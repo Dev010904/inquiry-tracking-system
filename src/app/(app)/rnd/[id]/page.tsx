@@ -194,18 +194,18 @@ export default async function RndProjectPage({
                   No IP assets linked yet.
                 </p>
               ) : (
-                // Not links yet: the IP screens are unbuilt, and a dead link
-                // is worse than plain text.
                 <ul className="divide-y">
                   {ipAssets.map((asset) => (
                     <li key={asset.id} className="py-2.5">
-                      <p className="text-sm font-medium">{asset.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {IP_TYPE[asset.ip_type]} · {IP_STATUS[asset.status]}
-                        {asset.next_renewal_date
-                          ? ` · renews ${formatDate(asset.next_renewal_date)}`
-                          : ''}
-                      </p>
+                      <Link href={`/ip/${asset.id}`} className="block hover:underline">
+                        <p className="text-sm font-medium">{asset.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {IP_TYPE[asset.ip_type]} · {IP_STATUS[asset.status]}
+                          {asset.next_renewal_date
+                            ? ` · renews ${formatDate(asset.next_renewal_date)}`
+                            : ''}
+                        </p>
+                      </Link>
                     </li>
                   ))}
                 </ul>

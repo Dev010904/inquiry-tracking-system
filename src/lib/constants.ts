@@ -111,6 +111,25 @@ export const IP_STATUS = {
 } as const
 export type IpStatus = keyof typeof IP_STATUS
 
+export const IP_ROUTE = {
+  provisional: 'Provisional',
+  complete: 'Complete Specification',
+  pct: 'PCT',
+  national_phase: 'National Phase',
+  unregistered: 'Unregistered',
+} as const
+export type IpRoute = keyof typeof IP_ROUTE
+
+export const CONFIDENTIALITY = {
+  public: 'Public',
+  internal: 'Internal',
+  restricted: 'Restricted',
+} as const
+export type Confidentiality = keyof typeof CONFIDENTIALITY
+
+/** IP statuses that are closed — no renewal chasing needed. */
+export const DEAD_IP_STATUSES = ['refused', 'abandoned', 'lapsed'] as const
+
 export const USER_ROLE = { admin: 'Admin', staff: 'Staff' } as const
 export type UserRole = keyof typeof USER_ROLE
 

@@ -230,17 +230,58 @@ See **`docs/HANDOVER.md`** for the deploy steps, per-device install
 instructions, how to create staff logins in Supabase, and the go-live cleanup
 script.
 
+### Phase 8 — IP, Companies, Reports, Settings ✅
+
+**The app is now feature-complete. Every nav link resolves; there are no
+unbuilt routes and no dead internal links** (verified by extracting every
+`href` in `src/` and checking each against the route tree).
+
+- **`/ip`** — portfolio cards with type/status filters, KPI row including
+  renewals due within 90 days. Detail page with an event timeline, renewal
+  card and ownership panel; create and edit forms. Costs are summed from
+  `ip_events` by trigger, never typed. Restricted assets are filtered by
+  `can_see_ip()` in Postgres, so a 404 for an unauthorised user reveals
+  nothing about the asset's existence.
+- **`/companies`** — client cards with primary contact, inquiry and order
+  counts, total business and outstanding. Detail page lists all contacts,
+  inquiries and orders. Orders reach a company via the inquiry, so the join
+  is two hops in the query layer rather than a database view to maintain.
+- **`/reports`** — conversion, order value by month, payment aging, loss
+  reasons, IP portfolio breakdown. Recharts.
+- **`/settings`** — own profile for everyone; for admins, staff accounts with
+  role and activate/deactivate controls.
+
+Decisions worth knowing:
+
+- **Conversion is measured by cohort** — an order counts in the month its
+  *inquiry* was logged, not the month it closed. Otherwise a good month for
+  closing old leads shows over 100% conversion, which tells you nothing. The
+  headline rate is won ÷ (won + lost); still-open inquiries are excluded
+  rather than counted as losses.
+- **Payment aging is measured from the order date**, because the model has no
+  separate invoice date. Worth revisiting if invoicing ever splits from
+  ordering.
+- **Settings cannot create users.** Creating an auth account needs the service
+  role key, which deliberately is not deployed. The screen explains the
+  Supabase steps instead. Role changes and deactivation *do* work in-app —
+  `profiles_update` already allows `is_admin()`.
+- **Last-admin guards**: you cannot demote or deactivate yourself, and the
+  last active admin cannot be deactivated. Without these, one click could
+  lock everyone out of user management with only direct SQL to recover.
+
+Typecheck: 115 source files, zero errors.
+
 ---
 
 ## Next — remaining phases
 
-1. **Dashboard extras** — CSV export, inquiries-by-status chart (filters shipped on `/inquiries`)
-2. **IP** — asset list and event timeline (the alarm-panel side is already live)
-3. **Companies** — clients with contacts, inquiry count, total business value
-4. **Reports** — conversion rate, value by month, payment aging, IP portfolio
-5. **Settings** — admin user management, install-app hints
-6. **PWA + deploy** — manifest, icons, GitHub, Vercel
-7. **Print-friendly invoice view** — deferred from the Orders phase
+All planned modules are built. What is left is polish, not function:
+
+1. **Dashboard extras** — CSV export and an inquiries-by-status chart
+2. **Print-friendly invoice view** — deferred from the Orders phase
+3. **In-app user creation** — needs the service role key deployed first
+4. **Timeline gap** — staff cannot see status-change history because
+   `activity_log` is admin-read-only; needs a `security definer` view
 
 ## Known constraints
 

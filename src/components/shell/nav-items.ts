@@ -20,9 +20,9 @@ export type NavItem = {
   /** Appears in the mobile bottom bar. Keep this to five items. */
   primary?: boolean
   /**
-   * Route not built yet. Kept here so re-enabling is a one-word edit, but
-   * filtered out of every menu — a link that 404s in front of a client is
-   * worse than a feature that is visibly absent.
+   * Route not built yet — filtered out of every menu. A link that 404s in
+   * front of a client is worse than a feature that is visibly absent.
+   * Nothing carries this flag now; it stays for the next unfinished screen.
    */
   unbuilt?: boolean
 }
@@ -32,13 +32,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: '/inquiries', label: 'Inquiries', short: 'Inquiries', icon: ClipboardList, primary: true },
   { href: '/orders', label: 'Orders', short: 'Orders', icon: Package, primary: true },
   { href: '/rnd', label: 'R&D Projects', short: 'R&D', icon: FlaskConical, primary: true },
-  { href: '/ip', label: 'IP Portfolio', short: 'IP', icon: ShieldCheck, primary: true, unbuilt: true },
-  { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2, unbuilt: true },
-  { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3, unbuilt: true },
-  { href: '/settings', label: 'Settings', short: 'Settings', icon: Settings, adminOnly: true, unbuilt: true },
+  { href: '/ip', label: 'IP Portfolio', short: 'IP', icon: ShieldCheck, primary: true },
+  { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
+  { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
+  { href: '/settings', label: 'Settings', short: 'Settings', icon: Settings, adminOnly: true },
 ]
 
-/** What the menus actually render. Drop `unbuilt` above as each phase lands. */
+/** What the menus render. Add `unbuilt: true` to hide a route in progress. */
 export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter((item) => !item.unbuilt)
 
 /** Highlights /inquiries for /inquiries/new and /inquiries/[id] too. */

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { AlarmClock, CalendarCheck, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -64,9 +65,12 @@ function IpGroup({ items }: { items: IpAlarm[] }) {
             )}
           >
             <div className="min-w-0">
-              {/* Plain text until the IP screens exist — the deadline still
-                  needs surfacing here, it just has nowhere to link to yet. */}
-              <p className="truncate font-medium">{item.title}</p>
+              <Link
+                href={`/ip/${item.assetId}`}
+                className="block truncate font-medium hover:underline"
+              >
+                {item.title}
+              </Link>
               <p className="text-sm text-muted-foreground">
                 {item.label} · {formatDate(item.effectiveDue)}
               </p>
