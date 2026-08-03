@@ -103,6 +103,10 @@ function indexBy<T extends { id: string }>(rows: T[] | null): Map<string, T> {
 export async function getAlarms(now = new Date()): Promise<Alarms> {
   const supabase = await createClient()
 
+  // Started now, awaited at the end: IP deadlines do not depend on anything
+  // below, so there is no reason to make them queue behind it.
+  const ipAlarms = getIpAlarms(now)
+
   const { data: pending } = await supabase
     .from('followups')
     .select('*')
@@ -182,7 +186,7 @@ export async function getAlarms(now = new Date()): Promise<Alarms> {
       today: alarms.filter((a) => a.bucket === 'today').sort(byDue),
       upcoming: alarms.filter((a) => a.bucket === 'upcoming').sort(byDue),
     },
-    ip: await getIpAlarms(now),
+    ip: await ipAlarms,
     overdueCount: alarms.filter((a) => a.bucket === 'overdue').length,
   }
 }
@@ -256,7 +260,7 @@ async function getIpAlarms(now: Date): Promise<IpAlarm[]> {
  * on inquiry status, because an order row is the point at which business is
  * actually booked. Value shown is inclusive of GST — it is what the client owes.
  */
-export async function getKpis(overdueFollowups: number, now = new Date()): Promise<Kpis> {
+export async function getKpis(now = new Date()): Promise<Omit<Kpis, 'overdueFollowups'>> {
   const supabase = await createClient()
   const monthStart = startOfMonth(now).toISOString().slice(0, 10)
 
@@ -284,7 +288,6 @@ export async function getKpis(overdueFollowups: number, now = new Date()): Promi
       (sum, o) => sum + Number(o.balance_pending ?? 0),
       0
     ),
-    overdueFollowups,
   }
 }
 

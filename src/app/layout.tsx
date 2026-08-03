@@ -22,6 +22,17 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 }
 
+/**
+ * Run server code in Singapore, next to the Supabase database.
+ *
+ * Vercel otherwise defaults to Washington DC, which puts the Atlantic and the
+ * Pacific between the app and its data: every query becomes India → USA →
+ * Singapore and back, roughly 250ms each. Pages here make several queries in
+ * sequence, so that compounds into a visible delay on every navigation.
+ * Co-locating with the database cuts each round trip to a few milliseconds.
+ */
+export const preferredRegion = 'sin1'
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

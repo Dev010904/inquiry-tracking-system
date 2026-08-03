@@ -15,13 +15,17 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardPage() {
   const now = new Date()
 
-  // Alarms first: the overdue count feeds the KPI row, so recomputing it
-  // inside getKpis would run the same queries twice.
-  const alarms = await getAlarms(now)
-  const [kpis, recent] = await Promise.all([
-    getKpis(alarms.overdueCount, now),
+  // All three run at once. The overdue KPI is taken from the alarms result
+  // rather than re-counted, so nothing has to wait on anything else — with
+  // the database a round trip away, sequential queries are what make a page
+  // feel slow.
+  const [alarms, kpiTotals, recent] = await Promise.all([
+    getAlarms(now),
+    getKpis(now),
     getRecentInquiries(8),
   ])
+
+  const kpis = { ...kpiTotals, overdueFollowups: alarms.overdueCount }
 
   return (
     <div className="mx-auto max-w-7xl space-y-5">
