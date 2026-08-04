@@ -21,10 +21,6 @@ export type CompanyCard = {
   lastInquiryDate: string | null
 }
 
-function indexBy<T extends { id: string }>(rows: T[] | null | undefined): Map<string, T> {
-  return new Map((rows ?? []).map((row) => [row.id, row]))
-}
-
 const OPEN_STATUSES = ['new', 'in_discussion', 'quoted', 'negotiation', 'on_hold']
 
 /**

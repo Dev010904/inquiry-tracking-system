@@ -121,7 +121,6 @@ export function CompanyPicker({
           onClick={() => setOpen((v) => !v)}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-invalid={Boolean(error)}
           className={cn(
             'flex h-11 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-base',
             error && 'border-destructive'
