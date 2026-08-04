@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Building2, Mail, Phone, User } from 'lucide-react'
 import { DeliveryPanel } from '@/components/orders/delivery-panel'
 import { DocumentsPanel } from '@/components/orders/documents-panel'
+import { MeetingsPanel } from '@/components/quality/meetings-panel'
+import { QaPanel } from '@/components/quality/qa-panel'
+import { QualificationTracker } from '@/components/quality/qualification-tracker'
 import { FinancialSummary } from '@/components/orders/financial-summary'
 import { LineItems } from '@/components/orders/line-items'
 import { OrderStatusBadge, ProgressBar } from '@/components/orders/order-status-badge'
@@ -16,6 +19,12 @@ import { formatDate } from '@/lib/format'
 import { requireProfile } from '@/lib/auth'
 import { getOrderDetail } from '@/lib/queries/orders'
 import { issuedTaxInvoices, listOrderDocuments } from '@/lib/queries/documents'
+import {
+  dispatchBlockReason,
+  listMeetings,
+  listQaChecks,
+  listQualifications,
+} from '@/lib/queries/quality'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,12 +44,16 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [profile, detail, documents, parents] = await Promise.all([
-    requireProfile(),
-    getOrderDetail(id),
-    listOrderDocuments(id),
-    issuedTaxInvoices(id),
-  ])
+  const [profile, detail, documents, parents, qaChecks, qualifications, meetings] =
+    await Promise.all([
+      requireProfile(),
+      getOrderDetail(id),
+      listOrderDocuments(id),
+      issuedTaxInvoices(id),
+      listQaChecks(id),
+      listQualifications(id),
+      listMeetings({ orderId: id, limit: 5 }),
+    ])
   if (!detail) notFound()
 
   const { order, inquiry, company, contact, items, payments, workUpdates, deliveryOverdue } =
@@ -110,6 +123,25 @@ export default async function OrderDetailPage({
             payments={payments}
             balancePending={Number(order.balance_pending ?? 0)}
             isAdmin={profile.role === 'admin'}
+          />
+
+          <QaPanel
+            orderId={order.id}
+            checks={qaChecks}
+            blockReason={dispatchBlockReason(qaChecks)}
+          />
+
+          <QualificationTracker
+            orderId={order.id}
+            required={order.requires_qualification}
+            stages={qualifications}
+          />
+
+          <MeetingsPanel
+            meetings={meetings}
+            newHref={`/meetings/new?order=${order.id}${
+              company?.id ? `&company=${company.id}` : ''
+            }`}
           />
 
           <WorkUpdatesFeed

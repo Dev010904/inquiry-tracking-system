@@ -94,6 +94,10 @@ export type FollowupRow = Timestamps & {
 }
 
 export type OrderRow = Timestamps & {
+  requires_qualification: boolean
+  qa_override_reason: string | null
+  qa_overridden_by: string | null
+  qa_overridden_at: string | null
   id: string
   order_no: string | null
   inquiry_id: string
@@ -117,6 +121,86 @@ export type OrderRow = Timestamps & {
   addendum: string | null
   deleted_at: string | null
   created_by: string | null
+}
+
+export type QaResult = 'pass' | 'fail' | 'conditional_pass'
+export type QaMediaKind = 'photo' | 'video'
+export type QualificationStage = 'dq' | 'iq' | 'oq' | 'pq'
+export type QualificationStatus = 'not_started' | 'in_progress' | 'passed' | 'failed'
+export type MeetingType = 'site_visit' | 'review' | 'kickoff' | 'handover' | 'other'
+
+export type QaCheckRow = Timestamps & {
+  id: string
+  order_id: string
+  report_no: string | null
+  checked_on: string
+  checked_by: string | null
+  result: QaResult
+  description: string
+  observations: string | null
+  conditions: string | null
+  approved_by: string | null
+  approved_at: string | null
+  deleted_at: string | null
+  created_by: string | null
+}
+
+export type QaMediaRow = {
+  id: string
+  qa_check_id: string
+  kind: QaMediaKind
+  storage_path: string | null
+  external_url: string | null
+  caption: string | null
+  uploaded_by: string | null
+  created_at: string
+}
+
+export type QualificationRow = Timestamps & {
+  id: string
+  order_id: string
+  stage: QualificationStage
+  status: QualificationStatus
+  planned_date: string | null
+  performed_on: string | null
+  performed_by: string | null
+  customer_representative: string | null
+  customer_signed_off: boolean
+  signed_off_on: string | null
+  summary: string | null
+  document_path: string | null
+  notes: string | null
+  created_by: string | null
+}
+
+export type MeetingRow = Timestamps & {
+  id: string
+  meeting_date: string
+  meeting_type: MeetingType
+  location: string | null
+  company_id: string | null
+  inquiry_id: string | null
+  order_id: string | null
+  subject: string
+  internal_attendees: string[]
+  client_attendees: string[]
+  agenda: string | null
+  discussion: string | null
+  decisions: string | null
+  next_steps: string | null
+  deleted_at: string | null
+  created_by: string | null
+}
+
+export type MeetingActionRow = Timestamps & {
+  id: string
+  meeting_id: string
+  action: string
+  owner_id: string | null
+  due_on: string | null
+  is_done: boolean
+  done_at: string | null
+  followup_id: string | null
 }
 
 export type DocumentType =
@@ -388,6 +472,11 @@ export type Database = {
         Update: Omit<InsertOf<OrderItemRow>, 'amount'>
         Relationships: []
       }
+      qa_checks: { Row: QaCheckRow; Insert: InsertOf<QaCheckRow> & { order_id: string; description: string }; Update: InsertOf<QaCheckRow>; Relationships: [] }
+      qa_media: { Row: QaMediaRow; Insert: Partial<QaMediaRow> & { qa_check_id: string; kind: QaMediaKind }; Update: Partial<QaMediaRow>; Relationships: [] }
+      qualifications: { Row: QualificationRow; Insert: InsertOf<QualificationRow> & { order_id: string; stage: QualificationStage }; Update: InsertOf<QualificationRow>; Relationships: [] }
+      meetings: { Row: MeetingRow; Insert: InsertOf<MeetingRow> & { subject: string }; Update: InsertOf<MeetingRow>; Relationships: [] }
+      meeting_actions: { Row: MeetingActionRow; Insert: InsertOf<MeetingActionRow> & { meeting_id: string; action: string }; Update: InsertOf<MeetingActionRow>; Relationships: [] }
       company_settings: { Row: CompanySettingsRow; Insert: InsertOf<CompanySettingsRow>; Update: InsertOf<CompanySettingsRow>; Relationships: [] }
       invoices: { Row: InvoiceRow; Insert: InsertOf<InvoiceRow> & { doc_type: DocumentType; company_id: string }; Update: InsertOf<InvoiceRow>; Relationships: [] }
       invoice_lines: { Row: InvoiceLineRow; Insert: Partial<InvoiceLineRow>; Update: Partial<InvoiceLineRow>; Relationships: [] }
@@ -441,6 +530,11 @@ export type Database = {
       ip_route: IpRoute
       ip_status: IpStatus
       ip_type: IpType
+      qa_result: QaResult
+      qa_media_kind: QaMediaKind
+      qualification_stage: QualificationStage
+      qualification_status: QualificationStatus
+      meeting_type: MeetingType
       document_type: DocumentType
       document_status: DocumentStatus
       item_unit: ItemUnit

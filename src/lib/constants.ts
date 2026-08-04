@@ -194,3 +194,52 @@ export const GST_STATES: Record<string, string> = {
   '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana',
   '37': 'Andhra Pradesh', '38': 'Ladakh', '97': 'Other Territory',
 }
+
+export const QA_RESULT = {
+  pass: 'Passed',
+  conditional_pass: 'Passed with conditions',
+  fail: 'Failed',
+} as const
+
+export const QA_MEDIA_KIND = { photo: 'Photo', video: 'Video' } as const
+
+/**
+ * The four qualification stages, in the order they happen.
+ *
+ * The owner named DQ, IQ and PQ. OQ is the standard fourth and normally sits
+ * between IQ and PQ; leaving it out of a validation set is unusual, and a
+ * client in a regulated industry will ask. It stays `not_started` if unused.
+ */
+export const QUALIFICATION_STAGE = {
+  dq: 'Design Qualification',
+  iq: 'Installation Qualification',
+  oq: 'Operational Qualification',
+  pq: 'Performance Qualification',
+} as const
+
+export const QUALIFICATION_STAGE_WHEN = {
+  dq: 'Before manufacture — the design meets the requirement',
+  iq: 'At site after delivery — installed correctly',
+  oq: 'After installation — operates through its range',
+  pq: 'In production use — performs consistently',
+} as const
+
+export const QUALIFICATION_STATUS = {
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  passed: 'Passed',
+  failed: 'Failed',
+} as const
+
+export const MEETING_TYPE = {
+  site_visit: 'Site visit',
+  review: 'Review',
+  kickoff: 'Kick-off',
+  handover: 'Handover',
+  other: 'Other',
+} as const
+
+/** Statuses that need a passed QA check before an order can reach them. */
+export const QA_GATED_STATUSES = ['dispatched', 'delivered', 'closed']
+
+export const QA_BUCKET = 'qa-evidence'

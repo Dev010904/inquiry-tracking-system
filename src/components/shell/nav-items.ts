@@ -1,5 +1,6 @@
 import {
   Building2,
+  CalendarDays,
   ClipboardList,
   FileText,
   FlaskConical,
@@ -36,6 +37,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: '/rnd', label: 'R&D Projects', short: 'R&D', icon: FlaskConical, primary: true },
   { href: '/ip', label: 'IP Portfolio', short: 'IP', icon: ShieldCheck, primary: true },
   { href: '/documents', label: 'Documents', short: 'Docs', icon: FileText },
+  { href: '/meetings', label: 'Meetings', short: 'Meetings', icon: CalendarDays },
   { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
   { href: '/activity', label: 'Recent changes', short: 'Changes', icon: History },
   { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
