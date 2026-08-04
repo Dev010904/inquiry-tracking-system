@@ -26,18 +26,26 @@ A phone photo is 3–5 MB. One minute of 1080p video is 60–150 MB. A single QA
 check with 5 photos and 2 short videos is roughly **220 MB** — about **four
 orders** before the free tier is exhausted.
 
-Mitigations built into this spec:
+**Decided by the owner:**
 
-- **Photos are compressed on upload** (longest edge 1600px, JPEG ~80%) — roughly
-  300 KB each. Even 1 GB then holds several thousand.
-- **Video accepts either an upload or an external link.** A setting
-  (`MEDIA_UPLOAD_ENABLED`) controls which. Free tier uses links; switching to a
-  paid plan flips the setting with no rebuild and no migration.
+- **Photos are uploaded into the system**, compressed on the way in (longest edge
+  1600px, JPEG ~80%) — roughly 300 KB each while staying sharp enough to inspect.
+  Even the free 1 GB then holds several thousand.
+- **Videos are linked, not uploaded.** Staff record the video, put it on company
+  Google Drive, and paste the share link into the QA screen.
 
-> Linked video is a cost workaround, not a design choice. QA media exists as
-> evidence in a dispute. A link breaks if the file is moved or deleted, obeys
-> Google Drive's permissions rather than this system's, and cannot be embedded
-> in a PDF. Say so plainly when presenting the option.
+Build the video field to accept **either** a link or an upload, switched by
+`MEDIA_UPLOAD_ENABLED` (default `false`). The day the plan is upgraded, the
+switch flips — no rebuild, no migration.
+
+> Recorded so nobody is surprised later: linked video is a cost decision, not a
+> design one. QA media exists as evidence in a dispute. A link breaks if the file
+> is moved or deleted, obeys Google Drive's permissions rather than this system's,
+> and cannot be embedded in a PDF — only referenced. Photos, which are stored
+> properly, carry the evidential weight.
+>
+> **Operational rule to give staff:** put QA videos in a dedicated Drive folder
+> that only managers can delete from, and never move or rename them.
 
 ### Licensing — needs resolving
 
@@ -67,7 +75,18 @@ wrong assumption produces invoices that are not valid.
 | 5 | Is a **digital signature** on the PDF required, or is a name and designation enough? | Affects PDF generation |
 | 6 | Do they want **OQ** as well as DQ, IQ and PQ? | The standard sequence is DQ → IQ → OQ → PQ; the owner named only three |
 | 7 | Which orders need qualification documents — **all, or equipment only**? | Decides whether it is a flag per order |
-| 8 | **Plan upgrade approved?** | Decides whether QA video works at all |
+| 8 | **Confirm the school / GST instruction with a CA.** See 3.2.1. | Affects whether invoices are legally correct |
+
+### Volume — smaller than it looks
+
+The owner expects **5–10 invoices a month**. This matters: the invoicing module
+does not need to be industrial. No bulk generation, no scheduled runs, no
+import/export pipelines. Correctness and legal validity matter enormously;
+throughput does not matter at all.
+
+It also settles a question worth asking out loud — at that volume, dedicated
+accounting software is hard to justify, which is exactly why this belongs in
+the system the orders already live in.
 
 ---
 
@@ -127,9 +146,43 @@ Five document types. Only two of them are tax documents.
 |---|---|---|---|
 | Proforma invoice | No | `PI/2026-27/0001` | A quotation-style document. Creates no GST liability. Must be clearly labelled "Proforma Invoice — not a tax invoice". |
 | Tax invoice | **Yes** | `INV/2026-27/0001` | Full legal requirements below. |
+| Bill of supply | No | `BOS/2026-27/0001` | For clients flagged `gst_applicable = false` — see 3.2.1. |
 | Delivery challan | No | `DC/2026-27/0001` | Accompanies goods. Shows quantities, not necessarily tax. |
 | Credit note | **Yes** | `CN/2026-27/0001` | Reduces value — returns, rate reduction, deficiency. Must reference the original invoice. |
 | Debit note | **Yes** | `DN/2026-27/0001` | Increases value. Must reference the original invoice. |
+
+#### 3.2.1 Schools without GST — implement, but verify first
+
+The owner has asked that **schools are not invoiced with GST**.
+
+Build it as a per-client switch, not a rule about the word "school":
+
+- New column `companies.gst_applicable boolean not null default true`.
+- When `false`, the client cannot be issued a **Tax invoice**, **Credit note** or
+  **Debit note**. They get a **Bill of supply** (new sixth document type,
+  series `BOS/2026-27/0001`), a proforma, or a delivery challan.
+- A bill of supply shows no tax columns and must carry the line
+  *"Not a tax invoice — no GST charged on this supply."*
+- The reason for the exemption is stored as free text on the company record,
+  so an auditor can be answered years later.
+- Reports separate taxable from non-taxable turnover.
+
+> **Flag this to the owner before the first invoice is raised.**
+>
+> Under GST, whether tax is charged depends on **what is being supplied and
+> whether the supplier is registered** — not on whether the customer holds a
+> GSTIN. A registered supplier selling taxable goods to an unregistered school
+> normally still charges GST; it is simply a B2C sale. The exemptions that exist
+> for educational institutions are narrow and mostly cover services *to* schools
+> such as transport, catering and security, not general equipment supply.
+>
+> There may well be a sound reason for this instruction — exempt supplies, a
+> different billing entity, or something specific to their contracts. But it is
+> a tax position, not a software preference, and getting it wrong creates a
+> liability that lands on ANK rather than on this system.
+>
+> **Have their CA confirm it in writing, then build it.** The switch above works
+> either way; only the default changes.
 
 **A tax invoice must carry:** supplier name, address and GSTIN · invoice number
 and date · recipient name, address and GSTIN · **place of supply** · per line:
@@ -180,8 +233,9 @@ by the UI — the UI merely explains why the option is unavailable.
 of the two location fields must be set — enforce with a check constraint.
 
 **Mandatory before a QA check may be marked passed:**
-description, at least **one photo**, and at least **one video** (uploaded or
-linked). Enforced in the database.
+description, at least **one photo** (uploaded), and at least **one video**
+(a link, per the storage decision in section 0). Enforced in the database, not
+only in the form.
 
 **UI:** a QA section on the order detail screen, between Work updates and
 Delivery. Photo thumbnails in a grid, click to enlarge. The Delivery status
@@ -323,8 +377,8 @@ Each phase ends with a working, deployable system.
 |---|---|---|
 | **2A** | Activity feed, `summary` and `note` columns, IST timestamps, dashboard swap, convert-to-order fields | No new storage, no new money, immediate visible value. Also gives an audit trail *before* riskier changes are made. |
 | **2B** | Order line items + migration | Everything below depends on it. Highest risk — do it alone, verify totals. |
-| **2C** | Invoicing: 5 document types, numbering, PDF, copies | The largest single piece. Needs decisions 1–5. |
-| **2D** | QA/QC gate + media | Needs the storage decision. |
+| **2C** | Invoicing: 6 document types, numbering, PDF, copies | The largest single piece. Needs decisions 1–5 and 8. |
+| **2D** | QA/QC gate + media | Photos uploaded, videos linked — decided. |
 | **2E** | Qualification documents | Self-contained. |
 | **2F** | Meetings and MOM | Self-contained; ties into follow-ups. |
 
