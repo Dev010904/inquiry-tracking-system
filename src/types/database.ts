@@ -36,6 +36,8 @@ export type ProfileRow = Timestamps & {
 }
 
 export type CompanyRow = Timestamps & {
+  gst_applicable: boolean
+  gst_exemption_reason: string | null
   id: string
   name: string
   type: CompanyType
@@ -115,6 +117,101 @@ export type OrderRow = Timestamps & {
   addendum: string | null
   deleted_at: string | null
   created_by: string | null
+}
+
+export type DocumentType =
+  | 'proforma'
+  | 'tax_invoice'
+  | 'bill_of_supply'
+  | 'delivery_challan'
+  | 'credit_note'
+  | 'debit_note'
+export type DocumentStatus = 'draft' | 'issued' | 'cancelled'
+
+/** The supplier's own identity and tax configuration. One row. */
+export type CompanySettingsRow = Timestamps & {
+  id: string
+  singleton: boolean
+  legal_name: string | null
+  trade_name: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  state_name: string | null
+  state_code: string | null
+  pincode: string | null
+  gstin: string | null
+  pan: string | null
+  phone: string | null
+  email: string | null
+  website: string | null
+  bank_name: string | null
+  bank_account_no: string | null
+  bank_ifsc: string | null
+  bank_branch: string | null
+  signatory_name: string | null
+  signatory_designation: string | null
+  default_gst_rate: number
+  invoice_terms: string | null
+}
+
+export type InvoiceRow = Timestamps & {
+  id: string
+  doc_type: DocumentType
+  status: DocumentStatus
+  fy: string | null
+  seq_number: number | null
+  doc_no: string | null
+  doc_date: string
+  order_id: string | null
+  company_id: string
+  parent_invoice_id: string | null
+  place_of_supply_code: string | null
+  place_of_supply_name: string | null
+  reverse_charge: boolean
+  supplier_snapshot: CompanySettingsRow | null
+  buyer_snapshot: {
+    name: string | null
+    address: string | null
+    city: string | null
+    state: string | null
+    gstin: string | null
+    gst_applicable: boolean | null
+  } | null
+  taxable_value: number
+  cgst_amount: number
+  sgst_amount: number
+  igst_amount: number
+  total_tax: number
+  round_off: number
+  grand_total: number
+  amount_in_words: string | null
+  notes: string | null
+  terms: string | null
+  reason: string | null
+  issued_at: string | null
+  issued_by: string | null
+  cancelled_at: string | null
+  cancel_reason: string | null
+  created_by: string | null
+}
+
+export type InvoiceLineRow = {
+  id: string
+  invoice_id: string
+  line_no: number
+  description: string
+  hsn_sac: string | null
+  quantity: number
+  unit: ItemUnit
+  rate: number
+  taxable_value: number
+  gst_rate: number
+  cgst_amount: number
+  sgst_amount: number
+  igst_amount: number
+  line_total: number
+  created_at: string
 }
 
 export type ItemUnit = 'nos' | 'set' | 'kg' | 'm' | 'hour' | 'lot'
@@ -291,6 +388,9 @@ export type Database = {
         Update: Omit<InsertOf<OrderItemRow>, 'amount'>
         Relationships: []
       }
+      company_settings: { Row: CompanySettingsRow; Insert: InsertOf<CompanySettingsRow>; Update: InsertOf<CompanySettingsRow>; Relationships: [] }
+      invoices: { Row: InvoiceRow; Insert: InsertOf<InvoiceRow> & { doc_type: DocumentType; company_id: string }; Update: InsertOf<InvoiceRow>; Relationships: [] }
+      invoice_lines: { Row: InvoiceLineRow; Insert: Partial<InvoiceLineRow>; Update: Partial<InvoiceLineRow>; Relationships: [] }
       payments: { Row: PaymentRow; Insert: InsertOf<PaymentRow> & { order_id: string; amount: number }; Update: InsertOf<PaymentRow>; Relationships: [] }
       rnd_projects: { Row: RndProjectRow; Insert: InsertOf<RndProjectRow> & { project_name: string }; Update: InsertOf<RndProjectRow>; Relationships: [] }
       rnd_expenses: { Row: RndExpenseRow; Insert: InsertOf<RndExpenseRow> & { project_id: string; amount: number; description: string }; Update: InsertOf<RndExpenseRow>; Relationships: [] }
@@ -305,6 +405,23 @@ export type Database = {
     Functions: {
       is_active_member: { Args: Record<string, never>; Returns: boolean }
       is_admin: { Args: Record<string, never>; Returns: boolean }
+      /** Creates a draft document from an order, copying its line items. */
+      create_document: {
+        Args: {
+          p_order_id: string
+          p_doc_type: DocumentType
+          p_doc_date?: string
+          p_place_of_supply_code?: string | null
+          p_place_of_supply_name?: string | null
+          p_parent_invoice_id?: string | null
+          p_notes?: string | null
+          p_reason?: string | null
+        }
+        Returns: string
+      }
+      /** Allocates the number and freezes the snapshots. Returns the doc no. */
+      issue_document: { Args: { p_invoice_id: string }; Returns: string }
+      cancel_document: { Args: { p_invoice_id: string; p_reason: string }; Returns: undefined }
       /** Updates the spec and records the reason in one transaction. */
       update_order_spec: {
         Args: {
@@ -324,6 +441,8 @@ export type Database = {
       ip_route: IpRoute
       ip_status: IpStatus
       ip_type: IpType
+      document_type: DocumentType
+      document_status: DocumentStatus
       item_unit: ItemUnit
       order_status: OrderStatus
       parent_kind: ParentKind

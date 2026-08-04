@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Building2, Mail, Phone, User } from 'lucide-react'
 import { DeliveryPanel } from '@/components/orders/delivery-panel'
+import { DocumentsPanel } from '@/components/orders/documents-panel'
 import { FinancialSummary } from '@/components/orders/financial-summary'
 import { LineItems } from '@/components/orders/line-items'
 import { OrderStatusBadge, ProgressBar } from '@/components/orders/order-status-badge'
@@ -14,6 +15,7 @@ import { COMPANY_TYPE } from '@/lib/constants'
 import { formatDate } from '@/lib/format'
 import { requireProfile } from '@/lib/auth'
 import { getOrderDetail } from '@/lib/queries/orders'
+import { issuedTaxInvoices, listOrderDocuments } from '@/lib/queries/documents'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +35,12 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [profile, detail] = await Promise.all([requireProfile(), getOrderDetail(id)])
+  const [profile, detail, documents, parents] = await Promise.all([
+    requireProfile(),
+    getOrderDetail(id),
+    listOrderDocuments(id),
+    issuedTaxInvoices(id),
+  ])
   if (!detail) notFound()
 
   const { order, inquiry, company, contact, items, payments, workUpdates, deliveryOverdue } =
@@ -87,6 +94,15 @@ export default async function OrderDetailPage({
             orderId={order.id}
             technicalSpecification={order.technical_specification}
             addendum={order.addendum}
+          />
+
+          <DocumentsPanel
+            orderId={order.id}
+            documents={documents}
+            parents={parents}
+            gstApplicable={company?.gst_applicable ?? true}
+            defaultStateCode={company?.gstin ? company.gstin.slice(0, 2) : null}
+            linesMissingHsn={items.filter((item) => !item.hsn_sac).length}
           />
 
           <PaymentsLedger

@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { Info, Monitor, Smartphone, UserPlus } from 'lucide-react'
+import { CompanySettingsForm } from '@/components/settings/company-settings-form'
 import { ProfileForm } from '@/components/settings/profile-form'
 import { UserTable } from '@/components/settings/user-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { requireProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { getCompanySettings, missingSettings } from '@/lib/queries/documents'
 
 export const metadata: Metadata = { title: 'Settings · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
@@ -30,6 +32,8 @@ const INSTALL_STEPS = [
 export default async function SettingsPage() {
   const profile = await requireProfile()
   const isAdmin = profile.role === 'admin'
+
+  const settings = isAdmin ? await getCompanySettings() : null
 
   const supabase = await createClient()
   const { data: users } = isAdmin
@@ -61,6 +65,8 @@ export default async function SettingsPage() {
           />
         </CardContent>
       </Card>
+
+      {isAdmin && <CompanySettingsForm settings={settings} missing={missingSettings(settings)} />}
 
       {isAdmin && (
         <Card>

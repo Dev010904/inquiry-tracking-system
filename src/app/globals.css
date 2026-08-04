@@ -72,3 +72,39 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/*
+ * Printing an invoice.
+ *
+ * Browser print is used rather than a PDF library: the layout is then
+ * identical on screen and on paper, "Save as PDF" comes free on every
+ * platform, and each copy is a real page rather than an image.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  /* Everything that is not the document itself is chrome. */
+  header[data-app-shell],
+  nav[data-app-shell],
+  aside[data-app-shell],
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  .doc-copy {
+    border: none !important;
+    padding: 0 !important;
+    break-inside: avoid;
+  }
+
+  .print-root {
+    margin: 0;
+  }
+}

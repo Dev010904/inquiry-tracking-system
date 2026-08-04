@@ -151,3 +151,46 @@ export const ITEM_UNIT = {
 } as const
 
 export type ItemUnit = keyof typeof ITEM_UNIT
+
+/** The six documents this system can raise. */
+export const DOCUMENT_TYPE = {
+  proforma: 'Proforma invoice',
+  tax_invoice: 'Tax invoice',
+  bill_of_supply: 'Bill of supply',
+  delivery_challan: 'Delivery challan',
+  credit_note: 'Credit note',
+  debit_note: 'Debit note',
+} as const
+
+export type DocumentType = keyof typeof DOCUMENT_TYPE
+
+export const DOCUMENT_STATUS = {
+  draft: 'Draft',
+  issued: 'Issued',
+  cancelled: 'Cancelled',
+} as const
+
+/** Only these three carry GST. The rest are not tax documents. */
+export const TAXABLE_DOCUMENT_TYPES: DocumentType[] = ['tax_invoice', 'credit_note', 'debit_note']
+
+/** The copies an Indian tax invoice is printed in, for goods. */
+export const INVOICE_COPIES = {
+  original: 'Original for Recipient',
+  duplicate: 'Duplicate for Transporter',
+  triplicate: 'Triplicate for Supplier',
+} as const
+
+export type InvoiceCopy = keyof typeof INVOICE_COPIES
+
+/** GST state codes, for place of supply. */
+export const GST_STATES: Record<string, string> = {
+  '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
+  '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
+  '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur',
+  '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
+  '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh',
+  '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra',
+  '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu',
+  '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana',
+  '37': 'Andhra Pradesh', '38': 'Ladakh', '97': 'Other Territory',
+}
