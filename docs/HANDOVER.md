@@ -139,6 +139,28 @@ it. Run the whole block at once.
 
 ---
 
+## 4b. Rotate the database password before go-live
+
+**Required, not optional.**
+
+The Postgres password currently in `.env.local` was shared over chat during
+development, so it must be treated as compromised. While the database holds
+only demonstration records that costs nothing. The moment real client data is
+in there, it matters a great deal — that password grants full read and write
+access to everything, bypassing every rule in the application.
+
+1. Supabase → **Connect** → **Direct** → **Reset database password**
+2. Generate a new one. Avoid the symbols `@ : / ? # [ ] %` — they must be
+   percent-encoded in a connection string and are awkward to debug.
+3. Open `C:\inquiry-tracking-system\.env.local` and replace only the password
+   inside `SUPABASE_DB_URL`.
+4. **Do not send the new password to anyone, in any chat, ever.** Type it
+   straight into the file.
+
+Nothing in the live app uses this password — it exists only for applying
+database migrations from your machine — so resetting it cannot break the
+running system.
+
 ## 5. One security setting to switch on
 
 **Supabase → Authentication → Policies → enable leaked password protection.**
