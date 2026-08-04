@@ -43,3 +43,6 @@ supabase/.branches
 
 # personal working notes — never published
 /_private
+
+# generated guide (large, contains data screenshots) — keep local
+/ANK-Inquiry-Tracking-System-Guide.pdf
