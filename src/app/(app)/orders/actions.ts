@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { orderDetailsSchema, paymentSchema } from '@/lib/schemas/order'
+import { orderDetailsSchema, orderItemSchema, paymentSchema } from '@/lib/schemas/order'
 
 export type Result =
   | { ok: true }
@@ -163,6 +163,94 @@ export async function updateOrderDetails(input: unknown): Promise<Result> {
   if (error) return { ok: false, error: 'Could not save your changes.' }
 
   revalidatePath(`/orders/${values.order_id}`)
+  revalidatePath('/orders')
+  revalidatePath('/dashboard')
+  return { ok: true }
+}
+
+/**
+ * Creates or updates a line item.
+ *
+ * The order value is never written here. A database trigger sums the live
+ * lines into `orders.order_value` after this returns, and GST, total and
+ * balance are generated columns off that — so the money follows the lines
+ * automatically and cannot be made to disagree with them.
+ */
+export async function saveOrderItem(input: unknown): Promise<Result> {
+  const profile = await requireProfile()
+
+  const parsed = orderItemSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: 'Check the highlighted fields.', fieldErrors: flatten(parsed.error) }
+  }
+  const values = parsed.data
+  const supabase = await createClient()
+
+  const { data: order } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('id', values.order_id)
+    .is('deleted_at', null)
+    .maybeSingle()
+
+  if (!order) return { ok: false, error: 'That order no longer exists.' }
+
+  const fields = {
+    description: values.description,
+    hsn_sac: values.hsn_sac || null,
+    quantity: values.quantity,
+    unit: values.unit,
+    rate: values.rate,
+    notes: values.notes || null,
+  }
+
+  if (values.id) {
+    const { error } = await supabase.from('order_items').update(fields).eq('id', values.id)
+    if (error) return { ok: false, error: 'Could not save that line.' }
+  } else {
+    // Next line number, counting removed lines too, so numbers are never
+    // reused — a line 3 that reappears meaning something else is confusing
+    // on a document someone printed last week.
+    const { data: last } = await supabase
+      .from('order_items')
+      .select('line_no')
+      .eq('order_id', values.order_id)
+      .order('line_no', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const { error } = await supabase.from('order_items').insert({
+      ...fields,
+      order_id: values.order_id,
+      line_no: (last?.line_no ?? 0) + 1,
+      created_by: profile.id,
+    })
+    if (error) return { ok: false, error: 'Could not add that line.' }
+  }
+
+  revalidatePath(`/orders/${values.order_id}`)
+  revalidatePath('/orders')
+  revalidatePath('/dashboard')
+  return { ok: true }
+}
+
+/**
+ * Removes a line. Soft delete, so the order's history stays readable and the
+ * activity feed can still explain why the value dropped.
+ */
+export async function removeOrderItem(itemId: string, orderId: string): Promise<Result> {
+  await requireProfile()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('order_items')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', itemId)
+    .is('deleted_at', null)
+
+  if (error) return { ok: false, error: 'Could not remove that line.' }
+
+  revalidatePath(`/orders/${orderId}`)
   revalidatePath('/orders')
   revalidatePath('/dashboard')
   return { ok: true }

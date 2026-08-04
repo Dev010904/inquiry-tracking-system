@@ -139,3 +139,15 @@ export type UserRole = keyof typeof USER_ROLE
  */
 export const FOLLOWUP_LEAD_DAYS = 7
 export const IP_LEAD_DAYS = [90, 30, 7] as const
+
+/** Units a line item can be measured in. */
+export const ITEM_UNIT = {
+  nos: 'Nos',
+  set: 'Set',
+  kg: 'Kg',
+  m: 'Metre',
+  hour: 'Hour',
+  lot: 'Lot',
+} as const
+
+export type ItemUnit = keyof typeof ITEM_UNIT

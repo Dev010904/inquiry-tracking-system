@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ORDER_STATUS, PAYMENT_MODE } from '@/lib/constants'
+import { ITEM_UNIT, ORDER_STATUS, PAYMENT_MODE } from '@/lib/constants'
 
 const enumKeys = <T extends Record<string, string>>(map: T) =>
   Object.keys(map) as [keyof T & string, ...(keyof T & string)[]]
@@ -71,3 +71,36 @@ export const orderDetailsSchema = z.object({
 })
 
 export type OrderDetailsValues = z.output<typeof orderDetailsSchema>
+
+/**
+ * A line on an order.
+ *
+ * `amount` is deliberately absent — Postgres generates it from quantity x rate,
+ * and the order value is the trigger-maintained sum of these lines. Nothing
+ * here lets anyone type a total.
+ */
+export const orderItemSchema = z.object({
+  id: z.string().uuid().optional(),
+  order_id: z.string().uuid(),
+  description: z.string().trim().min(3, 'Describe what is being supplied').max(500),
+  hsn_sac: z
+    .string()
+    .trim()
+    .max(10)
+    .regex(/^\d*$/, 'HSN/SAC codes are digits only')
+    .optional()
+    .or(z.literal('')),
+  quantity: moneyInput.pipe(
+    z
+      .number({ invalid_type_error: 'Enter a quantity' })
+      .positive('Quantity must be more than zero')
+      .max(9_999_999)
+  ),
+  unit: z.enum(enumKeys(ITEM_UNIT)),
+  rate: moneyInput.pipe(
+    z.number({ invalid_type_error: 'Enter a rate' }).min(0, 'Rate cannot be negative').max(99_999_999)
+  ),
+  notes: z.string().trim().max(500).optional().or(z.literal('')),
+})
+
+export type OrderItemValues = z.output<typeof orderItemSchema>

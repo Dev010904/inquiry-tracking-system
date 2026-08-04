@@ -6,6 +6,7 @@ import type {
   CompanyRow,
   ContactRow,
   InquiryRow,
+  OrderItemRow,
   OrderRow,
   OrderStatus,
   PaymentRow,
@@ -234,6 +235,7 @@ export type OrderDetail = {
   inquiry: InquiryRow | null
   company: CompanyRow | null
   contact: ContactRow | null
+  items: OrderItemRow[]
   payments: PaymentRow[]
   workUpdates: (WorkUpdateRow & { authorName: string | null })[]
   deliveryOverdue: boolean
@@ -251,8 +253,14 @@ export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
 
   if (!order) return null
 
-  const [inquiryRes, paymentsRes, updatesRes] = await Promise.all([
+  const [inquiryRes, itemsRes, paymentsRes, updatesRes] = await Promise.all([
     supabase.from('inquiries').select('*').eq('id', order.inquiry_id).maybeSingle(),
+    supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', id)
+      .is('deleted_at', null)
+      .order('line_no', { ascending: true }),
     supabase
       .from('payments')
       .select('*')
@@ -294,6 +302,7 @@ export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
     inquiry,
     company: companyRes.data ?? null,
     contact: contactRes.data ?? null,
+    items: itemsRes.data ?? [],
     payments: paymentsRes.data ?? [],
     workUpdates: updates.map((update) => ({
       ...update,

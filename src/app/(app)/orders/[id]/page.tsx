@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Building2, Mail, Phone, User } from 'lucide-react'
 import { DeliveryPanel } from '@/components/orders/delivery-panel'
 import { FinancialSummary } from '@/components/orders/financial-summary'
+import { LineItems } from '@/components/orders/line-items'
 import { OrderStatusBadge, ProgressBar } from '@/components/orders/order-status-badge'
 import { PaymentsLedger } from '@/components/orders/payments-ledger'
 import { SpecPanel } from '@/components/orders/spec-panel'
@@ -35,7 +36,8 @@ export default async function OrderDetailPage({
   const [profile, detail] = await Promise.all([requireProfile(), getOrderDetail(id)])
   if (!detail) notFound()
 
-  const { order, inquiry, company, contact, payments, workUpdates, deliveryOverdue } = detail
+  const { order, inquiry, company, contact, items, payments, workUpdates, deliveryOverdue } =
+    detail
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
@@ -77,6 +79,8 @@ export default async function OrderDetailPage({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
+          <LineItems orderId={order.id} items={items} />
+
           <FinancialSummary order={order} />
 
           <SpecPanel
