@@ -96,6 +96,49 @@ export async function removePayment(paymentId: string, orderId: string): Promise
   return { ok: true }
 }
 
+const specSchema = z.object({
+  order_id: z.string().uuid(),
+  technical_specification: z
+    .string()
+    .trim()
+    .min(20, 'Describe what was agreed — at least a sentence')
+    .max(8000),
+  addendum: z.string().trim().max(8000).optional(),
+  reason: z.string().trim().min(3, 'Give a reason for the change').max(500),
+})
+
+/**
+ * Updates the specification and records why, in one transaction.
+ *
+ * This goes through a database function rather than a plain update because the
+ * reason has to reach the audit trigger. Every PostgREST call is its own
+ * transaction, so a reason set by a separate call would already be gone by the
+ * time the trigger fired.
+ */
+export async function updateOrderSpec(input: unknown): Promise<Result> {
+  await requireProfile()
+
+  const parsed = specSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]!.message, fieldErrors: flatten(parsed.error) }
+  }
+  const values = parsed.data
+  const supabase = await createClient()
+
+  const { error } = await supabase.rpc('update_order_spec', {
+    p_order_id: values.order_id,
+    p_technical_specification: values.technical_specification,
+    p_addendum: values.addendum ?? null,
+    p_reason: values.reason,
+  })
+
+  if (error) return { ok: false, error: 'Could not save the specification.' }
+
+  revalidatePath(`/orders/${values.order_id}`)
+  revalidatePath('/activity')
+  return { ok: true }
+}
+
 /** Delivery date, PO number, status and notes. Never money. */
 export async function updateOrderDetails(input: unknown): Promise<Result> {
   await requireProfile()

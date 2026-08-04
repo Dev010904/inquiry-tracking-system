@@ -38,7 +38,8 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
   const [orderDate, setOrderDate] = useState(today())
   const [deliveryDate, setDeliveryDate] = useState('')
   const [poNumber, setPoNumber] = useState('')
-  const [notes, setNotes] = useState('')
+  const [technicalSpec, setTechnicalSpec] = useState('')
+  const [addendum, setAddendum] = useState('')
 
   // Preview only. The stored figures are Postgres generated columns; this is
   // here so the number is not a surprise after saving.
@@ -56,7 +57,8 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
         order_value: orderValue,
         delivery_date: deliveryDate,
         po_number: poNumber || undefined,
-        notes: notes || undefined,
+        technical_specification: technicalSpec,
+        addendum: addendum || undefined,
       })
 
       if (result.ok) {
@@ -160,12 +162,33 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
             <Input id="po_number" value={poNumber} onChange={(e) => setPoNumber(e.target.value)} />
           </Field>
 
-          <Field label="Notes" htmlFor="order_notes">
+          <Field
+            label="Technical specification"
+            htmlFor="technical_specification"
+            required
+            error={errors.technical_specification}
+            hint="What was agreed, and what production will build to"
+          >
             <Textarea
-              id="order_notes"
+              id="technical_specification"
+              rows={5}
+              value={technicalSpec}
+              placeholder="Quantities, specifications, materials, tolerances, standards, delivery scope."
+              onChange={(e) => setTechnicalSpec(e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="Addendum / changes"
+            htmlFor="addendum"
+            error={errors.addendum}
+            hint="Anything agreed after the original specification. Can be added later."
+          >
+            <Textarea
+              id="addendum"
               rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              value={addendum}
+              onChange={(e) => setAddendum(e.target.value)}
             />
           </Field>
 
@@ -173,7 +196,7 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
             <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={pending}>
+            <Button onClick={submit} disabled={pending || technicalSpec.trim().length < 20}>
               {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Create order
             </Button>

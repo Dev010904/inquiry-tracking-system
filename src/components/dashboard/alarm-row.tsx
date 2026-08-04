@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { FOLLOWUP_CHANNEL } from '@/lib/constants'
-import { formatDateTime, formatRelative } from '@/lib/format'
+import { formatDateTimeIST, formatRelative } from '@/lib/format'
 import { markFollowupDone, snoozeFollowup } from '@/app/(app)/dashboard/actions'
 import type { AlarmBucket, FollowupAlarm } from '@/lib/queries/dashboard'
 
@@ -88,7 +88,7 @@ export function AlarmRow({ alarm }: { alarm: FollowupAlarm }) {
         <p className="text-sm">{alarm.note}</p>
 
         <p className="text-xs text-muted-foreground">
-          <time dateTime={alarm.effectiveDue} title={formatDateTime(alarm.effectiveDue)}>
+          <time dateTime={alarm.effectiveDue} title={formatDateTimeIST(alarm.effectiveDue)}>
             {formatRelative(alarm.effectiveDue)}
           </time>
           {alarm.ownerName && ` · ${alarm.ownerName}`}

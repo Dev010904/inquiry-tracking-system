@@ -125,7 +125,18 @@ export const convertToOrderSchema = z.object({
   ),
   delivery_date: z.union([isoDate, z.literal('')]).optional(),
   po_number: optionalText,
-  notes: z.string().trim().max(2000).optional(),
+  /**
+   * What was agreed and what production will build to. Required, because an
+   * order with no recorded specification is the thing that causes an argument
+   * three months later.
+   */
+  technical_specification: z
+    .string()
+    .trim()
+    .min(20, 'Describe what was agreed — at least a sentence')
+    .max(8000),
+  /** Variations agreed after the original specification. */
+  addendum: z.string().trim().max(8000).optional(),
 })
 
 export type ConvertToOrderValues = z.output<typeof convertToOrderSchema>

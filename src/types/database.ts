@@ -109,6 +109,10 @@ export type OrderRow = Timestamps & {
   order_status: OrderStatus
   completion_pct: number
   notes: string | null
+  /** What was agreed and what production builds to. Required at conversion. */
+  technical_specification: string | null
+  /** Variations agreed after the original specification. */
+  addendum: string | null
   deleted_at: string | null
   created_by: string | null
 }
@@ -210,7 +214,27 @@ export type ActivityLogRow = {
   action: string
   actor_id: string | null
   diff: Json | null
+  /** Plain-language description written by the log_activity trigger. */
+  summary: string | null
+  /** Reason supplied by whoever made the change, on noted operations only. */
+  note: string | null
   created_at: string
+}
+
+/**
+ * Staff-safe projection of the audit log. Never carries `diff`, and rows about
+ * restricted IP assets are removed entirely rather than redacted.
+ */
+export type ActivityFeedRow = {
+  id: number
+  created_at: string
+  table_name: string
+  row_id: string | null
+  action: string
+  summary: string | null
+  note: string | null
+  actor_id: string | null
+  actor_name: string
 }
 
 /** Columns Postgres computes; never send them on insert or update. */
@@ -241,10 +265,22 @@ export type Database = {
       ip_events: { Row: IpEventRow; Insert: InsertOf<IpEventRow> & { ip_asset_id: string; event_type: string }; Update: InsertOf<IpEventRow>; Relationships: [] }
       activity_log: { Row: ActivityLogRow; Insert: Partial<ActivityLogRow>; Update: Partial<ActivityLogRow>; Relationships: [] }
     }
-    Views: Record<string, never>
+    Views: {
+      activity_feed: { Row: ActivityFeedRow; Relationships: [] }
+    }
     Functions: {
       is_active_member: { Args: Record<string, never>; Returns: boolean }
       is_admin: { Args: Record<string, never>; Returns: boolean }
+      /** Updates the spec and records the reason in one transaction. */
+      update_order_spec: {
+        Args: {
+          p_order_id: string
+          p_technical_specification: string | null
+          p_addendum: string | null
+          p_reason: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       company_type: CompanyType

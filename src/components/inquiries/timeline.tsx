@@ -6,7 +6,7 @@ import {
   RefreshCw,
   type LucideIcon,
 } from 'lucide-react'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTimeIST } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { TimelineEntry } from '@/lib/queries/inquiries'
 
@@ -51,7 +51,7 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
             {entry.detail && (
               <p className="text-sm text-muted-foreground">{entry.detail}</p>
             )}
-            <p className="text-xs text-muted-foreground">{formatDateTime(entry.at)}</p>
+            <p className="text-xs text-muted-foreground">{formatDateTimeIST(entry.at)}</p>
           </li>
         )
       })}

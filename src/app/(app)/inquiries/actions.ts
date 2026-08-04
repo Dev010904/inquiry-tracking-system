@@ -260,7 +260,8 @@ export async function convertToOrder(
       order_value: values.order_value,
       delivery_date: values.delivery_date || null,
       po_number: values.po_number ?? null,
-      notes: values.notes ?? null,
+      technical_specification: values.technical_specification,
+      addendum: values.addendum ?? null,
       created_by: profile.id,
     })
     .select('id')

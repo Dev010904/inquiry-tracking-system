@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FOLLOWUP_CHANNEL } from '@/lib/constants'
-import { formatDateTime, formatRelative } from '@/lib/format'
+import { formatDateTimeIST, formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { markFollowupDone, snoozeFollowup } from '@/app/(app)/dashboard/actions'
 import type { FollowupRow } from '@/types/database'
@@ -62,7 +62,7 @@ export function FollowupItem({ followup }: { followup: FollowupRow }) {
         </div>
         <p className="text-sm">{followup.note}</p>
         <p className="text-xs text-muted-foreground">
-          <time dateTime={effectiveDue} title={formatDateTime(effectiveDue)}>
+          <time dateTime={effectiveDue} title={formatDateTimeIST(effectiveDue)}>
             {formatRelative(effectiveDue)}
           </time>
         </p>

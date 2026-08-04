@@ -6,6 +6,7 @@ import { DeliveryPanel } from '@/components/orders/delivery-panel'
 import { FinancialSummary } from '@/components/orders/financial-summary'
 import { OrderStatusBadge, ProgressBar } from '@/components/orders/order-status-badge'
 import { PaymentsLedger } from '@/components/orders/payments-ledger'
+import { SpecPanel } from '@/components/orders/spec-panel'
 import { WorkUpdatesFeed } from '@/components/work-updates/work-updates-feed'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COMPANY_TYPE } from '@/lib/constants'
@@ -77,6 +78,12 @@ export default async function OrderDetailPage({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
           <FinancialSummary order={order} />
+
+          <SpecPanel
+            orderId={order.id}
+            technicalSpecification={order.technical_specification}
+            addendum={order.addendum}
+          />
 
           <PaymentsLedger
             orderId={order.id}
