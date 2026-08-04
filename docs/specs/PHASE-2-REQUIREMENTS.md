@@ -66,16 +66,40 @@ backups and no auto-pausing — all three of which Phase 2 needs regardless.
 These cannot be guessed. Invoicing in particular is a legal document, and a
 wrong assumption produces invoices that are not valid.
 
-| # | Question | Why it blocks |
+**None of these block the build.** They are configuration, not code — see 1.1.
+They block *issuing the first real invoice*, which is a different thing.
+
+| # | Question | Needed before |
 |---|---|---|
-| 1 | ANK's **GSTIN** and **registered state** | Determines CGST+SGST vs IGST on every invoice |
-| 2 | Are they **GST-registered under the regular scheme**? | Composition dealers cannot issue tax invoices |
-| 3 | **HSN/SAC codes** for what they sell | Legally required on tax invoices |
-| 4 | Invoice **series prefixes and starting numbers** for each document type | Must be unique, sequential, gapless, per financial year |
-| 5 | Is a **digital signature** on the PDF required, or is a name and designation enough? | Affects PDF generation |
-| 6 | Do they want **OQ** as well as DQ, IQ and PQ? | The standard sequence is DQ → IQ → OQ → PQ; the owner named only three |
-| 7 | Which orders need qualification documents — **all, or equipment only**? | Decides whether it is a flag per order |
-| 8 | **Confirm the school / GST instruction with a CA.** See 3.2.1. | Affects whether invoices are legally correct |
+| 1 | ANK's **GSTIN** and **registered state** | First invoice |
+| 2 | Are they **GST-registered under the regular scheme**? | First invoice |
+| 3 | **HSN/SAC codes** for what they sell | First invoice |
+| 4 | Invoice **series prefixes and starting numbers** | First invoice |
+| 5 | **Digital signature** on the PDF, or name and designation? | Later — additive |
+| 6 | Do they want **OQ** as well as DQ, IQ and PQ? | Never — build all four |
+| 7 | Which orders need qualification documents? | Never — per-order flag |
+| 8 | **CA confirmation on the school / GST instruction.** See 3.2.1. | Flipping the switch |
+
+### 1.1 Tax details are settings, not code
+
+Do **not** hardcode a GSTIN, a state, an HSN code or an invoice series anywhere.
+
+**New table `company_settings`** — a single row holding the supplier identity:
+legal name, address, `gstin`, `state_code`, `state_name`, PAN, bank details,
+signatory name and designation, plus per-document-type series prefixes and
+starting numbers. Admin-editable at `/settings` under **Company & tax details**.
+
+**HSN/SAC** lives per `order_item`, with a small reusable `hsn_codes` lookup
+table an admin can maintain.
+
+Consequences, all good:
+
+- The whole of Phase 2 can be built before the owner answers anything.
+- The owner types his own details in once, at go-live.
+- A GSTIN change, a new series, or a state change is an edit — not a deployment.
+- **Invoice issuing is blocked in the UI until `company_settings` is complete**,
+  with a clear message naming what is missing. That is the correct place for the
+  block: at issue time, not at build time.
 
 ### Volume — smaller than it looks
 
