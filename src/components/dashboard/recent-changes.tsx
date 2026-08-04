@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { History } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatAudit } from '@/lib/format'
-import { activityHref } from '@/lib/queries/activity'
+import { activityHref } from '@/lib/activity'
 import type { ActivityFeedRow } from '@/types/database'
 
 /**

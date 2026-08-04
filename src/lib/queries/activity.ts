@@ -3,26 +3,11 @@ import 'server-only'
 import { subDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 import type { ActivityFeedRow } from '@/types/database'
+import type { ActivitySection } from '@/lib/activity'
 
 export const ACTIVITY_PAGE_SIZE = 50
 
-/** The sections a change can belong to, as staff would name them. */
-export const ACTIVITY_SECTIONS = {
-  inquiries: 'Inquiries',
-  followups: 'Follow-ups',
-  orders: 'Orders',
-  payments: 'Payments',
-  work_updates: 'Work updates',
-  rnd_projects: 'R&D projects',
-  rnd_expenses: 'R&D expenses',
-  ip_assets: 'IP assets',
-  ip_events: 'IP events',
-  companies: 'Companies',
-  contacts: 'Contacts',
-  profiles: 'Staff accounts',
-} as const
-
-export type ActivitySection = keyof typeof ACTIVITY_SECTIONS
+export { ACTIVITY_SECTIONS, activityHref, type ActivitySection } from '@/lib/activity'
 
 export type ActivityFilters = {
   actorId?: string
@@ -37,28 +22,6 @@ export type ActivityResult = {
   total: number
   page: number
   pageCount: number
-}
-
-/** Where a change can be opened, when the row still points somewhere useful. */
-export function activityHref(row: ActivityFeedRow): string | null {
-  if (!row.row_id) return null
-  switch (row.table_name) {
-    case 'inquiries':
-      return `/inquiries/${row.row_id}`
-    case 'orders':
-      return `/orders/${row.row_id}`
-    case 'rnd_projects':
-      return `/rnd/${row.row_id}`
-    case 'ip_assets':
-      return `/ip/${row.row_id}`
-    case 'companies':
-      return `/companies/${row.row_id}`
-    default:
-      // Payments, follow-ups and work updates live inside a parent screen and
-      // have no page of their own, so they are shown without a link rather
-      // than linking somewhere that will not scroll to them.
-      return null
-  }
 }
 
 /**

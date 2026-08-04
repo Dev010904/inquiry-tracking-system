@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatAudit } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { ACTIVITY_SECTIONS, activityHref, type ActivitySection } from '@/lib/queries/activity'
+import { ACTIVITY_SECTIONS, activityHref, type ActivitySection } from '@/lib/activity'
 import type { ActivityFeedRow } from '@/types/database'
 
 /** Deletions are worth spotting at a glance; the rest are routine. */

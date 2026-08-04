@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, optionsFrom } from '@/components/ui/select'
-import { ACTIVITY_SECTIONS } from '@/lib/queries/activity'
+import { ACTIVITY_SECTIONS } from '@/lib/activity'
 
 const PERIODS = {
   '1': 'Last 24 hours',
