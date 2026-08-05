@@ -21,7 +21,7 @@ export default async function NewRndProjectPage() {
         Back to projects
       </Link>
 
-      <h2 className="text-lg font-semibold tracking-tight">Start an R&amp;D project</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Start an R&amp;D project</h2>
 
       <ProjectForm mode="create" staff={staff} currentUserId={profile.id} />
     </div>

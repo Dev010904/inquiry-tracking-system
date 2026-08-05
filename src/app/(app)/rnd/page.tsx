@@ -33,7 +33,7 @@ export default async function RndPage({ searchParams }: { searchParams: Promise<
     <div className="mx-auto max-w-7xl space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">R&amp;D projects</h2>
+          <h2 className="text-xl font-semibold tracking-tight">R&amp;D projects</h2>
           <p className="text-sm text-muted-foreground">
             Spend is summed from each project&apos;s expense ledger — never typed directly.
           </p>

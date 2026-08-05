@@ -29,7 +29,7 @@ export default async function EditIpAssetPage({
         Back to asset
       </Link>
 
-      <h2 className="text-lg font-semibold tracking-tight">Edit {asset.title}</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Edit {asset.title}</h2>
 
       <IpForm
         mode="edit"

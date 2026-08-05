@@ -34,7 +34,7 @@ export default async function DashboardPage() {
     <div className="mx-auto max-w-7xl space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Today</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Today</h2>
           <p className="text-sm text-muted-foreground">
             What is due, what has come in, and what has changed.
           </p>

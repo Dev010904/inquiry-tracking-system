@@ -47,7 +47,7 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Settings</h2>
         <p className="text-sm text-muted-foreground">
           Your details, and — for admins — who can sign in.
         </p>

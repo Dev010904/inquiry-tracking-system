@@ -72,7 +72,7 @@ export default async function OrderDetailPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">{order.order_no ?? 'Order'}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{order.order_no ?? 'Order'}</h2>
             <OrderStatusBadge status={order.order_status} />
           </div>
           <p className="text-sm text-muted-foreground">

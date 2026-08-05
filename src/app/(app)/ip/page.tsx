@@ -46,7 +46,7 @@ export default async function IpPage({ searchParams }: { searchParams: Promise<S
     <div className="mx-auto max-w-7xl space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">IP portfolio</h2>
+          <h2 className="text-xl font-semibold tracking-tight">IP portfolio</h2>
           <p className="text-sm text-muted-foreground">
             Renewal deadlines also appear on the dashboard at 90, 30 and 7 days.
           </p>

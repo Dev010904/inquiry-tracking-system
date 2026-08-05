@@ -13,7 +13,7 @@ export default function OfflinePage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-muted/40 p-6 text-center">
       <WifiOff className="h-10 w-10 text-muted-foreground" aria-hidden />
-      <h1 className="text-lg font-semibold tracking-tight">You are offline</h1>
+      <h1 className="text-xl font-semibold tracking-tight">You are offline</h1>
       <p className="max-w-xs text-sm text-muted-foreground">
         ANK Inquiry Tracking needs a connection to show live inquiries, orders and deadlines.
         Reconnect and try again.

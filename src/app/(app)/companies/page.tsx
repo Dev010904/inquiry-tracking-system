@@ -31,7 +31,7 @@ export default async function CompaniesPage({
   return (
     <div className="mx-auto max-w-7xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Companies &amp; schools</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Companies &amp; schools</h2>
         <p className="text-sm text-muted-foreground">
           Every client, their contacts, and what they are worth.
         </p>

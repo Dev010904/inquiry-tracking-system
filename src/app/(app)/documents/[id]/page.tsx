@@ -38,11 +38,11 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to documents
+          Back to invoices
         </Link>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="text-xl font-semibold tracking-tight">
             {invoice.doc_no ?? `${DOCUMENT_TYPE[invoice.doc_type]} — draft`}
           </h2>
           <Badge

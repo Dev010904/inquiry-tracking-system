@@ -35,7 +35,7 @@ export default async function EditInquiryPage({
         Back to {inquiry.inquiry_no ?? 'inquiry'}
       </Link>
 
-      <h2 className="text-lg font-semibold tracking-tight">
+      <h2 className="text-xl font-semibold tracking-tight">
         Edit {inquiry.inquiry_no ?? 'inquiry'}
       </h2>
 

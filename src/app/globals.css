@@ -4,7 +4,13 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /*
+     * The page sits on a faint tint rather than pure white, so cards read as
+     * raised surfaces instead of invisible rectangles. This one change does
+     * more for how finished the app looks than any amount of styling on the
+     * cards themselves.
+     */
+    --background: 220 33% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -13,28 +19,38 @@
     /* ANK brand navy (#000080), taken from the supplied logo. */
     --primary: 240 100% 25%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
+    --secondary: 220 25% 95%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
+    --muted: 220 25% 96%;
+    /* Lifted from 47% so secondary text clears WCAG AA on the tinted page. */
+    --muted-foreground: 215 19% 42%;
+    --accent: 222 42% 96%;
     --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
+    --destructive: 0 72% 47%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 240 100% 25%;
-    --radius: 0.6rem;
+    --border: 216 28% 90%;
+    --input: 216 28% 88%;
+    --ring: 240 100% 40%;
+    --radius: 0.7rem;
 
-    --overdue: 0 72% 51%;
-    --duesoon: 38 92% 50%;
-    --ok: 142 71% 45%;
+    --overdue: 0 72% 47%;
+    --duesoon: 32 95% 42%;
+    --ok: 152 62% 33%;
+
+    /*
+     * Two-part shadows: a tight contact shadow plus a wider soft one. A
+     * single blurred shadow reads as a smudge; the pair reads as a card
+     * sitting on a surface.
+     */
+    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.04), 0 1px 3px 0 hsl(222 47% 11% / 0.06);
+    --shadow-md: 0 1px 2px 0 hsl(222 47% 11% / 0.04), 0 4px 12px -2px hsl(222 47% 11% / 0.08);
+    --shadow-lg: 0 2px 4px 0 hsl(222 47% 11% / 0.04), 0 12px 32px -8px hsl(222 47% 11% / 0.14);
   }
 
   .dark {
-    --background: 222 47% 7%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 96%;
-    --card: 222 47% 10%;
+    --card: 222 44% 10%;
     --card-foreground: 210 40% 96%;
     --popover: 222 47% 10%;
     --popover-foreground: 210 40% 96%;
@@ -53,9 +69,14 @@
     --input: 217 33% 20%;
     --ring: 240 100% 72%;
 
-    --overdue: 0 72% 60%;
-    --duesoon: 38 92% 55%;
-    --ok: 142 71% 50%;
+    --overdue: 0 78% 65%;
+    --duesoon: 38 95% 60%;
+    --ok: 150 60% 52%;
+
+    /* Shadows do almost nothing on a dark surface; borders carry elevation. */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.45);
+    --shadow-lg: 0 12px 32px -8px hsl(0 0% 0% / 0.6);
   }
 }
 
@@ -64,8 +85,39 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     -webkit-tap-highlight-color: transparent;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Headings tighten as they grow, which is what stops large text looking
+     loose and amateurish. */
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+    text-wrap: balance;
+  }
+
+  /* Long paragraphs avoid a single orphaned word on the last line. */
+  p {
+    text-wrap: pretty;
+  }
+
+  /* One focus treatment everywhere, rather than the browser default in some
+     places and a ring in others. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Respect a user who has asked for less movement. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
   /* Tabular numerals so currency columns align */
   .tnum {

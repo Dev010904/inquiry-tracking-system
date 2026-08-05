@@ -66,7 +66,7 @@ export default async function InquiriesPage({
     <div className="mx-auto max-w-7xl space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">All inquiries</h2>
+          <h2 className="text-xl font-semibold tracking-tight">All inquiries</h2>
           <p className="text-sm text-muted-foreground">
             {result.total} {result.total === 1 ? 'record' : 'records'}
             {filtered ? ' matching your filters' : ''}

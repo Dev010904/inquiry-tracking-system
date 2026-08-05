@@ -19,7 +19,7 @@ export default async function MeetingsPage() {
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Meetings</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Meetings</h2>
           <p className="text-sm text-muted-foreground">
             Site visits, reviews and handovers, with what was decided and who owes what.
           </p>

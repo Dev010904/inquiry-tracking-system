@@ -10,7 +10,7 @@ import { formatDate, formatINR } from '@/lib/format'
 import { listDocuments, getCompanySettings, missingSettings } from '@/lib/queries/documents'
 import type { DocumentStatus, DocumentType } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Documents · ANK Inquiry Tracking' }
+export const metadata: Metadata = { title: 'Invoices · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 type Search = Record<string, string | string[] | undefined>
@@ -48,7 +48,7 @@ export default async function DocumentsPage({
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Documents</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Invoices &amp; documents</h2>
         <p className="text-sm text-muted-foreground">
           Proformas, tax invoices, bills of supply, delivery challans and notes. Documents are
           raised from an order, so the lines always match what was sold.
@@ -76,7 +76,7 @@ export default async function DocumentsPage({
         {result.rows.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No documents yet"
+            title="No invoices yet"
             description="Open an order and use Raise document to create a proforma or an invoice."
           />
         ) : (

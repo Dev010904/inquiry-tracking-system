@@ -46,7 +46,7 @@ export default async function CompanyDetailPage({
 
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">{company.name}</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{company.name}</h2>
           <Badge variant="secondary">{COMPANY_TYPE[company.type]}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">

@@ -50,7 +50,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   return (
     <div className="mx-auto max-w-7xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Orders</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Orders</h2>
         <p className="text-sm text-muted-foreground">
           Orders are created by converting an inquiry. GST, totals and balances are calculated by
           the database — nobody types them.

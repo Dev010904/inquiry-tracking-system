@@ -63,7 +63,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">{meeting.subject}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{meeting.subject}</h2>
             <Badge variant="muted">{MEETING_TYPE[meeting.meeting_type]}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">

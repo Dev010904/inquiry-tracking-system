@@ -20,7 +20,7 @@ export default async function NewIpAssetPage() {
         Back to portfolio
       </Link>
 
-      <h2 className="text-lg font-semibold tracking-tight">Add an IP asset</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Add an IP asset</h2>
 
       <IpForm mode="create" projects={projects} />
     </div>

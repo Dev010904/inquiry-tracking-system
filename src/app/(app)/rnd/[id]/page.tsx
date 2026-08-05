@@ -51,7 +51,7 @@ export default async function RndProjectPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">{project.project_name}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{project.project_name}</h2>
             <StageBadge stage={project.stage} />
             {card.overdue && <Badge variant="overdue">Past target</Badge>}
           </div>

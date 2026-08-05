@@ -60,7 +60,7 @@ export default async function InquiryDetailPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">
+            <h2 className="text-xl font-semibold tracking-tight">
               {inquiry.inquiry_no ?? 'Inquiry'}
             </h2>
             <StatusBadge status={inquiry.status} />

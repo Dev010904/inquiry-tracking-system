@@ -8,13 +8,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary/10 text-primary',
+        default: 'border-transparent bg-primary/10 text-primary ring-1 ring-inset ring-primary/15',
         secondary: 'border-transparent bg-secondary text-secondary-foreground',
         outline: 'text-foreground',
-        overdue: 'border-transparent bg-overdue/12 text-overdue',
-        duesoon: 'border-transparent bg-duesoon/15 text-duesoon',
-        ok: 'border-transparent bg-ok/12 text-ok',
-        muted: 'border-transparent bg-muted text-muted-foreground',
+        overdue: 'border-transparent bg-overdue/10 text-overdue ring-1 ring-inset ring-overdue/20',
+        duesoon: 'border-transparent bg-duesoon/12 text-duesoon ring-1 ring-inset ring-duesoon/25',
+        ok: 'border-transparent bg-ok/10 text-ok ring-1 ring-inset ring-ok/20',
+        muted: 'border-transparent bg-muted text-muted-foreground ring-1 ring-inset ring-border',
       },
     },
     defaultVariants: { variant: 'default' },

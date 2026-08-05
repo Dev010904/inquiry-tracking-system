@@ -19,7 +19,7 @@ export default async function ReportsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Reports</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Reports</h2>
         <p className="text-sm text-muted-foreground">
           Last 6 months. Conversion counts an order in the month its inquiry was logged, not the
           month it closed.

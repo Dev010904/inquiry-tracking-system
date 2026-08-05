@@ -11,7 +11,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
+    <aside data-app-shell className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
       <div className="flex h-16 items-center gap-2.5 border-b px-4">
         <Image
           src="/logo-mark.png"
@@ -37,10 +37,13 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
               href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                // A left marker on the active item reads faster than colour
+                // alone, and survives being viewed in bright sunlight on site.
+                'relative flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
+                'before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-primary before:transition-transform',
                 active
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  ? 'bg-primary/10 text-primary before:scale-y-100'
+                  : 'text-muted-foreground before:scale-y-0 hover:bg-accent hover:text-foreground'
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />

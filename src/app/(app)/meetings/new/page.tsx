@@ -35,7 +35,7 @@ export default async function NewMeetingPage({
         Back to meetings
       </Link>
 
-      <h2 className="text-lg font-semibold tracking-tight">New minutes</h2>
+      <h2 className="text-xl font-semibold tracking-tight">New minutes</h2>
 
       <Card>
         <CardContent className="pt-6">

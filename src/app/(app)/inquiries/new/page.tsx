@@ -22,7 +22,7 @@ export default async function NewInquiryPage() {
       </Link>
 
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Log an inquiry</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Log an inquiry</h2>
         <p className="text-sm text-muted-foreground">
           The inquiry number is assigned automatically once you save.
         </p>

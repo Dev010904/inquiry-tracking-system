@@ -46,7 +46,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Recent changes</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Recent changes</h2>
         <p className="text-sm text-muted-foreground">
           Everything anyone has changed, with who did it and exactly when. Times are shown in IST
           so everyone reads the same clock.

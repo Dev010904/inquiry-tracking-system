@@ -16,8 +16,9 @@ export function BottomNav() {
 
   return (
     <nav
+      data-app-shell
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden"
     >
       {/* Column count follows the number of built destinations, so the bar
           stays evenly divided as phases land. */}
@@ -34,7 +35,14 @@ export function BottomNav() {
                   active ? 'text-primary' : 'text-muted-foreground'
                 )}
               >
-                <Icon className="h-5 w-5" aria-hidden />
+                <span
+                  className={cn(
+                    'flex h-7 w-12 items-center justify-center rounded-full transition-colors',
+                    active ? 'bg-primary/10' : 'bg-transparent'
+                  )}
+                >
+                  <Icon className="h-5 w-5" aria-hidden />
+                </span>
                 {short}
               </Link>
             </li>

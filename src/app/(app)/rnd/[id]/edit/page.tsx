@@ -34,7 +34,7 @@ export default async function EditRndProjectPage({
         Back to {project.project_code ?? 'project'}
       </Link>
 
-      <h2 className="text-lg font-semibold tracking-tight">Edit {project.project_name}</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Edit {project.project_name}</h2>
 
       <ProjectForm
         mode="edit"
