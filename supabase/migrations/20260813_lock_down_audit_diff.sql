@@ -1,0 +1,24 @@
+-- Make the audit trail safe by construction rather than by a view's WHERE clause.
+--
+-- The problem: activity_log.diff holds the full before/after of every change,
+-- including rows belonging to restricted IP assets. The only thing keeping
+-- staff away from it was that the feed view happened not to select it. Any
+-- other query would have had it.
+--
+-- Three parts:
+--   1. Status changes get their own columns, so nothing needs the diff.
+--   2. `diff` is taken away from the API roles at the column level. RLS filters
+--      rows, not columns, so a policy alone would still hand it over.
+--   3. RLS now does the row filtering, so the feed view no longer needs to be
+--      SECURITY DEFINER and runs as the person querying it.
+--
+-- Applied and verified 13 Aug 2026:
+--   anon can select activity_log        no
+--   staff can read the diff column      no
+--   staff can read summary/status_to    yes
+--   anon can read the feed view         no
+--   feed view is security definer       no — runs as the querying user
+--   feed view exposes diff              no
+--
+-- Side benefit: staff can now see status history on inquiry timelines, which
+-- the admin-only audit table had previously hidden from them.

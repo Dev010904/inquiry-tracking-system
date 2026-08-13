@@ -421,6 +421,8 @@ export type ActivityLogRow = {
   summary: string | null
   /** Reason supplied by whoever made the change, on noted operations only. */
   note: string | null
+  status_from: string | null
+  status_to: string | null
   created_at: string
 }
 
@@ -436,6 +438,9 @@ export type ActivityFeedRow = {
   action: string
   summary: string | null
   note: string | null
+  /** Previous status on a status change. Lets timelines show history without the diff. */
+  status_from: string | null
+  status_to: string | null
   actor_id: string | null
   actor_name: string
 }

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
 import type {
-  ActivityLogRow,
+  ActivityFeedRow,
   CompanyRow,
   CompanyType,
   ContactRow,
@@ -262,8 +262,12 @@ export async function getInquiryDetail(id: string): Promise<InquiryDetail | null
       .order('name'),
     supabase.from('followups').select('*').eq('inquiry_id', id).order('due_at', { ascending: true }),
     supabase.from('orders').select('*').eq('inquiry_id', id).is('deleted_at', null).maybeSingle(),
+    // Read the feed view, never activity_log itself. The raw table carries a
+    // full before/after diff of every change — including rows belonging to
+    // restricted IP assets — and is not granted to the application at all.
+    // Status history comes from the structured columns instead.
     supabase
-      .from('activity_log')
+      .from('activity_feed')
       .select('*')
       .eq('table_name', 'inquiries')
       .eq('row_id', id)
@@ -298,7 +302,7 @@ export async function getInquiryDetail(id: string): Promise<InquiryDetail | null
 function buildTimeline(
   inquiry: InquiryRow,
   followups: FollowupRow[],
-  activity: ActivityLogRow[],
+  activity: ActivityFeedRow[],
   order: OrderRow | null
 ): TimelineEntry[] {
   const entries: TimelineEntry[] = [
@@ -311,16 +315,18 @@ function buildTimeline(
     },
   ]
 
+  // Status history comes from the structured columns the audit trigger writes,
+  // not from the diff. Staff can read these; the diff itself is granted to
+  // nobody, so a timeline can never become a way to see restricted detail.
   for (const row of activity) {
-    const diff = (row.diff ?? {}) as Record<string, unknown>
-    const statusChange = diff.status as { from?: string; to?: string } | undefined
-    if (row.action === 'update' && statusChange?.to) {
+    if (row.action === 'update' && row.status_to) {
       entries.push({
         id: `activity:${row.id}`,
         at: row.created_at,
         kind: 'status',
-        title: `Status → ${statusChange.to.replace(/_/g, ' ')}`,
-        detail: statusChange.from ? `was ${statusChange.from.replace(/_/g, ' ')}` : undefined,
+        title: `Status → ${row.status_to.replace(/_/g, ' ')}`,
+        detail: row.status_from ? `was ${row.status_from.replace(/_/g, ' ')}` : undefined,
+        actor: row.actor_name,
       })
     }
   }
