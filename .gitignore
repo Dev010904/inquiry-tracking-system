@@ -46,3 +46,6 @@ supabase/.branches
 
 # generated guide (large, contains data screenshots) — keep local
 /ANK-Inquiry-Tracking-System-Guide.pdf
+
+# a separate project that happens to live in this folder — never part of this repo
+/product-lite
