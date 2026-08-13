@@ -153,7 +153,9 @@ export function CompanyPicker({
             <ul role="listbox" className="max-h-64 overflow-y-auto p-1">
               {matches.length === 0 && (
                 <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  No company matches “{query}”.
+                  {query.trim()
+                    ? `No company matches “${query}”.`
+                    : 'No companies yet — add the first one below.'}
                 </li>
               )}
               {matches.map((company) => (

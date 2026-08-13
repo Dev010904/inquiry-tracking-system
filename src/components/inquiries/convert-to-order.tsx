@@ -167,7 +167,11 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
             htmlFor="technical_specification"
             required
             error={errors.technical_specification}
-            hint="What was agreed, and what production will build to"
+            hint={
+              technicalSpec.trim().length < 20
+                ? 'What was agreed, and what production will build to. At least 20 characters.'
+                : 'What was agreed, and what production will build to'
+            }
           >
             <Textarea
               id="technical_specification"
