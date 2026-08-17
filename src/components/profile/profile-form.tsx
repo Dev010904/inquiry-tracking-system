@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { updateOwnProfile } from '@/app/(app)/settings/actions'
+import { updateOwnProfile } from '@/app/(app)/profile/actions'
 
 export function ProfileForm({
   fullName,

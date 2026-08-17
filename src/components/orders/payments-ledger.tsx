@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, IndianRupee, Loader2, Plus, Trash2 } from 'lucide-react'
+import { AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { CurrencyIcon } from '@/components/ui/currency-icon'
 import { Modal } from '@/components/ui/modal'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -115,7 +116,7 @@ export function PaymentsLedger({ orderId, payments, balancePending, currency, is
       <CardContent>
         {payments.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
-            <IndianRupee className="h-7 w-7 text-muted-foreground" aria-hidden />
+            <CurrencyIcon currency={currency} className="h-7 w-7 text-muted-foreground" />
             <p className="text-sm font-medium">Nothing received yet</p>
             <p className="max-w-xs text-sm text-muted-foreground">
               The balance updates itself as soon as a payment is recorded here.

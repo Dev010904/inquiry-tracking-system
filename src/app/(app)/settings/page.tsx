@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Info, Monitor, Smartphone, UserPlus } from 'lucide-react'
 import { CompanySettingsForm } from '@/components/settings/company-settings-form'
-import { ProfileForm } from '@/components/settings/profile-form'
 import { UserTable } from '@/components/settings/user-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notFound } from 'next/navigation'
@@ -52,22 +52,13 @@ export default async function SettingsPage() {
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Settings</h2>
         <p className="text-sm text-muted-foreground">
-          Company details, staff accounts and your own profile.
+          Company details and staff accounts. Your own name and phone live on{' '}
+          <Link href="/profile" className="font-medium text-primary hover:underline">
+            your profile
+          </Link>
+          .
         </p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Your details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm
-            fullName={profile.full_name}
-            phone={profile.phone}
-            email={profile.email}
-          />
-        </CardContent>
-      </Card>
 
       <CompanySettingsForm settings={settings} missing={missingSettings(settings)} />
 

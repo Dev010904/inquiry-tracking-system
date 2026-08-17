@@ -88,34 +88,3 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
   return { ok: true }
 }
 
-const profileSchema = z.object({
-  full_name: z.string().trim().min(2, 'Enter your name').max(120),
-  phone: z.union([z.string().trim().max(20), z.literal('')]).optional(),
-})
-
-/**
- * Own name and phone — never role or active flag.
- *
- * Gated like the rest of this file: the form it backs now lives only on the
- * restricted Settings screen, so leaving it open would be an endpoint with no
- * caller and no guard.
- */
-export async function updateOwnProfile(input: unknown): Promise<SettingsResult> {
-  const profile = await settingsManagerOrNull()
-  if (!profile) return NO_ACCESS
-
-  const parsed = profileSchema.safeParse(input)
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
-
-  const supabase = await createClient()
-  const { error } = await supabase
-    .from('profiles')
-    .update({ full_name: parsed.data.full_name, phone: parsed.data.phone || null })
-    .eq('id', profile.id)
-
-  if (error) return { ok: false, error: 'Could not save your details.' }
-
-  revalidatePath('/settings')
-  revalidatePath('/', 'layout')
-  return { ok: true }
-}

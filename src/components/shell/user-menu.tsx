@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { LogOut, Menu } from 'lucide-react'
+import { LogOut, Menu, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS } from './nav-items'
 import { signOut } from '@/app/login/actions'
@@ -73,6 +73,20 @@ export function UserMenu({ fullName, email, initials, isAdmin, canManageSettings
                 Admin
               </span>
             )}
+          </div>
+
+          {/* Not in NAV_ITEMS: every member has a profile, so it belongs to the
+              account menu rather than the feature nav. */}
+          <div className="border-t py-1">
+            <Link
+              href="/profile"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex h-11 items-center gap-3 rounded-md px-3 text-sm hover:bg-accent"
+            >
+              <UserRound className="h-4 w-4 text-muted-foreground" aria-hidden />
+              Your profile
+            </Link>
           </div>
 
           {overflowItems.length > 0 && (
