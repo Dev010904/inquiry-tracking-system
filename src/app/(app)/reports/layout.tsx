@@ -1,14 +1,21 @@
-import { requireFeature } from '@/lib/permissions'
+import { notFound } from 'next/navigation'
+import { currentAccess, visibleFeatures } from '@/lib/permissions'
 
 /**
  * Gate for every screen under /reports.
  *
- * A layout rather than a check in each page: this covers the nested routes
- * too, so a new page under here cannot be added without the guard.
- * `requireFeature` raises a plain 404 — someone whose role withholds this
- * should not learn from the app that the route exists.
+ * Reports needs `dashboard` as well as its own key — see `visibleFeatures()`,
+ * which is where that rule lives so the menu and this guard cannot disagree.
+ * Someone who cannot see the money on the dashboard must not reach it here.
+ *
+ * A plain 404, so nothing advertises the route.
  */
-export default async function ReportsSectionLayout({ children }: { children: React.ReactNode }) {
-  await requireFeature('reports')
+export default async function ReportsSectionLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { features } = await currentAccess()
+  if (!visibleFeatures(features).includes('reports')) notFound()
   return <>{children}</>
 }

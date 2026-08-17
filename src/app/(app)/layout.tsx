@@ -5,8 +5,7 @@ import { PageTitle } from '@/components/shell/page-title'
 import { Sidebar } from '@/components/shell/sidebar'
 import { UserMenu } from '@/components/shell/user-menu'
 import { initialsOf } from '@/lib/auth'
-import { currentAccess } from '@/lib/permissions'
-import { FEATURE_KEYS } from '@/lib/constants'
+import { currentAccess, visibleFeatures } from '@/lib/permissions'
 
 /**
  * Shell for every signed-in screen. Middleware guarantees a session; this
@@ -19,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Hiding a menu item is not access control — each route segment gates
   // itself and each server action re-checks. This is only so the menu stops
   // advertising screens the user would be 404'd from.
-  const visible = FEATURE_KEYS.filter((key) => features[key].canView)
+  const visible = visibleFeatures(features)
 
   return (
     <div className="flex min-h-dvh bg-background">

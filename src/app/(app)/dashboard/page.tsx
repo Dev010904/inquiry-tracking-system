@@ -6,15 +6,46 @@ import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { RecentChanges } from '@/components/dashboard/recent-changes'
 import { RecentInquiries } from '@/components/dashboard/recent-inquiries'
 import { buttonVariants } from '@/components/ui/button'
+import { MyWorkDashboard } from '@/components/dashboard/my-work-dashboard'
 import { getAlarms, getKpis, getRecentInquiries } from '@/lib/queries/dashboard'
 import { recentActivity } from '@/lib/queries/activity'
+import { getMyFollowups } from '@/lib/queries/my-work'
+import { getMyTasks } from '@/lib/queries/tasks'
+import { currentAccess } from '@/lib/permissions'
 
 export const metadata: Metadata = { title: 'Dashboard · Inquiry Tracking System' }
 
 /** Deadlines must be current, so nothing on this page is cached. */
 export const dynamic = 'force-dynamic'
 
+/**
+ * One route, two dashboards, chosen on the server.
+ *
+ * Someone whose role withholds `dashboard` gets My work instead: their own
+ * tasks and their own follow-ups, no money and no company-wide counts. The
+ * branch happens before any commercial query is issued, so those figures are
+ * never fetched for such a user — rendering them and hiding them with CSS
+ * would still put every number into the HTML for anyone who reads the source.
+ */
 export default async function DashboardPage() {
+  const { profile, features } = await currentAccess()
+
+  if (!features.dashboard.canView) {
+    const [tasks, followups] = await Promise.all([
+      getMyTasks(profile.id),
+      getMyFollowups(profile.id),
+    ])
+
+    return (
+      <MyWorkDashboard
+        fullName={profile.full_name}
+        tasks={tasks}
+        followups={followups}
+        canOpenInquiries={features.inquiries.canView}
+      />
+    )
+  }
+
   const now = new Date()
 
   // All four run at once. The overdue KPI is taken from the alarms result

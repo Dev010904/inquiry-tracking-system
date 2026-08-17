@@ -65,6 +65,25 @@ export const currentAccess = cache(
 )
 
 /**
+ * Which sections a permission map can actually open.
+ *
+ * Almost always just "the ones with can_view". The exception is Reports: it is
+ * the dashboard's commercial figures cut a different way, so a role built to
+ * keep someone away from order values would be undone by leaving Reports on.
+ * It therefore needs `dashboard` as well as its own key.
+ *
+ * Kept here rather than in the menu so the menu and the route guard cannot
+ * disagree — a visible item that 404s is worse than no item at all.
+ */
+export function visibleFeatures(map: FeatureMap): FeatureKey[] {
+  return FEATURE_KEYS.filter((key) => {
+    if (!map[key].canView) return false
+    if (key === 'reports') return map.dashboard.canView
+    return true
+  })
+}
+
+/**
  * Gate for a page or route segment.
  *
  * A plain 404, not a "you do not have permission" page: someone who cannot
