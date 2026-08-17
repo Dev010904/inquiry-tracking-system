@@ -30,7 +30,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
   const [profile, detail] = await Promise.all([requireProfile(), getDocument(id)])
   if (!detail) notFound()
 
-  const { invoice, lines, settings, order } = detail
+  const { invoice, lines, settings, company, contact, order } = detail
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -100,6 +100,8 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
         invoice={invoice}
         lines={lines}
         settings={settings}
+        company={company}
+        contact={contact}
         isAdmin={profile.role === 'admin'}
       />
     </div>

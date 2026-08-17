@@ -14,7 +14,24 @@ type Props = {
   lines: InvoiceLineRow[]
   /** Live settings, used only for an unissued draft. */
   settings: CompanySettingsRow | null
+  /**
+   * The live client record, used only for an unissued draft — exactly as
+   * `settings` is for the supplier side. An issued document reads its buyer
+   * from `buyer_snapshot` and nothing else, so a client who moves or changes
+   * their GSTIN can never rewrite a document that has already gone out.
+   */
+  buyerFallback: BuyerFallback | null
   copies: (keyof typeof INVOICE_COPIES)[]
+}
+
+type BuyerFallback = {
+  name: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  gstin: string | null
+  contact_name: string | null
+  contact_phone: string | null
 }
 
 type Slab = { rate: number; taxable: number; cgst: number; sgst: number; igst: number }
@@ -71,9 +88,11 @@ const money = (v: number | string | null | undefined) => formatMoney(v, 'INR', t
  * The layout is then identical on screen and on paper, "Save as PDF" is free on
  * every platform, and the copy labels are real page breaks rather than an image.
  */
-export function PrintableDocument({ invoice, lines, settings, copies }: Props) {
+export function PrintableDocument({ invoice, lines, settings, buyerFallback, copies }: Props) {
   const supplier = invoice.supplier_snapshot ?? settings
-  const buyer = invoice.buyer_snapshot
+  // The snapshot always wins where it exists; the fallback only ever fills a
+  // draft, which has no snapshot yet.
+  const buyer = invoice.buyer_snapshot ?? buyerFallback
   const isStatutoryTax = TAXABLE_DOCUMENT_TYPES.includes(invoice.doc_type)
   const showsTax = TAX_DISPLAYING_DOCUMENT_TYPES.includes(invoice.doc_type)
   const isDraft = invoice.status === 'draft'

@@ -3,6 +3,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import type {
   CompanyRow,
+  ContactRow,
   DocumentStatus,
   DocumentType,
   CompanySettingsRow,
@@ -88,6 +89,8 @@ export type DocumentDetail = {
   invoice: InvoiceRow
   lines: InvoiceLineRow[]
   company: CompanyRow | null
+  /** Primary contact on that company — the buyer block prints their phone. */
+  contact: ContactRow | null
   order: OrderRow | null
   /**
    * Live settings, used only while the document is a draft. Once issued, the
@@ -103,13 +106,24 @@ export async function getDocument(id: string): Promise<DocumentDetail | null> {
   const { data: invoice } = await supabase.from('invoices').select('*').eq('id', id).maybeSingle()
   if (!invoice) return null
 
-  const [linesRes, companyRes, orderRes, settings] = await Promise.all([
+  const [linesRes, companyRes, contactRes, orderRes, settings] = await Promise.all([
     supabase
       .from('invoice_lines')
       .select('*')
       .eq('invoice_id', id)
       .order('line_no', { ascending: true }),
     supabase.from('companies').select('*').eq('id', invoice.company_id).maybeSingle(),
+    // Same ordering `issue_document()` uses to pick the contact it snapshots,
+    // so the draft preview shows the person the issued document will name.
+    supabase
+      .from('contacts')
+      .select('*')
+      .eq('company_id', invoice.company_id)
+      .is('deleted_at', null)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
     invoice.order_id
       ? supabase.from('orders').select('*').eq('id', invoice.order_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -120,6 +134,7 @@ export async function getDocument(id: string): Promise<DocumentDetail | null> {
     invoice,
     lines: linesRes.data ?? [],
     company: companyRes.data ?? null,
+    contact: contactRes.data ?? null,
     order: orderRes.data ?? null,
     settings,
   }

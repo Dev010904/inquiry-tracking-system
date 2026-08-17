@@ -77,6 +77,11 @@ export async function saveCompanySettings(input: unknown): Promise<Result> {
       default_gst_rate: v.default_gst_rate,
       default_currency: v.default_currency,
       invoice_terms: blank(v.invoice_terms),
+      msme_no: blank(v.msme_no),
+      jurisdiction_city: blank(v.jurisdiction_city),
+      payment_terms: blank(v.payment_terms),
+      delivery_timeline: blank(v.delivery_timeline),
+      quotation_terms: blank(v.quotation_terms),
     })
     .eq('id', existing!.id)
 
