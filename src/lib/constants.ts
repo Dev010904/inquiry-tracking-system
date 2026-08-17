@@ -1,12 +1,19 @@
 /**
- * GST is fixed at 18% by company policy.
+ * The fallback rate for a preview only, when the real one is not to hand.
  *
- * The authoritative calculation lives in Postgres as GENERATED columns on the
- * `orders` table. This constant exists ONLY so forms can show a live preview
- * as the user types the order value. Never persist a value derived from it.
+ * GST is no longer one rate: it is set per line, and the authoritative figures
+ * are maintained by triggers on `orders` from those lines. This constant exists
+ * ONLY so a form can show a live preview before any line exists. Never persist
+ * a value derived from it, and prefer `company_settings.default_gst_rate`
+ * wherever it can be read.
  */
 export const GST_RATE = 0.18
-export const GST_LABEL = 'GST @ 18%'
+
+/**
+ * Deliberately rate-free. It labels a figure that can be the sum of several
+ * different rates, so naming one of them would be wrong on any mixed order.
+ */
+export const GST_LABEL = 'GST'
 
 /**
  * The five currencies ANK trades in. Labels carry the code because "$" alone is
@@ -22,6 +29,16 @@ export const CURRENCY = {
   JPY: 'JPY — Japanese Yen',
   CNY: 'CNY — Chinese Yuan',
 } as const
+
+/**
+ * The GST slabs ANK actually sells at. Offered as a picker, but a rate can
+ * still be typed: GST has carried odd rates before (1.5%, 3%, 7.5%) and a form
+ * that cannot express one sends staff to a spreadsheet.
+ *
+ * 0 is a slab like any other here. What separates a 0% line from an exempt one
+ * on a printed document is the recorded reason, not the number.
+ */
+export const GST_SLABS = [0, 5, 12, 18, 28] as const
 
 export const INQUIRY_STATUS = {
   new: 'New',

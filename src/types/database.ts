@@ -309,6 +309,7 @@ export type InvoiceLineRow = {
   sgst_amount: number
   igst_amount: number
   line_total: number
+  zero_rate_reason: string | null
   created_at: string
 }
 
@@ -330,6 +331,9 @@ export type OrderItemRow = Timestamps & {
   rate: number
   amount: number
   notes: string | null
+  gst_rate: number
+  /** Set only on a 0% line; cleared by trigger on any taxed line. */
+  zero_rate_reason: string | null
   deleted_at: string | null
   created_by: string | null
 }

@@ -101,6 +101,21 @@ export const orderItemSchema = z.object({
     z.number({ invalid_type_error: 'Enter a rate' }).min(0, 'Rate cannot be negative').max(99_999_999)
   ),
   notes: z.string().trim().max(500).optional().or(z.literal('')),
+  // Not constrained to the five common slabs: GST has carried unusual rates
+  // before (1.5%, 7.5%, 3% on bullion) and a form that cannot express one
+  // would send staff to a spreadsheet instead.
+  gst_rate: moneyInput.pipe(
+    z
+      .number({ invalid_type_error: 'Enter a GST rate' })
+      .min(0, 'GST rate cannot be negative')
+      .max(100, 'GST rate cannot exceed 100%')
+  ),
+  // A 0% line and an exempt line print differently, and the difference is this
+  // sentence. Deliberately not required here: `resolve_zero_rate_reason()` in
+  // Postgres falls back to the buyer's recorded exemption reason, and a schema
+  // rule demanding a typed reason would defeat that fallback. The database
+  // raises if neither exists, and the action surfaces that message.
+  zero_rate_reason: z.string().trim().max(300).optional().or(z.literal('')),
 })
 
 export type OrderItemValues = z.output<typeof orderItemSchema>

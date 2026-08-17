@@ -18,7 +18,7 @@ import { COMPANY_TYPE } from '@/lib/constants'
 import { formatDate } from '@/lib/format'
 import { requireProfile } from '@/lib/auth'
 import { getOrderDetail } from '@/lib/queries/orders'
-import { issuedTaxInvoices, listOrderDocuments } from '@/lib/queries/documents'
+import { getCompanySettings, issuedTaxInvoices, listOrderDocuments } from '@/lib/queries/documents'
 import {
   dispatchBlockReason,
   listMeetings,
@@ -44,7 +44,7 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [profile, detail, documents, parents, qaChecks, qualifications, meetings] =
+  const [profile, detail, documents, parents, qaChecks, qualifications, meetings, settings] =
     await Promise.all([
       requireProfile(),
       getOrderDetail(id),
@@ -53,6 +53,7 @@ export default async function OrderDetailPage({
       listQaChecks(id),
       listQualifications(id),
       listMeetings({ orderId: id, limit: 5 }),
+      getCompanySettings(),
     ])
   if (!detail) notFound()
 
@@ -99,7 +100,13 @@ export default async function OrderDetailPage({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
-          <LineItems orderId={order.id} items={items} currency={order.currency} />
+          <LineItems
+            orderId={order.id}
+            items={items}
+            currency={order.currency}
+            defaultGstRate={Number(settings?.default_gst_rate ?? 18)}
+            companyExemptionReason={company?.gst_exemption_reason ?? null}
+          />
 
           <FinancialSummary order={order} />
 

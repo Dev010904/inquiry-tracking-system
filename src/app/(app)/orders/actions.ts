@@ -169,12 +169,28 @@ export async function updateOrderDetails(input: unknown): Promise<Result> {
 }
 
 /**
+ * The one database error a user can actually fix from this form.
+ *
+ * `resolve_zero_rate_reason()` refuses a 0% line when neither the line nor the
+ * buyer's company carries a reason. That message is written for the person
+ * typing, so it is passed through instead of being flattened into "could not
+ * save"; everything else stays generic, since a raw Postgres error tells a user
+ * nothing and tells an attacker something.
+ */
+function zeroRateErrorOr(error: { message?: string }, fallback: string): Result {
+  if (error.message?.includes('0% line needs a reason')) {
+    return { ok: false, error: error.message, fieldErrors: { zero_rate_reason: error.message } }
+  }
+  return { ok: false, error: fallback }
+}
+
+/**
  * Creates or updates a line item.
  *
  * The order value is never written here. A database trigger sums the live
- * lines into `orders.order_value` after this returns, and GST, total and
- * balance are generated columns off that — so the money follows the lines
- * automatically and cannot be made to disagree with them.
+ * lines into `orders.order_value` after this returns, and a second trigger
+ * sums each line's own rounded tax into `orders.gst_amount` — so the money
+ * follows the lines automatically and cannot be made to disagree with them.
  */
 export async function saveOrderItem(input: unknown): Promise<Result> {
   const profile = await requireProfile()
@@ -202,11 +218,13 @@ export async function saveOrderItem(input: unknown): Promise<Result> {
     unit: values.unit,
     rate: values.rate,
     notes: values.notes || null,
+    gst_rate: values.gst_rate,
+    zero_rate_reason: values.zero_rate_reason || null,
   }
 
   if (values.id) {
     const { error } = await supabase.from('order_items').update(fields).eq('id', values.id)
-    if (error) return { ok: false, error: 'Could not save that line.' }
+    if (error) return zeroRateErrorOr(error, 'Could not save that line.')
   } else {
     // Next line number, counting removed lines too, so numbers are never
     // reused — a line 3 that reappears meaning something else is confusing
@@ -225,7 +243,7 @@ export async function saveOrderItem(input: unknown): Promise<Result> {
       line_no: (last?.line_no ?? 0) + 1,
       created_by: profile.id,
     })
-    if (error) return { ok: false, error: 'Could not add that line.' }
+    if (error) return zeroRateErrorOr(error, 'Could not add that line.')
   }
 
   revalidatePath(`/orders/${values.order_id}`)
