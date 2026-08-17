@@ -1,0 +1,24 @@
+# Line endings are decided here, not by each machine's git config.
+#
+# Nine files under src/app/(app)/ had been rewritten with CRLF by some Windows
+# tool, so `git status` showed them as modified with 2146 insertions and 2146
+# deletions and no content change. That noise makes `git show --stat HEAD`
+# before a push useless, which is the point of running it.
+#
+# Everything text is stored and checked out as LF. Vercel builds on Linux, so
+# LF is what the build actually sees either way.
+* text=auto eol=lf
+
+# Binaries are never inspected or rewritten.
+*.xlsx binary
+*.xls  binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.otf  binary
