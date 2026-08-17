@@ -27,6 +27,7 @@ export type RndStage = 'concept' | 'design' | 'prototype' | 'testing' | 'complet
 export type RndExpenseKind =
   | 'material' | 'component' | 'service' | 'tooling' | 'testing' | 'travel' | 'other'
 export type UserRole = 'admin' | 'staff'
+export type TaskStatus = 'open' | 'in_progress' | 'blocked' | 'done'
 
 type Timestamps = { created_at: string; updated_at: string }
 
@@ -53,6 +54,21 @@ export type RoleRow = Timestamps & {
   description: string | null
   /** Seeded roles. Cannot be renamed or deleted — enforced by trigger. */
   is_system: boolean
+  created_by: string | null
+}
+
+export type TaskRow = Timestamps & {
+  id: string
+  parent_type: ParentKind
+  parent_id: string
+  title: string
+  detail: string | null
+  status: TaskStatus
+  due_date: string | null
+  assigned_to: string
+  assigned_by: string | null
+  /** Stamped and cleared by `sync_task_bookkeeping()`. Never write it. */
+  completed_at: string | null
   created_by: string | null
 }
 
@@ -513,6 +529,17 @@ export type Database = {
       profiles: { Row: ProfileRow; Insert: InsertOf<ProfileRow> & { id: string }; Update: InsertOf<ProfileRow>; Relationships: [] }
       roles: { Row: RoleRow; Insert: InsertOf<RoleRow> & { name: string }; Update: InsertOf<RoleRow>; Relationships: [] }
       role_features: { Row: RoleFeatureRow; Insert: RoleFeatureRow; Update: Partial<RoleFeatureRow>; Relationships: [] }
+      tasks: {
+        Row: TaskRow
+        Insert: Omit<InsertOf<TaskRow>, 'completed_at'> & {
+          parent_type: ParentKind
+          parent_id: string
+          title: string
+          assigned_to: string
+        }
+        Update: Omit<InsertOf<TaskRow>, 'completed_at'>
+        Relationships: []
+      }
       companies: { Row: CompanyRow; Insert: InsertOf<CompanyRow> & { name: string }; Update: InsertOf<CompanyRow>; Relationships: [] }
       contacts: { Row: ContactRow; Insert: InsertOf<ContactRow> & { company_id: string; name: string }; Update: InsertOf<ContactRow>; Relationships: [] }
       inquiries: { Row: InquiryRow; Insert: InsertOf<InquiryRow> & { company_id: string }; Update: InsertOf<InquiryRow>; Relationships: [] }
@@ -626,6 +653,7 @@ export type Database = {
       rnd_stage: RndStage
       rnd_expense_kind: RndExpenseKind
       user_role: UserRole
+      task_status: TaskStatus
     }
     CompositeTypes: Record<string, never>
   }

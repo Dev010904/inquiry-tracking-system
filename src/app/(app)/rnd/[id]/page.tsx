@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowLeft, Pencil, ShieldCheck } from 'lucide-react'
 import { ExpenseLedger } from '@/components/rnd/expense-ledger'
 import { BudgetBar, StageBadge } from '@/components/rnd/stage-badge'
 import { ProgressBar } from '@/components/orders/order-status-badge'
+import { PendingWorkCard } from '@/components/tasks/pending-work-card'
 import { WorkUpdatesFeed } from '@/components/work-updates/work-updates-feed'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import { IP_STATUS, IP_TYPE } from '@/lib/constants'
 import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { requireProfile } from '@/lib/auth'
+import { getAssignableStaff, getPendingTasks } from '@/lib/queries/tasks'
 import { getRndProjectDetail } from '@/lib/queries/rnd'
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +35,12 @@ export default async function RndProjectPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [profile, detail] = await Promise.all([requireProfile(), getRndProjectDetail(id)])
+  const [profile, detail, tasks, staff] = await Promise.all([
+    requireProfile(),
+    getRndProjectDetail(id),
+    getPendingTasks('rnd', id),
+    getAssignableStaff(),
+  ])
   if (!detail) notFound()
 
   const { project, card, expenses, workUpdates, ipAssets } = detail
@@ -99,6 +106,17 @@ export default async function RndProjectPage({
             parentId={project.id}
             updates={workUpdates}
             currentProgress={project.progress_pct}
+          />
+
+          {/* Directly after the work updates, per the owner: that feed says
+              what was done, this card says what is left. */}
+          <PendingWorkCard
+            parentType="rnd"
+            parentId={project.id}
+            tasks={tasks}
+            staff={staff}
+            currentUserId={profile.id}
+            isAdmin={profile.role === 'admin'}
           />
         </div>
 

@@ -214,6 +214,25 @@ export const FEATURE_KEYS = [
 export type FeatureKey = (typeof FEATURE_KEYS)[number]
 
 /**
+ * The four states a piece of assigned work moves through.
+ *
+ * `blocked` is deliberately not a terminal state — it is still outstanding and
+ * still shows on the pending work card. Only `done` takes a task off the list,
+ * and only `done` stamps `completed_at`.
+ */
+export const TASK_STATUS = {
+  open: 'Open',
+  in_progress: 'In progress',
+  blocked: 'Blocked',
+  done: 'Done',
+} as const
+
+export type TaskStatusKey = keyof typeof TASK_STATUS
+
+/** Everything that still counts as outstanding work. */
+export const OPEN_TASK_STATUSES: TaskStatusKey[] = ['open', 'in_progress', 'blocked']
+
+/**
  * Lead times for the dashboard alarm panel, in days.
  * IP renewals are irreversible if missed, so they surface far earlier.
  */

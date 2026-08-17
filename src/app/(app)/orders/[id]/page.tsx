@@ -12,11 +12,13 @@ import { LineItems } from '@/components/orders/line-items'
 import { OrderStatusBadge, ProgressBar } from '@/components/orders/order-status-badge'
 import { PaymentsLedger } from '@/components/orders/payments-ledger'
 import { SpecPanel } from '@/components/orders/spec-panel'
+import { PendingWorkCard } from '@/components/tasks/pending-work-card'
 import { WorkUpdatesFeed } from '@/components/work-updates/work-updates-feed'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COMPANY_TYPE } from '@/lib/constants'
 import { formatDate } from '@/lib/format'
 import { requireProfile } from '@/lib/auth'
+import { getAssignableStaff, getPendingTasks } from '@/lib/queries/tasks'
 import { getOrderDetail } from '@/lib/queries/orders'
 import { getCompanySettings, issuedTaxInvoices, listOrderDocuments } from '@/lib/queries/documents'
 import {
@@ -44,8 +46,18 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [profile, detail, documents, parents, qaChecks, qualifications, meetings, settings] =
-    await Promise.all([
+  const [
+    profile,
+    detail,
+    documents,
+    parents,
+    qaChecks,
+    qualifications,
+    meetings,
+    settings,
+    tasks,
+    staff,
+  ] = await Promise.all([
       requireProfile(),
       getOrderDetail(id),
       listOrderDocuments(id),
@@ -54,6 +66,8 @@ export default async function OrderDetailPage({
       listQualifications(id),
       listMeetings({ orderId: id, limit: 5 }),
       getCompanySettings(),
+      getPendingTasks('order', id),
+      getAssignableStaff(),
     ])
   if (!detail) notFound()
 
@@ -157,6 +171,17 @@ export default async function OrderDetailPage({
             parentId={order.id}
             updates={workUpdates}
             currentProgress={order.completion_pct}
+          />
+
+          {/* The owner asked for this on R&D, but the table is generic and an
+              order has the identical need, so it goes on both. */}
+          <PendingWorkCard
+            parentType="order"
+            parentId={order.id}
+            tasks={tasks}
+            staff={staff}
+            currentUserId={profile.id}
+            isAdmin={profile.role === 'admin'}
           />
         </div>
 
