@@ -56,6 +56,11 @@ export function CompanySettingsForm({ settings, missing }: Props) {
     default_gst_rate: str(settings?.default_gst_rate ?? 18),
     default_currency: settings?.default_currency ?? 'INR',
     invoice_terms: str(settings?.invoice_terms),
+    msme_no: str(settings?.msme_no),
+    jurisdiction_city: str(settings?.jurisdiction_city),
+    payment_terms: str(settings?.payment_terms),
+    delivery_timeline: str(settings?.delivery_timeline),
+    quotation_terms: str(settings?.quotation_terms),
   })
 
   const set = (key: keyof typeof form) => (value: string) => setForm({ ...form, [key]: value })
@@ -328,18 +333,90 @@ export function CompanySettingsForm({ settings, missing }: Props) {
             </Field>
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="MSME number"
+              htmlFor="msme_no"
+              error={errors.msme_no}
+              hint="Printed in the declaration block"
+            >
+              <Input
+                id="msme_no"
+                value={form.msme_no}
+                onChange={(e) => set('msme_no')(e.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="Jurisdiction city"
+              htmlFor="jurisdiction_city"
+              error={errors.jurisdiction_city}
+              hint="Printed as the footer on every document"
+            >
+              <Input
+                id="jurisdiction_city"
+                value={form.jurisdiction_city}
+                placeholder="Vadodara"
+                onChange={(e) => set('jurisdiction_city')(e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <Field
+            label="Payment terms"
+            htmlFor="payment_terms"
+            error={errors.payment_terms}
+            hint="One line, printed above the bank details"
+          >
+            <Input
+              id="payment_terms"
+              value={form.payment_terms}
+              placeholder="100% against tax invoice."
+              onChange={(e) => set('payment_terms')(e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="Delivery timeline"
+            htmlFor="delivery_timeline"
+            error={errors.delivery_timeline}
+            hint="One line, printed under the payment terms"
+          >
+            <Input
+              id="delivery_timeline"
+              value={form.delivery_timeline}
+              placeholder="4-6 weeks from order confirmation."
+              onChange={(e) => set('delivery_timeline')(e.target.value)}
+            />
+          </Field>
+
           <Field
             label="Terms and conditions"
             htmlFor="invoice_terms"
             error={errors.invoice_terms}
-            hint="Printed at the foot of every document"
+            hint="Printed at the foot of invoices, challans and notes"
           >
             <Textarea
               id="invoice_terms"
               rows={4}
               value={form.invoice_terms}
-              placeholder="Payment due within 30 days. Goods once sold will not be taken back. Subject to Ahmedabad jurisdiction."
+              placeholder="Payment due within 30 days. Goods once sold will not be taken back."
               onChange={(e) => set('invoice_terms')(e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="Quotation terms"
+            htmlFor="quotation_terms"
+            error={errors.quotation_terms}
+            hint="Used instead of the above when a quotation is issued — extras such as site visit charges go here"
+          >
+            <Textarea
+              id="quotation_terms"
+              rows={3}
+              value={form.quotation_terms}
+              placeholder="Site installation and visit charges quoted separately."
+              onChange={(e) => set('quotation_terms')(e.target.value)}
             />
           </Field>
         </section>

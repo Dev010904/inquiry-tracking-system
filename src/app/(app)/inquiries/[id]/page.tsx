@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Building2, Mail, Pencil, Phone, User } from 'lucide-react'
 import { AddFollowup } from '@/components/inquiries/add-followup'
 import { ConvertToOrder } from '@/components/inquiries/convert-to-order'
+import { RaiseQuotation } from '@/components/inquiries/raise-quotation'
 import { FollowupItem } from '@/components/inquiries/followup-item'
 import { Timeline } from '@/components/inquiries/timeline'
 import { Badge, StatusBadge } from '@/components/ui/badge'
@@ -88,6 +89,10 @@ export default async function InquiryDetailPage({
             <Pencil className="h-4 w-4" aria-hidden />
             Edit
           </Link>
+          <RaiseQuotation
+            inquiryId={inquiry.id}
+            defaultStateCode={company?.gstin ? company.gstin.slice(0, 2) : null}
+          />
           <div>
             <ConvertToOrder
               inquiryId={inquiry.id}

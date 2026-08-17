@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { AcceptQuotation } from '@/components/documents/accept-quotation'
+import { DocumentLinesEditor } from '@/components/documents/document-lines-editor'
 import { DocumentView } from '@/components/documents/document-view'
 import { Badge } from '@/components/ui/badge'
-import { DOCUMENT_TYPE } from '@/lib/constants'
+import { DOCUMENT_TYPE, TAX_DISPLAYING_DOCUMENT_TYPES } from '@/lib/constants'
 import { formatAudit } from '@/lib/format'
 import { requireProfile } from '@/lib/auth'
 import { getDocument } from '@/lib/queries/documents'
@@ -73,6 +75,26 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
           </p>
         )}
       </div>
+
+      {/* Only a draft can be edited, and only the database enforces that. This
+          is here so a quotation — which is raised empty, against an inquiry —
+          can be given its lines at all. */}
+      {invoice.status === 'draft' && (
+        <div className="print:hidden">
+          <DocumentLinesEditor
+            invoiceId={invoice.id}
+            lines={lines}
+            defaultGstRate={Number(settings?.default_gst_rate ?? 18)}
+            showsTax={TAX_DISPLAYING_DOCUMENT_TYPES.includes(invoice.doc_type)}
+          />
+        </div>
+      )}
+
+      {invoice.doc_type === 'quotation' && invoice.status === 'issued' && !order && (
+        <div className="print:hidden">
+          <AcceptQuotation quotationId={invoice.id} />
+        </div>
+      )}
 
       <DocumentView
         invoice={invoice}

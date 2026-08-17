@@ -73,6 +73,14 @@ export const companySettingsSchema = z.object({
     z.number().min(0, 'Cannot be negative').max(28, 'GST does not go above 28%')
   ),
   invoice_terms: optional(2000),
+  // Everything the printed documents put on the page. Held here rather than in
+  // the layout so the owner changes an MSME number or a payment term without a
+  // deployment.
+  msme_no: optional(60),
+  jurisdiction_city: optional(80),
+  payment_terms: optional(500),
+  delivery_timeline: optional(500),
+  quotation_terms: optional(2000),
 })
 
 export type CompanySettingsValues = z.output<typeof companySettingsSchema>

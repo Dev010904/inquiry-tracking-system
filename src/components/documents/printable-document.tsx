@@ -1,4 +1,11 @@
-import { DOCUMENT_TYPE, INVOICE_COPIES, TAXABLE_DOCUMENT_TYPES } from '@/lib/constants'
+import {
+  DOCUMENT_NO_LABEL,
+  DOCUMENT_TITLE,
+  INVOICE_COPIES,
+  ITEM_UNIT,
+  TAXABLE_DOCUMENT_TYPES,
+  TAX_DISPLAYING_DOCUMENT_TYPES,
+} from '@/lib/constants'
 import { formatDate, formatMoney } from '@/lib/format'
 import type { CompanySettingsRow, InvoiceLineRow, InvoiceRow } from '@/types/database'
 
@@ -10,34 +17,84 @@ type Props = {
   copies: (keyof typeof INVOICE_COPIES)[]
 }
 
+type Slab = { rate: number; taxable: number; cgst: number; sgst: number; igst: number }
+
 /**
- * The printed document.
+ * One tax row per rate, in rate order.
+ *
+ * The supplied format shows a single "CGST @ 9%" / "SGST @ 9%" pair because
+ * every line on that sample sat at 18%. Since GST became per line, a document
+ * can carry several rates at once, and a single pair would be arithmetically
+ * meaningless. Grouping keeps the single-rate case reading exactly like the
+ * sample and lets the mixed case expand to one row per slab.
+ *
+ * The figures are summed from the lines, which Postgres already rounded
+ * individually — never recomputed from a rate against the document total.
+ */
+function slabsOf(lines: InvoiceLineRow[]): Slab[] {
+  const map = new Map<number, Slab>()
+  for (const line of lines) {
+    const rate = Number(line.gst_rate ?? 0)
+    const slab = map.get(rate) ?? { rate, taxable: 0, cgst: 0, sgst: 0, igst: 0 }
+    slab.taxable += Number(line.taxable_value ?? 0)
+    slab.cgst += Number(line.cgst_amount ?? 0)
+    slab.sgst += Number(line.sgst_amount ?? 0)
+    slab.igst += Number(line.igst_amount ?? 0)
+    map.set(rate, slab)
+  }
+  return [...map.values()].sort((a, b) => a.rate - b.rate)
+}
+
+const money = (v: number | string | null | undefined) => formatMoney(v, 'INR', true)
+
+/**
+ * The printed document — quotation, invoice and delivery challan from one
+ * layout, in the format ANK already sends out.
  *
  * For an issued document every supplier and buyer detail comes from the
  * snapshot frozen at issue, never from the live records — that is the whole
- * point of snapshotting. A draft has no snapshot yet, so it falls back to
- * live settings and is watermarked DRAFT so it cannot be mistaken for the
- * real thing.
+ * point of snapshotting. A draft has no snapshot yet, so it falls back to live
+ * settings and is watermarked DRAFT so it cannot be mistaken for the real thing.
  *
- * Printing is done through the browser's own print dialogue rather than a
- * PDF library. That keeps the layout identical on screen and on paper, gets
- * "Save as PDF" for free on every platform, and means the copy labels are
- * real page breaks rather than an image.
+ * Three things vary by type and nothing else does:
+ *   * a challan prints no tax at all — no slab rows, no tax-in-words, no GST
+ *     summary, because it moves goods rather than charging for them;
+ *   * a quotation prints tax but is not a tax document, so it carries no
+ *     copy marking, no reverse-charge line and no place of supply;
+ *   * an invoice keeps every statutory field.
+ *
+ * Nothing on the page is hardcoded. Terms, bank details, MSME number,
+ * jurisdiction and the signatory all come from company settings, so the owner
+ * changes them without a deployment.
+ *
+ * Printing goes through the browser's own dialogue rather than a PDF library.
+ * The layout is then identical on screen and on paper, "Save as PDF" is free on
+ * every platform, and the copy labels are real page breaks rather than an image.
  */
 export function PrintableDocument({ invoice, lines, settings, copies }: Props) {
   const supplier = invoice.supplier_snapshot ?? settings
   const buyer = invoice.buyer_snapshot
-  const isTax = TAXABLE_DOCUMENT_TYPES.includes(invoice.doc_type)
-  const intrastate = invoice.cgst_amount > 0 || invoice.sgst_amount > 0
+  const isStatutoryTax = TAXABLE_DOCUMENT_TYPES.includes(invoice.doc_type)
+  const showsTax = TAX_DISPLAYING_DOCUMENT_TYPES.includes(invoice.doc_type)
   const isDraft = invoice.status === 'draft'
+
+  // Intrastate splits into CGST + SGST, interstate into IGST. Decided by what
+  // Postgres actually put on the lines, not re-derived from the state codes.
+  const intrastate = Number(invoice.cgst_amount) > 0 || Number(invoice.sgst_amount) > 0
+  const slabs = showsTax ? slabsOf(lines).filter((s) => s.rate > 0) : []
+  const singleSlab = slabs.length === 1
+
+  // A copy marking is a tax-invoice rule. A quotation printed three times as
+  // "Original for Recipient / Duplicate for Transporter" would be nonsense.
+  const sheets = isStatutoryTax ? copies : (['original'] as const)
 
   return (
     <div className="print-root space-y-6">
-      {copies.map((copy, index) => (
+      {sheets.map((copy, index) => (
         <article
           key={copy}
-          className="doc-copy relative border bg-white p-6 text-[11px] leading-snug text-black"
-          style={index < copies.length - 1 ? { pageBreakAfter: 'always' } : undefined}
+          className="doc-copy relative mx-auto flex min-h-[277mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
+          style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
           {isDraft && (
             <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[80px] font-bold uppercase tracking-widest text-black/[0.06]">
@@ -50,220 +107,253 @@ export function PrintableDocument({ invoice, lines, settings, copies }: Props) {
             </p>
           )}
 
-          <header className="flex items-start justify-between gap-4 border-b border-black/20 pb-3">
-            <div>
-              <h1 className="text-base font-bold uppercase">
-                {supplier?.legal_name ?? 'Company name not set'}
-              </h1>
-              {supplier?.trade_name && <p>{supplier.trade_name}</p>}
-              <p className="mt-1 whitespace-pre-line">
-                {[supplier?.address_line1, supplier?.address_line2].filter(Boolean).join('\n')}
+          {/* The supplied sheet has no supplier block — it was printed on
+              letterhead. A browser print has no letterhead, and a tax invoice
+              without the supplier's name and GSTIN is not a valid one, so the
+              identity is printed here for every type. */}
+          <header className="border-b border-black/30 pb-2 text-center">
+            <h1 className="text-sm font-bold uppercase">
+              {supplier?.legal_name ?? 'Company name not set'}
+            </h1>
+            <p>
+              {[supplier?.address_line1, supplier?.address_line2].filter(Boolean).join(', ')}
+            </p>
+            <p>
+              {[supplier?.city, supplier?.state_name, supplier?.pincode]
+                .filter(Boolean)
+                .join(', ')}
+              {supplier?.phone ? ` · ${supplier.phone}` : ''}
+              {supplier?.email ? ` · ${supplier.email}` : ''}
+            </p>
+            {supplier?.gstin && (
+              <p className="font-medium">
+                GSTIN: {supplier.gstin}
+                {supplier.pan ? ` · PAN: ${supplier.pan}` : ''}
+              </p>
+            )}
+          </header>
+
+          <h2 className="border-b border-black/30 py-1.5 text-center text-sm font-bold">
+            {DOCUMENT_TITLE[invoice.doc_type]}
+            {isStatutoryTax && (
+              <span className="ml-2 text-[10px] font-normal uppercase tracking-wide">
+                ({INVOICE_COPIES[copy]})
+              </span>
+            )}
+          </h2>
+
+          <section className="grid grid-cols-[1.6fr_1fr] border-b border-black/30">
+            <div className="border-r border-black/30 p-2">
+              <p>
+                <span className="text-black/60">
+                  {invoice.doc_type === 'quotation' ? 'Quote To:' : 'Bill To:'}
+                </span>{' '}
+                <span className="font-semibold">{buyer?.name ?? '—'}</span>
+              </p>
+              {buyer?.contact_name && (
+                <p>
+                  <span className="text-black/60">Customer&rsquo;s Name:</span>{' '}
+                  {buyer.contact_name}
+                  {buyer.contact_phone ? ` (${buyer.contact_phone})` : ''}
+                </p>
+              )}
+              <p>
+                <span className="text-black/60">Address:</span>{' '}
+                {[buyer?.address, buyer?.city].filter(Boolean).join(', ') || '—'}
               </p>
               <p>
-                {[supplier?.city, supplier?.state_name, supplier?.pincode]
-                  .filter(Boolean)
-                  .join(', ')}
+                <span className="text-black/60">GSTIN/UIN :</span> {buyer?.gstin || '-'}
               </p>
-              {supplier?.gstin && <p className="mt-1 font-medium">GSTIN: {supplier.gstin}</p>}
-              {supplier?.pan && <p>PAN: {supplier.pan}</p>}
               <p>
-                {[supplier?.phone, supplier?.email].filter(Boolean).join(' · ')}
+                <span className="text-black/60">State/U.T :</span> {buyer?.state || '-'}
               </p>
             </div>
 
-            <div className="shrink-0 text-right">
-              <p className="text-sm font-bold uppercase">{DOCUMENT_TYPE[invoice.doc_type]}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-wide">{INVOICE_COPIES[copy]}</p>
-              <p className="mt-2">
-                <span className="text-black/60">No:</span>{' '}
-                <span className="font-semibold">{invoice.doc_no ?? 'Not yet issued'}</span>
-              </p>
+            <div className="p-2">
               <p>
                 <span className="text-black/60">Date:</span> {formatDate(invoice.doc_date)}
               </p>
-              {invoice.reverse_charge && <p className="mt-1">Reverse charge: Yes</p>}
-            </div>
-          </header>
-
-          {!isTax && (
-            <p className="mt-2 font-semibold">
-              {invoice.doc_type === 'proforma' &&
-                'Proforma Invoice — not a tax invoice. This document does not create a GST liability.'}
-              {invoice.doc_type === 'bill_of_supply' &&
-                'Not a tax invoice — no GST charged on this supply.'}
-              {invoice.doc_type === 'delivery_challan' &&
-                'Delivery Challan — for movement of goods. Not a tax invoice.'}
-            </p>
-          )}
-
-          <section className="mt-3 grid grid-cols-2 gap-4 border-b border-black/20 pb-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-black/60">
-                Billed to
+              <p>
+                <span className="text-black/60">{DOCUMENT_NO_LABEL[invoice.doc_type]}:</span>{' '}
+                <span className="font-semibold">{invoice.doc_no ?? 'Not yet issued'}</span>
               </p>
-              <p className="font-semibold">{buyer?.name ?? 'Client'}</p>
-              <p className="whitespace-pre-line">{buyer?.address ?? ''}</p>
-              <p>{[buyer?.city, buyer?.state].filter(Boolean).join(', ')}</p>
-              {buyer?.gstin && <p className="mt-1">GSTIN: {buyer.gstin}</p>}
-            </div>
-            <div>
-              {isTax && (
-                <>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-black/60">
-                    Place of supply
-                  </p>
-                  <p>
-                    {invoice.place_of_supply_code} — {invoice.place_of_supply_name}
-                  </p>
-                </>
+              {isStatutoryTax && invoice.place_of_supply_code && (
+                <p>
+                  <span className="text-black/60">Place of supply:</span>{' '}
+                  {invoice.place_of_supply_code} — {invoice.place_of_supply_name}
+                </p>
               )}
-              {invoice.parent_invoice_id && (
-                <p className="mt-1">
-                  Against invoice: <span className="font-medium">see reference</span>
+              {isStatutoryTax && (
+                <p>
+                  <span className="text-black/60">Reverse charge:</span>{' '}
+                  {invoice.reverse_charge ? 'Yes' : 'No'}
                 </p>
               )}
             </div>
           </section>
 
-          <table className="mt-3 w-full border-collapse">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-black/30 text-left">
-                <th className="py-1 pr-2 font-semibold">#</th>
-                <th className="py-1 pr-2 font-semibold">Description</th>
-                <th className="py-1 pr-2 font-semibold">HSN/SAC</th>
-                <th className="py-1 pr-2 text-right font-semibold">Qty</th>
-                <th className="py-1 pr-2 text-right font-semibold">Rate</th>
-                <th className="py-1 pr-2 text-right font-semibold">Taxable</th>
-                {isTax &&
-                  (intrastate ? (
-                    <>
-                      <th className="py-1 pr-2 text-right font-semibold">CGST</th>
-                      <th className="py-1 pr-2 text-right font-semibold">SGST</th>
-                    </>
-                  ) : (
-                    <th className="py-1 pr-2 text-right font-semibold">IGST</th>
-                  ))}
-                <th className="py-1 text-right font-semibold">Amount</th>
+              <tr className="border-b border-black/30 text-left align-bottom">
+                <th className="w-10 px-1 py-1 font-semibold">SR. NO</th>
+                <th className="px-1 py-1 font-semibold">PRODUCT / SERVICE DESCRIPTION</th>
+                <th className="w-16 px-1 py-1 font-semibold">HSN/SAC</th>
+                <th className="w-12 px-1 py-1 text-right font-semibold">QTY.</th>
+                <th className="w-20 px-1 py-1 text-right font-semibold">RATE</th>
+                <th className="w-14 px-1 py-1 font-semibold">PER</th>
+                {showsTax && <th className="w-12 px-1 py-1 text-right font-semibold">GST</th>}
+                <th className="w-24 px-1 py-1 text-right font-semibold">AMOUNT (₹)</th>
               </tr>
             </thead>
             <tbody>
               {lines.map((line) => (
-                <tr key={line.id} className="border-b border-black/10 align-top">
-                  <td className="py-1 pr-2">{line.line_no}</td>
-                  <td className="py-1 pr-2">{line.description}</td>
-                  <td className="py-1 pr-2">{line.hsn_sac ?? '—'}</td>
-                  <td className="py-1 pr-2 text-right">
-                    {line.quantity} {line.unit}
+                <tr key={line.id} className="align-top">
+                  <td className="px-1 py-0.5">{line.line_no}</td>
+                  <td className="px-1 py-0.5">
+                    {line.description}
+                    {Number(line.gst_rate ?? 0) === 0 && line.zero_rate_reason && (
+                      <span className="block text-[10px] text-black/60">
+                        {line.zero_rate_reason}
+                      </span>
+                    )}
                   </td>
-                  <td className="py-1 pr-2 text-right">{formatMoney(line.rate, 'INR', true)}</td>
-                  <td className="py-1 pr-2 text-right">{formatMoney(line.taxable_value, 'INR', true)}</td>
-                  {isTax &&
-                    (intrastate ? (
-                      <>
-                        <td className="py-1 pr-2 text-right">
-                          {line.gst_rate / 2}% {formatMoney(line.cgst_amount, 'INR', true)}
-                        </td>
-                        <td className="py-1 pr-2 text-right">
-                          {line.gst_rate / 2}% {formatMoney(line.sgst_amount, 'INR', true)}
-                        </td>
-                      </>
-                    ) : (
-                      <td className="py-1 pr-2 text-right">
-                        {line.gst_rate}% {formatMoney(line.igst_amount, 'INR', true)}
-                      </td>
-                    ))}
-                  <td className="py-1 text-right font-medium">
-                    {formatMoney(line.line_total, 'INR', true)}
-                  </td>
+                  <td className="px-1 py-0.5">{line.hsn_sac ?? '—'}</td>
+                  <td className="px-1 py-0.5 text-right">{line.quantity}</td>
+                  <td className="px-1 py-0.5 text-right">{money(line.rate)}</td>
+                  <td className="px-1 py-0.5">{ITEM_UNIT[line.unit]}</td>
+                  {showsTax && (
+                    <td className="px-1 py-0.5 text-right">{Number(line.gst_rate ?? 0)}%</td>
+                  )}
+                  <td className="px-1 py-0.5 text-right">{money(line.taxable_value)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <section className="mt-3 flex justify-end">
-            <dl className="w-64 space-y-1">
-              <div className="flex justify-between">
-                <dt>Taxable value</dt>
-                <dd>{formatMoney(invoice.taxable_value, 'INR', true)}</dd>
-              </div>
-              {isTax && intrastate && (
-                <>
-                  <div className="flex justify-between">
-                    <dt>CGST</dt>
-                    <dd>{formatMoney(invoice.cgst_amount, 'INR', true)}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>SGST</dt>
-                    <dd>{formatMoney(invoice.sgst_amount, 'INR', true)}</dd>
-                  </div>
-                </>
-              )}
-              {isTax && !intrastate && invoice.igst_amount > 0 && (
+          <section className="mt-auto">
+            <div className="flex justify-end border-t border-black/30 pt-1">
+              <dl className="w-72 space-y-0.5">
                 <div className="flex justify-between">
-                  <dt>IGST</dt>
-                  <dd>{formatMoney(invoice.igst_amount, 'INR', true)}</dd>
+                  <dt>GROSS TOTAL</dt>
+                  <dd>{money(invoice.taxable_value)}</dd>
                 </div>
-              )}
-              {Number(invoice.round_off) !== 0 && (
+
+                {/* A challan reaches none of this: no slab rows, no tax total. */}
+                {showsTax &&
+                  slabs.map((slab) =>
+                    intrastate ? (
+                      <div key={slab.rate}>
+                        <div className="flex justify-between">
+                          <dt>
+                            CGST @ {slab.rate / 2}%
+                            {!singleSlab && (
+                              <span className="text-black/60"> on {money(slab.taxable)}</span>
+                            )}
+                          </dt>
+                          <dd>{money(slab.cgst)}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt>
+                            SGST @ {slab.rate / 2}%
+                            {!singleSlab && (
+                              <span className="text-black/60"> on {money(slab.taxable)}</span>
+                            )}
+                          </dt>
+                          <dd>{money(slab.sgst)}</dd>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={slab.rate} className="flex justify-between">
+                        <dt>
+                          IGST @ {slab.rate}%
+                          {!singleSlab && (
+                            <span className="text-black/60"> on {money(slab.taxable)}</span>
+                          )}
+                        </dt>
+                        <dd>{money(slab.igst)}</dd>
+                      </div>
+                    )
+                  )}
+
                 <div className="flex justify-between">
-                  <dt>Rounding</dt>
-                  <dd>{formatMoney(invoice.round_off, 'INR', true)}</dd>
+                  <dt>Roundoff</dt>
+                  <dd>{money(invoice.round_off)}</dd>
                 </div>
-              )}
-              <div className="flex justify-between border-t border-black/30 pt-1 text-sm font-bold">
-                <dt>Grand total</dt>
-                <dd>{formatMoney(invoice.grand_total, 'INR', true)}</dd>
-              </div>
-            </dl>
-          </section>
-
-          {invoice.amount_in_words && (
-            <p className="mt-2 border-t border-black/20 pt-2">
-              <span className="text-black/60">Amount in words:</span>{' '}
-              <span className="font-medium">{invoice.amount_in_words}</span>
-            </p>
-          )}
-
-          <footer className="mt-4 flex items-end justify-between gap-6 border-t border-black/20 pt-3">
-            <div className="space-y-2">
-              {supplier?.bank_name && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-black/60">
-                    Bank details
-                  </p>
-                  <p>
-                    {supplier.bank_name}
-                    {supplier.bank_branch ? `, ${supplier.bank_branch}` : ''}
-                  </p>
-                  <p>
-                    A/c {supplier.bank_account_no ?? '—'} · IFSC {supplier.bank_ifsc ?? '—'}
-                  </p>
+                <div className="flex justify-between border-t border-black/40 pt-0.5 text-xs font-bold">
+                  <dt>TOTAL</dt>
+                  <dd>{money(invoice.grand_total)}</dd>
                 </div>
-              )}
-              {invoice.notes && <p className="max-w-md">{invoice.notes}</p>}
-              {invoice.terms && (
-                <div className="max-w-md">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-black/60">
-                    Terms
-                  </p>
-                  <p className="whitespace-pre-line">{invoice.terms}</p>
-                </div>
-              )}
+              </dl>
             </div>
 
-            <div className="shrink-0 text-center">
-              <p className="mb-10">For {supplier?.legal_name ?? ''}</p>
-              <p className="border-t border-black/40 pt-1">
-                {supplier?.signatory_name ?? ''}
-                <br />
-                <span className="text-[10px]">
-                  {supplier?.signatory_designation ?? 'Authorised Signatory'}
-                </span>
+            <div className="border-t border-black/30 pt-1">
+              <p>
+                <span className="text-black/60">Amount in words :</span>{' '}
+                <span className="font-medium">{invoice.amount_in_words ?? '—'}</span>
               </p>
+              {/* Both words lines are computed from the stored totals in
+                  Postgres. Never typed, and never left behind from a document
+                  the layout was copied from. */}
+              {showsTax && invoice.tax_amount_in_words && (
+                <p>
+                  <span className="text-black/60">Tax Amount (in words) :</span>{' '}
+                  <span className="font-medium">{invoice.tax_amount_in_words}</span>
+                </p>
+              )}
+              <p className="mt-1">E. &amp; O.E</p>
             </div>
-          </footer>
+
+            <div className="border-t border-black/30 pt-1">
+              {supplier?.payment_terms && (
+                <p>
+                  <span className="text-black/60">Payment Terms :</span> {supplier.payment_terms}
+                </p>
+              )}
+              {supplier?.delivery_timeline && (
+                <p>
+                  <span className="text-black/60">Delivery Timeline:</span>{' '}
+                  {supplier.delivery_timeline}
+                </p>
+              )}
+              {invoice.notes && <p className="whitespace-pre-line">{invoice.notes}</p>}
+              {invoice.terms && <p className="whitespace-pre-line">{invoice.terms}</p>}
+            </div>
+
+            {supplier?.bank_name && (
+              <div className="border-t border-black/30 pt-1">
+                <p className="font-semibold">Company&rsquo;s Bank Details:</p>
+                <p>Bank Name : {supplier.bank_name}</p>
+                <p>A/c Name : {supplier.legal_name ?? '—'}</p>
+                <p>A/c No. : {supplier.bank_account_no ?? '—'}</p>
+                <p>Branch &amp; IFSC : {supplier.bank_branch ?? '—'} {supplier.bank_ifsc ?? ''}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-[1.6fr_1fr] border-t border-black/30">
+              <div className="border-r border-black/30 p-2">
+                <p className="font-semibold">Declaration</p>
+                {supplier?.msme_no && <p>MSME : {supplier.msme_no}</p>}
+                <p>
+                  We declare that this {DOCUMENT_TITLE[invoice.doc_type].toLowerCase()} shows the
+                  actual price of the goods described and that all particulars are true and correct.
+                </p>
+              </div>
+              <div className="p-2 text-center">
+                <p>For {supplier?.legal_name ?? ''}</p>
+                <p className="mt-10">{supplier?.signatory_name ?? ''}</p>
+                <p className="text-[10px]">
+                  {supplier?.signatory_designation ?? 'Authorised Signatory'}
+                </p>
+              </div>
+            </div>
+
+            <p className="border-t border-black/30 pt-1 text-center font-semibold uppercase">
+              Subject to {supplier?.jurisdiction_city ?? 'Vadodara'} jurisdiction
+            </p>
+          </section>
         </article>
       ))}
     </div>
   )
 }
+

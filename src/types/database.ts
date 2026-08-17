@@ -211,6 +211,7 @@ export type MeetingActionRow = Timestamps & {
 }
 
 export type DocumentType =
+  | 'quotation'
   | 'proforma'
   | 'tax_invoice'
   | 'bill_of_supply'
@@ -245,6 +246,11 @@ export type CompanySettingsRow = Timestamps & {
   default_gst_rate: number
   default_currency: CurrencyCode
   invoice_terms: string | null
+  msme_no: string | null
+  jurisdiction_city: string | null
+  payment_terms: string | null
+  delivery_timeline: string | null
+  quotation_terms: string | null
 }
 
 export type InvoiceRow = Timestamps & {
@@ -256,6 +262,8 @@ export type InvoiceRow = Timestamps & {
   doc_no: string | null
   doc_date: string
   order_id: string | null
+  /** Quotations only — they are raised before there is an order to point at. */
+  inquiry_id: string | null
   company_id: string
   parent_invoice_id: string | null
   place_of_supply_code: string | null
@@ -269,6 +277,8 @@ export type InvoiceRow = Timestamps & {
     state: string | null
     gstin: string | null
     gst_applicable: boolean | null
+    contact_name: string | null
+    contact_phone: string | null
   } | null
   taxable_value: number
   cgst_amount: number
@@ -277,6 +287,8 @@ export type InvoiceRow = Timestamps & {
   total_tax: number
   round_off: number
   grand_total: number
+  /** Null on a document that carries no tax, so the layout can omit the line. */
+  tax_amount_in_words: string | null
   /**
    * Both null unless the parent order is priced in a foreign currency. The tax
    * columns above are always INR; these record what that INR was derived from.
@@ -531,6 +543,24 @@ export type Database = {
           p_notes?: string | null
           p_reason?: string | null
         }
+        Returns: string
+      }
+      /** Raises an empty draft quotation against an inquiry. */
+      create_quotation: {
+        Args: {
+          p_inquiry_id: string
+          p_doc_date?: string
+          p_place_of_supply_code?: string | null
+          p_place_of_supply_name?: string | null
+          p_notes?: string | null
+        }
+        Returns: string
+      }
+      /** Recalculates a DRAFT's totals after its lines are edited. */
+      refresh_document_totals: { Args: { p_invoice_id: string }; Returns: void }
+      /** Creates the order an accepted quotation becomes. Returns the order id. */
+      accept_quotation: {
+        Args: { p_quotation_id: string; p_technical_specification?: string | null }
         Returns: string
       }
       /** Allocates the number and freezes the snapshots. Returns the doc no. */

@@ -202,6 +202,7 @@ export type ItemUnit = keyof typeof ITEM_UNIT
 
 /** The six documents this system can raise. */
 export const DOCUMENT_TYPE = {
+  quotation: 'Quotation',
   proforma: 'Proforma invoice',
   tax_invoice: 'Tax invoice',
   bill_of_supply: 'Bill of supply',
@@ -209,6 +210,28 @@ export const DOCUMENT_TYPE = {
   credit_note: 'Credit note',
   debit_note: 'Debit note',
 } as const
+
+/** The heading printed at the top of the page, in the supplied format's wording. */
+export const DOCUMENT_TITLE: Record<keyof typeof DOCUMENT_TYPE, string> = {
+  quotation: 'Quotation',
+  proforma: 'Proforma Invoice',
+  tax_invoice: 'Tax Invoice',
+  bill_of_supply: 'Bill of Supply',
+  delivery_challan: 'Delivery Challan',
+  credit_note: 'Credit Note',
+  debit_note: 'Debit Note',
+}
+
+/** What the number is called on the page — "Quotation No.", "Invoice No.". */
+export const DOCUMENT_NO_LABEL: Record<keyof typeof DOCUMENT_TYPE, string> = {
+  quotation: 'Quotation No.',
+  proforma: 'Proforma No.',
+  tax_invoice: 'Invoice No.',
+  bill_of_supply: 'Bill No.',
+  delivery_challan: 'Challan No.',
+  credit_note: 'Credit Note No.',
+  debit_note: 'Debit Note No.',
+}
 
 export type DocumentType = keyof typeof DOCUMENT_TYPE
 
@@ -220,6 +243,19 @@ export const DOCUMENT_STATUS = {
 
 /** Only these three carry GST. The rest are not tax documents. */
 export const TAXABLE_DOCUMENT_TYPES: DocumentType[] = ['tax_invoice', 'credit_note', 'debit_note']
+
+/**
+ * Types that PRINT tax, which is not the same list.
+ *
+ * A quotation shows what the tax will be so the buyer knows the real price,
+ * but it creates no liability, needs no HSN and takes no statutory number.
+ * Mirrors `doc_type_shows_tax()` in Postgres; `TAXABLE_DOCUMENT_TYPES` above
+ * stays the statutory list and must not absorb this one.
+ */
+export const TAX_DISPLAYING_DOCUMENT_TYPES: DocumentType[] = [
+  ...TAXABLE_DOCUMENT_TYPES,
+  'quotation',
+]
 
 /** The copies an Indian tax invoice is printed in, for goods. */
 export const INVOICE_COPIES = {

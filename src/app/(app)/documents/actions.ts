@@ -181,3 +181,176 @@ export async function deleteDraft(invoiceId: string): Promise<Result> {
   revalidatePath('/documents')
   return { ok: true }
 }
+
+const quotationSchema = z.object({
+  inquiry_id: z.string().uuid(),
+  doc_date: z.string().min(1, 'Pick a date'),
+  place_of_supply_code: z.string().trim().max(2).optional().or(z.literal('')),
+  notes: z.string().trim().max(2000).optional().or(z.literal('')),
+})
+
+/**
+ * Raises a draft quotation against an inquiry.
+ *
+ * It starts with no lines: a quotation goes out before anything is confirmed,
+ * so there is no order to copy from. The lines are typed on the draft, and
+ * accepting the quotation later carries them into the order.
+ */
+export async function createQuotation(input: unknown): Promise<Result> {
+  await requireProfile()
+
+  const parsed = quotationSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: 'Check the highlighted fields.', fieldErrors: flatten(parsed.error) }
+  }
+  const v = parsed.data
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.rpc('create_quotation', {
+    p_inquiry_id: v.inquiry_id,
+    p_doc_date: v.doc_date,
+    p_place_of_supply_code: v.place_of_supply_code || null,
+    p_place_of_supply_name: v.place_of_supply_code
+      ? (GST_STATES[v.place_of_supply_code] ?? null)
+      : null,
+    p_notes: v.notes || null,
+  })
+
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not raise that quotation.') }
+
+  revalidatePath('/documents')
+  revalidatePath(`/inquiries/${v.inquiry_id}`)
+  return { ok: true, id: data as string }
+}
+
+const documentLineSchema = z.object({
+  id: z.string().uuid().optional(),
+  invoice_id: z.string().uuid(),
+  description: z.string().trim().min(3, 'Describe what is being supplied').max(500),
+  hsn_sac: z
+    .string()
+    .trim()
+    .max(10)
+    .regex(/^\d*$/, 'HSN/SAC codes are digits only')
+    .optional()
+    .or(z.literal('')),
+  quantity: z.coerce.number().positive('Quantity must be more than zero').max(9_999_999),
+  unit: z.enum(['nos', 'set', 'kg', 'm', 'hour', 'lot']),
+  rate: z.coerce.number().min(0, 'Rate cannot be negative').max(99_999_999),
+  gst_rate: z.coerce.number().min(0, 'Cannot be negative').max(100, 'Cannot exceed 100%'),
+  zero_rate_reason: z.string().trim().max(300).optional().or(z.literal('')),
+})
+
+/**
+ * Adds or edits a line on a draft document.
+ *
+ * `taxable_value` and `line_total` are written here as quantity x rate, and
+ * then immediately recalculated by Postgres along with the tax — the values
+ * sent from the browser are a starting point the database overwrites, never
+ * the figures that end up on the document.
+ *
+ * The draft-only rule is enforced by the `invoice_lines_write` policy and by
+ * `guard_issued_document_lines()`, not by this action. An issued document
+ * cannot be edited even by a request that skips this code path entirely.
+ */
+export async function saveDocumentLine(input: unknown): Promise<Result> {
+  await requireProfile()
+
+  const parsed = documentLineSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: 'Check the highlighted fields.', fieldErrors: flatten(parsed.error) }
+  }
+  const v = parsed.data
+  const supabase = await createClient()
+
+  const amount = Math.round(v.quantity * v.rate * 100) / 100
+  const fields = {
+    description: v.description,
+    hsn_sac: v.hsn_sac || null,
+    quantity: v.quantity,
+    unit: v.unit,
+    rate: v.rate,
+    taxable_value: amount,
+    line_total: amount,
+    gst_rate: v.gst_rate,
+    zero_rate_reason: v.zero_rate_reason || null,
+  }
+
+  if (v.id) {
+    const { error } = await supabase.from('invoice_lines').update(fields).eq('id', v.id)
+    if (error) return { ok: false, error: dbMessage(error.message, 'Could not save that line.') }
+  } else {
+    const { data: last } = await supabase
+      .from('invoice_lines')
+      .select('line_no')
+      .eq('invoice_id', v.invoice_id)
+      .order('line_no', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const { error } = await supabase
+      .from('invoice_lines')
+      .insert({ ...fields, invoice_id: v.invoice_id, line_no: (last?.line_no ?? 0) + 1 })
+    if (error) return { ok: false, error: dbMessage(error.message, 'Could not add that line.') }
+  }
+
+  const { error: recalcError } = await supabase.rpc('refresh_document_totals', {
+    p_invoice_id: v.invoice_id,
+  })
+  if (recalcError) {
+    return { ok: false, error: dbMessage(recalcError.message, 'Line saved, but the totals did not update.') }
+  }
+
+  revalidatePath(`/documents/${v.invoice_id}`)
+  return { ok: true }
+}
+
+/** Removes a line from a draft and recalculates what is left. */
+export async function removeDocumentLine(lineId: string, invoiceId: string): Promise<Result> {
+  await requireProfile()
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('invoice_lines').delete().eq('id', lineId)
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not remove that line.') }
+
+  const { error: recalcError } = await supabase.rpc('refresh_document_totals', {
+    p_invoice_id: invoiceId,
+  })
+  if (recalcError) {
+    return { ok: false, error: dbMessage(recalcError.message, 'Line removed, but the totals did not update.') }
+  }
+
+  revalidatePath(`/documents/${invoiceId}`)
+  return { ok: true }
+}
+
+/**
+ * Turns an accepted quotation into an order, carrying its lines across.
+ *
+ * The order is created by the database in one call so the lines cannot arrive
+ * without the order, and the inquiry cannot be marked confirmed without both.
+ */
+export async function acceptQuotation(
+  quotationId: string,
+  technicalSpecification: string
+): Promise<Result> {
+  await requireProfile()
+
+  const spec = technicalSpecification.trim()
+  if (spec.length < 3) {
+    return { ok: false, error: 'Describe what is being supplied before creating the order.' }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('accept_quotation', {
+    p_quotation_id: quotationId,
+    p_technical_specification: spec,
+  })
+
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not accept that quotation.') }
+
+  revalidatePath('/orders')
+  revalidatePath('/documents')
+  revalidatePath(`/documents/${quotationId}`)
+  return { ok: true, id: data as string }
+}
