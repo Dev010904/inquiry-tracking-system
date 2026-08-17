@@ -6,9 +6,9 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, isActivePath } from './nav-items'
 
-export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
+export function Sidebar({ canManageSettings }: { canManageSettings: boolean }) {
   const pathname = usePathname()
-  const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
+  const items = NAV_ITEMS.filter((item) => !item.settingsManagerOnly || canManageSettings)
 
   return (
     <aside data-app-shell className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">

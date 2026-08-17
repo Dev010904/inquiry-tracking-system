@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile } from '@/lib/auth'
+import { requireProfile, settingsManagerOrNull } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { companySettingsSchema, createDocumentSchema } from '@/lib/schemas/document'
 import { GST_STATES } from '@/lib/constants'
@@ -33,9 +33,12 @@ function dbMessage(message: string, fallback: string): string {
 
 /** Saves the supplier's own details. Admin only, enforced by RLS as well. */
 export async function saveCompanySettings(input: unknown): Promise<Result> {
-  const profile = await requireProfile()
-  if (profile.role !== 'admin') {
-    return { ok: false, error: 'Only an admin can change the company details.' }
+  // Lives here rather than in settings/actions.ts, but it is a settings write
+  // and carries the settings gate. The company_settings RLS policy requires the
+  // same flag, so this only decides which error the user sees.
+  const profile = await settingsManagerOrNull()
+  if (!profile) {
+    return { ok: false, error: 'You cannot change the company details.' }
   }
 
   const parsed = companySettingsSchema.safeParse(input)

@@ -11,14 +11,16 @@ type Props = {
   fullName: string
   email: string | null
   initials: string
+  /** Drives the role badge only. Settings visibility is a separate flag. */
   isAdmin: boolean
+  canManageSettings: boolean
 }
 
 /**
  * Header avatar menu. On mobile it also carries the nav destinations that
  * did not fit in the five-slot bottom bar.
  */
-export function UserMenu({ fullName, email, initials, isAdmin }: Props) {
+export function UserMenu({ fullName, email, initials, isAdmin, canManageSettings }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -39,7 +41,7 @@ export function UserMenu({ fullName, email, initials, isAdmin }: Props) {
   }, [open])
 
   const overflowItems = NAV_ITEMS.filter(
-    (item) => !item.primary && (!item.adminOnly || isAdmin)
+    (item) => !item.primary && (!item.settingsManagerOnly || canManageSettings)
   )
 
   return (

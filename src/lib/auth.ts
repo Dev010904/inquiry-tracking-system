@@ -40,6 +40,18 @@ export async function requireAdmin(): Promise<ProfileRow> {
   return profile
 }
 
+/**
+ * The signed-in profile if it may manage Settings, otherwise null.
+ *
+ * Returns rather than redirects so each caller can fail in the way its own
+ * surface needs: the page raises a plain 404, and the server actions return an
+ * error. Neither should hint that a restricted screen exists.
+ */
+export async function settingsManagerOrNull(): Promise<ProfileRow | null> {
+  const profile = await requireProfile()
+  return profile.can_manage_settings ? profile : null
+}
+
 /** Initials for the avatar chip: "Anand Kumar" -> "AK". */
 export function initialsOf(fullName: string): string {
   return fullName

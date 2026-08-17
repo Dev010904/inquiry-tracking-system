@@ -2,12 +2,19 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireAdmin, requireProfile } from '@/lib/auth'
+import { settingsManagerOrNull } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 
 export type SettingsResult = { ok: true } | { ok: false; error: string }
 
 const idSchema = z.string().uuid('Unrecognised user')
+
+/**
+ * Every action here re-checks the flag. The page already gates the screen, but
+ * a server action is a public endpoint — reachable by anyone who knows its id,
+ * whether or not they could ever render the form that calls it.
+ */
+const NO_ACCESS = { ok: false, error: 'You cannot change settings.' } as const
 
 /**
  * Changes a staff member's role.
@@ -17,7 +24,8 @@ const idSchema = z.string().uuid('Unrecognised user')
  * rejects a non-admin touching `role` even on their own row.
  */
 export async function setUserRole(userId: string, role: 'admin' | 'staff'): Promise<SettingsResult> {
-  const admin = await requireAdmin()
+  const admin = await settingsManagerOrNull()
+  if (!admin) return NO_ACCESS
 
   const parsed = idSchema.safeParse(userId)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
@@ -39,7 +47,8 @@ export async function setUserRole(userId: string, role: 'admin' | 'staff'): Prom
 
 /** Deactivating is the intended alternative to deleting — it preserves history. */
 export async function setUserActive(userId: string, isActive: boolean): Promise<SettingsResult> {
-  const admin = await requireAdmin()
+  const admin = await settingsManagerOrNull()
+  if (!admin) return NO_ACCESS
 
   const parsed = idSchema.safeParse(userId)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
@@ -84,9 +93,16 @@ const profileSchema = z.object({
   phone: z.union([z.string().trim().max(20), z.literal('')]).optional(),
 })
 
-/** Anyone may edit their own name and phone — not their role or active flag. */
+/**
+ * Own name and phone — never role or active flag.
+ *
+ * Gated like the rest of this file: the form it backs now lives only on the
+ * restricted Settings screen, so leaving it open would be an endpoint with no
+ * caller and no guard.
+ */
 export async function updateOwnProfile(input: unknown): Promise<SettingsResult> {
-  const profile = await requireProfile()
+  const profile = await settingsManagerOrNull()
+  if (!profile) return NO_ACCESS
 
   const parsed = profileSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }

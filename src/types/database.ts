@@ -1,7 +1,10 @@
 /**
- * Generated from the live Supabase schema (project vozvdtgsinocrohmasvq).
- * Regenerate after any migration with:  npm run db:types
- * Do not hand-edit.
+ * Mirrors the live Supabase schema (project vozvdtgsinocrohmasvq).
+ *
+ * Hand-maintained, despite the `db:types` script. That script writes the raw
+ * generator output, which has none of the named row aliases the application
+ * imports (`ProfileRow`, `OrderRow`, …) and would not compile. After a
+ * migration, edit the affected row type here to match.
  */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -33,6 +36,7 @@ export type ProfileRow = Timestamps & {
   phone: string | null
   role: UserRole
   is_active: boolean
+  can_manage_settings: boolean
 }
 
 export type CompanyRow = Timestamps & {

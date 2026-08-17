@@ -13,11 +13,10 @@ import { initialsOf, requireProfile } from '@/lib/auth'
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireProfile()
-  const isAdmin = profile.role === 'admin'
 
   return (
     <div className="flex min-h-dvh bg-background">
-      <Sidebar isAdmin={isAdmin} />
+      <Sidebar canManageSettings={profile.can_manage_settings} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header
@@ -39,7 +38,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             fullName={profile.full_name}
             email={profile.email}
             initials={initialsOf(profile.full_name)}
-            isAdmin={isAdmin}
+            isAdmin={profile.role === 'admin'}
+            canManageSettings={profile.can_manage_settings}
           />
         </header>
 

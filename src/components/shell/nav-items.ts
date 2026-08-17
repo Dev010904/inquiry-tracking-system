@@ -19,7 +19,11 @@ export type NavItem = {
   /** Short label for the mobile tab bar, where width is tight. */
   short: string
   icon: LucideIcon
-  adminOnly?: boolean
+  /**
+   * Hidden unless the profile carries `can_manage_settings`. Being an admin is
+   * not enough — Settings is held by named people, not by a role.
+   */
+  settingsManagerOnly?: boolean
   /** Appears in the mobile bottom bar. Keep this to five items. */
   primary?: boolean
   /**
@@ -41,7 +45,13 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
   { href: '/activity', label: 'Recent changes', short: 'Changes', icon: History },
   { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
-  { href: '/settings', label: 'Settings', short: 'Settings', icon: Settings, adminOnly: true },
+  {
+    href: '/settings',
+    label: 'Settings',
+    short: 'Settings',
+    icon: Settings,
+    settingsManagerOnly: true,
+  },
 ]
 
 /** What the menus render. Add `unbuilt: true` to hide a route in progress. */
