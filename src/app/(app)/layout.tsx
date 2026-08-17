@@ -4,7 +4,9 @@ import { BottomNav } from '@/components/shell/bottom-nav'
 import { PageTitle } from '@/components/shell/page-title'
 import { Sidebar } from '@/components/shell/sidebar'
 import { UserMenu } from '@/components/shell/user-menu'
-import { initialsOf, requireProfile } from '@/lib/auth'
+import { initialsOf } from '@/lib/auth'
+import { currentAccess } from '@/lib/permissions'
+import { FEATURE_KEYS } from '@/lib/constants'
 
 /**
  * Shell for every signed-in screen. Middleware guarantees a session; this
@@ -12,11 +14,16 @@ import { initialsOf, requireProfile } from '@/lib/auth'
  * page runs a query.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const profile = await requireProfile()
+  const { profile, features } = await currentAccess()
+
+  // Hiding a menu item is not access control — each route segment gates
+  // itself and each server action re-checks. This is only so the menu stops
+  // advertising screens the user would be 404'd from.
+  const visible = FEATURE_KEYS.filter((key) => features[key].canView)
 
   return (
     <div className="flex min-h-dvh bg-background">
-      <Sidebar canManageSettings={profile.can_manage_settings} />
+      <Sidebar canManageSettings={profile.can_manage_settings} visibleFeatures={visible} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header
@@ -40,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             initials={initialsOf(profile.full_name)}
             isAdmin={profile.role === 'admin'}
             canManageSettings={profile.can_manage_settings}
+            visibleFeatures={visible}
           />
         </header>
 
@@ -47,7 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="flex-1 animate-fade-in p-4 pb-24 sm:p-6 md:pb-8">{children}</main>
       </div>
 
-      <BottomNav />
+      <BottomNav visibleFeatures={visible} />
       <InstallPrompt />
     </div>
   )

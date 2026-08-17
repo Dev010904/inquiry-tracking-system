@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { LogOut, Menu, UserRound } from 'lucide-react'
+import type { FeatureKey } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS } from './nav-items'
 import { signOut } from '@/app/login/actions'
@@ -14,13 +15,21 @@ type Props = {
   /** Drives the role badge only. Settings visibility is a separate flag. */
   isAdmin: boolean
   canManageSettings: boolean
+  visibleFeatures: FeatureKey[]
 }
 
 /**
  * Header avatar menu. On mobile it also carries the nav destinations that
  * did not fit in the five-slot bottom bar.
  */
-export function UserMenu({ fullName, email, initials, isAdmin, canManageSettings }: Props) {
+export function UserMenu({
+  fullName,
+  email,
+  initials,
+  isAdmin,
+  canManageSettings,
+  visibleFeatures,
+}: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -40,8 +49,12 @@ export function UserMenu({ fullName, email, initials, isAdmin, canManageSettings
     }
   }, [open])
 
-  const overflowItems = NAV_ITEMS.filter(
-    (item) => !item.primary && (!item.settingsManagerOnly || canManageSettings)
+  const overflowItems = NAV_ITEMS.filter((item) =>
+    item.primary
+      ? false
+      : item.feature
+        ? visibleFeatures.includes(item.feature)
+        : !item.settingsManagerOnly || canManageSettings
   )
 
   return (

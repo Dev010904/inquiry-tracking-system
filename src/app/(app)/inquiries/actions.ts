@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyContacts } from '@/lib/queries/inquiries'
 import { CONVERTIBLE_STATUSES, CONVERTIBLE_STATUS_LABEL } from '@/lib/constants'
@@ -36,7 +36,8 @@ function flatten(error: z.ZodError): Record<string, string> {
  * company that does not exist.
  */
 export async function createInquiry(input: InquiryInput): Promise<SaveResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('inquiries')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = inquirySchema.safeParse(input)
   if (!parsed.success) {
@@ -123,7 +124,7 @@ export async function createInquiry(input: InquiryInput): Promise<SaveResult> {
 }
 
 export async function updateInquiry(id: string, input: InquiryInput): Promise<SaveResult> {
-  await requireProfile()
+  if (!(await editorOrNull('inquiries'))) return NO_FEATURE_ACCESS
 
   if (!z.string().uuid().safeParse(id).success) {
     return { ok: false, error: 'Unrecognised inquiry.' }
@@ -192,7 +193,8 @@ const followupSchema = z.object({
 export async function addFollowup(
   input: z.input<typeof followupSchema>
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('inquiries')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = followupSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
@@ -227,7 +229,8 @@ export async function addFollowup(
 export async function convertToOrder(
   input: z.input<typeof convertToOrderSchema>
 ): Promise<SaveResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('inquiries')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = convertToOrderSchema.safeParse(input)
   if (!parsed.success) {
@@ -302,9 +305,15 @@ export async function convertToOrder(
   return { ok: true, id: order.id }
 }
 
-/** Contacts for the picker when the chosen company changes. */
+/**
+ * Contacts for the picker when the chosen company changes.
+ *
+ * Returns an empty list rather than an error when the role withholds
+ * Inquiries: the only caller is the inquiry form, which such a user cannot
+ * reach, and an empty picker leaks nothing about who the client's people are.
+ */
 export async function fetchCompanyContacts(companyId: string) {
-  await requireProfile()
+  if (!(await editorOrNull('inquiries'))) return []
   if (!z.string().uuid().safeParse(companyId).success) return []
   return getCompanyContacts(companyId)
 }

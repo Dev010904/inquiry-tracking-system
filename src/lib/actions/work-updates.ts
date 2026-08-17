@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { workUpdateSchema } from '@/lib/schemas/order'
 
@@ -18,8 +18,6 @@ export type WorkUpdateResult =
  * kept in sync by hand.
  */
 export async function addWorkUpdate(input: unknown): Promise<WorkUpdateResult> {
-  const profile = await requireProfile()
-
   const parsed = workUpdateSchema.safeParse(input)
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {}
@@ -31,6 +29,13 @@ export async function addWorkUpdate(input: unknown): Promise<WorkUpdateResult> {
   }
 
   const values = parsed.data
+
+  // The permission follows the parent, so the check has to wait until the
+  // input is parsed. Validation first is safe: it reads nothing and writes
+  // nothing, and the reply to a malformed payload is the same either way.
+  const profile = await editorOrNull(values.parent_type === 'order' ? 'orders' : 'rnd')
+  if (!profile) return NO_FEATURE_ACCESS
+
   const supabase = await createClient()
 
   const { error } = await supabase.from('work_updates').insert({

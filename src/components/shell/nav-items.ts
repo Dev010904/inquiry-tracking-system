@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
+import { FEATURE_KEYS, type FeatureKey } from '@/lib/constants'
 
 export type NavItem = {
   href: string
@@ -19,6 +20,12 @@ export type NavItem = {
   /** Short label for the mobile tab bar, where width is tight. */
   short: string
   icon: LucideIcon
+  /**
+   * The permission this destination sits behind, or undefined for a
+   * destination governed some other way. Settings is the only one: it is held
+   * by named people through `can_manage_settings`, not granted by a role.
+   */
+  feature?: FeatureKey
   /**
    * Hidden unless the profile carries `can_manage_settings`. Being an admin is
    * not enough — Settings is held by named people, not by a role.
@@ -34,17 +41,29 @@ export type NavItem = {
   unbuilt?: boolean
 }
 
+/**
+ * One entry per feature key, keyed by it.
+ *
+ * Typed as a full `Record<FeatureKey, …>` on purpose: adding a key to
+ * `FEATURE_KEYS` without giving it a destination here is a compile error, so
+ * a new feature cannot slip into the database's grantable list while being
+ * invisible in the menu and in the permission editor.
+ */
+const FEATURE_NAV: Record<FeatureKey, Omit<NavItem, 'feature'>> = {
+  dashboard: { href: '/dashboard', label: 'Dashboard', short: 'Home', icon: LayoutDashboard, primary: true },
+  inquiries: { href: '/inquiries', label: 'Inquiries', short: 'Inquiries', icon: ClipboardList, primary: true },
+  orders: { href: '/orders', label: 'Orders', short: 'Orders', icon: Package, primary: true },
+  rnd: { href: '/rnd', label: 'R&D Projects', short: 'R&D', icon: FlaskConical, primary: true },
+  ip: { href: '/ip', label: 'IP Portfolio', short: 'IP', icon: ShieldCheck, primary: true },
+  documents: { href: '/documents', label: 'Invoices', short: 'Invoices', icon: FileText },
+  meetings: { href: '/meetings', label: 'Meetings', short: 'Meetings', icon: CalendarDays },
+  companies: { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
+  activity: { href: '/activity', label: 'Recent changes', short: 'Changes', icon: History },
+  reports: { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
+}
+
 const ALL_NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', short: 'Home', icon: LayoutDashboard, primary: true },
-  { href: '/inquiries', label: 'Inquiries', short: 'Inquiries', icon: ClipboardList, primary: true },
-  { href: '/orders', label: 'Orders', short: 'Orders', icon: Package, primary: true },
-  { href: '/rnd', label: 'R&D Projects', short: 'R&D', icon: FlaskConical, primary: true },
-  { href: '/ip', label: 'IP Portfolio', short: 'IP', icon: ShieldCheck, primary: true },
-  { href: '/documents', label: 'Invoices', short: 'Invoices', icon: FileText },
-  { href: '/meetings', label: 'Meetings', short: 'Meetings', icon: CalendarDays },
-  { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
-  { href: '/activity', label: 'Recent changes', short: 'Changes', icon: History },
-  { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
+  ...FEATURE_KEYS.map((feature) => ({ feature, ...FEATURE_NAV[feature] })),
   {
     href: '/settings',
     label: 'Settings',
@@ -56,6 +75,14 @@ const ALL_NAV_ITEMS: NavItem[] = [
 
 /** What the menus render. Add `unbuilt: true` to hide a route in progress. */
 export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter((item) => !item.unbuilt)
+
+/**
+ * The label the permission editor shows for each feature, taken from the menu
+ * rather than kept in a second list that could drift from it.
+ */
+export const FEATURE_LABELS: Record<FeatureKey, string> = Object.fromEntries(
+  FEATURE_KEYS.map((feature) => [feature, FEATURE_NAV[feature].label])
+) as Record<FeatureKey, string>
 
 /** Highlights /inquiries for /inquiries/new and /inquiries/[id] too. */
 export function isActivePath(pathname: string, href: string): boolean {

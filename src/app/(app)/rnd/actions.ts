@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { rndExpenseSchema, rndProjectSchema } from '@/lib/schemas/rnd'
 
@@ -22,7 +22,8 @@ function flatten(error: z.ZodError): Record<string, string> {
 }
 
 export async function createRndProject(input: unknown): Promise<RndResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('rnd')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = rndProjectSchema.safeParse(input)
   if (!parsed.success) {
@@ -65,7 +66,7 @@ export async function createRndProject(input: unknown): Promise<RndResult> {
 }
 
 export async function updateRndProject(id: string, input: unknown): Promise<RndResult> {
-  await requireProfile()
+  if (!(await editorOrNull('rnd'))) return NO_FEATURE_ACCESS
 
   if (!z.string().uuid().safeParse(id).success) {
     return { ok: false, error: 'Unrecognised project.' }
@@ -114,7 +115,8 @@ export async function updateRndProject(id: string, input: unknown): Promise<RndR
  * so budget-vs-spent can never drift from what was actually recorded.
  */
 export async function addRndExpense(input: unknown): Promise<SimpleResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('rnd')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = rndExpenseSchema.safeParse(input)
   if (!parsed.success) {
@@ -161,7 +163,8 @@ export async function removeRndExpense(
   expenseId: string,
   projectId: string
 ): Promise<SimpleResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('rnd')
+  if (!profile) return NO_FEATURE_ACCESS
 
   if (profile.role !== 'admin') {
     return { ok: false, error: 'Only an admin can remove an expense.' }

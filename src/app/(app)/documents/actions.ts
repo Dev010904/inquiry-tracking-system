@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile, settingsManagerOrNull } from '@/lib/auth'
+import { settingsManagerOrNull } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { companySettingsSchema, createDocumentSchema } from '@/lib/schemas/document'
 import { GST_STATES } from '@/lib/constants'
@@ -100,7 +101,7 @@ export async function saveCompanySettings(input: unknown): Promise<Result> {
  * moment, and the copy cannot drift from the original.
  */
 export async function createDocument(input: unknown): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
 
   const parsed = createDocumentSchema.safeParse(input)
   if (!parsed.success) {
@@ -132,7 +133,7 @@ export async function createDocument(input: unknown): Promise<Result> {
  * and buyer details onto the document. After this it cannot be changed.
  */
 export async function issueDocument(invoiceId: string): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
 
   const { data, error } = await supabase.rpc('issue_document', { p_invoice_id: invoiceId })
@@ -150,7 +151,8 @@ export async function issueDocument(invoiceId: string): Promise<Result> {
 }
 
 export async function cancelDocument(invoiceId: string, reason: string): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('documents')
+  if (!profile) return NO_FEATURE_ACCESS
   if (profile.role !== 'admin') {
     return { ok: false, error: 'Only an admin can cancel a document.' }
   }
@@ -173,7 +175,8 @@ export async function cancelDocument(invoiceId: string, reason: string): Promise
 
 /** Deletes a draft. An issued document can only be cancelled, never removed. */
 export async function deleteDraft(invoiceId: string): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('documents')
+  if (!profile) return NO_FEATURE_ACCESS
   if (profile.role !== 'admin') {
     return { ok: false, error: 'Only an admin can delete a draft.' }
   }
@@ -202,7 +205,7 @@ const quotationSchema = z.object({
  * accepting the quotation later carries them into the order.
  */
 export async function createQuotation(input: unknown): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
 
   const parsed = quotationSchema.safeParse(input)
   if (!parsed.success) {
@@ -259,7 +262,7 @@ const documentLineSchema = z.object({
  * cannot be edited even by a request that skips this code path entirely.
  */
 export async function saveDocumentLine(input: unknown): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
 
   const parsed = documentLineSchema.safeParse(input)
   if (!parsed.success) {
@@ -312,7 +315,7 @@ export async function saveDocumentLine(input: unknown): Promise<Result> {
 
 /** Removes a line from a draft and recalculates what is left. */
 export async function removeDocumentLine(lineId: string, invoiceId: string): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
 
   const { error } = await supabase.from('invoice_lines').delete().eq('id', lineId)
@@ -339,7 +342,7 @@ export async function acceptQuotation(
   quotationId: string,
   technicalSpecification: string
 ): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
 
   const spec = technicalSpecification.trim()
   if (spec.length < 3) {

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { FeatureKey } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, isActivePath } from './nav-items'
 
@@ -9,10 +10,19 @@ import { NAV_ITEMS, isActivePath } from './nav-items'
  * Mobile tab bar. Five destinations only — more than that and the touch
  * targets drop below 44px on a 375px screen. Everything else lives behind
  * the "More" sheet in the header menu.
+ *
+ * A restricted role can leave fewer than five; the grid follows the count so
+ * the bar stays evenly divided either way.
  */
-export function BottomNav() {
+export function BottomNav({ visibleFeatures }: { visibleFeatures: FeatureKey[] }) {
   const pathname = usePathname()
-  const items = NAV_ITEMS.filter((item) => item.primary)
+  const items = NAV_ITEMS.filter(
+    (item) => item.primary && item.feature && visibleFeatures.includes(item.feature)
+  )
+
+  // `repeat(0, …)` is not a valid grid template, and an empty bar is only a
+  // strip of chrome taking up the bottom of the screen.
+  if (items.length === 0) return null
 
   return (
     <nav

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import {
   meetingActionSchema,
@@ -37,7 +37,8 @@ const toList = (v: string | undefined) =>
 /* ---------------------------------------------------------------- QA ---- */
 
 export async function saveQaCheck(input: unknown): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('orders')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = qaCheckSchema.safeParse(input)
   if (!parsed.success) {
@@ -95,7 +96,8 @@ export async function saveQaCheck(input: unknown): Promise<Result> {
  * Videos are stored as links, which keeps the free storage tier viable.
  */
 export async function addQaMedia(input: unknown, orderId: string): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('orders')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = qaMediaSchema.safeParse(input)
   if (!parsed.success) {
@@ -120,7 +122,7 @@ export async function addQaMedia(input: unknown, orderId: string): Promise<Resul
 }
 
 export async function removeQaMedia(mediaId: string, orderId: string): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
   const { error } = await supabase.from('qa_media').delete().eq('id', mediaId)
   if (error) return { ok: false, error: 'Could not remove that.' }
@@ -131,7 +133,8 @@ export async function removeQaMedia(mediaId: string, orderId: string): Promise<R
 /* ------------------------------------------------------ Qualification ---- */
 
 export async function saveQualification(input: unknown): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('orders')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = qualificationSchema.safeParse(input)
   if (!parsed.success) {
@@ -178,7 +181,7 @@ export async function setRequiresQualification(
   orderId: string,
   required: boolean
 ): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
   const { error } = await supabase
     .from('orders')
@@ -192,7 +195,8 @@ export async function setRequiresQualification(
 /* ----------------------------------------------------------- Meetings ---- */
 
 export async function saveMeeting(input: unknown): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('meetings')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = meetingSchema.safeParse(input)
   if (!parsed.success) {
@@ -244,7 +248,7 @@ export async function saveMeeting(input: unknown): Promise<Result> {
  * — the two cannot drift apart, and closing the action closes the follow-up.
  */
 export async function saveMeetingAction(input: unknown): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('meetings'))) return NO_FEATURE_ACCESS
 
   const parsed = meetingActionSchema.safeParse(input)
   if (!parsed.success) {
@@ -273,7 +277,7 @@ export async function saveMeetingAction(input: unknown): Promise<Result> {
 }
 
 export async function deleteMeetingAction(actionId: string, meetingId: string): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('meetings'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
   const { error } = await supabase.from('meeting_actions').delete().eq('id', actionId)
   if (error) return { ok: false, error: 'Could not remove that action.' }

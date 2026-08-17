@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Info, Monitor, Smartphone, UserPlus } from 'lucide-react'
 import { CompanySettingsForm } from '@/components/settings/company-settings-form'
+import { RoleManager } from '@/components/settings/role-manager'
 import { UserTable } from '@/components/settings/user-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notFound } from 'next/navigation'
@@ -47,6 +48,21 @@ export default async function SettingsPage() {
     .order('is_active', { ascending: false })
     .order('full_name')
 
+  const { data: roles } = await supabase
+    .from('roles')
+    .select('*')
+    .order('is_system', { ascending: false })
+    .order('name')
+
+  const { data: roleFeatures } = await supabase.from('role_features').select('*')
+
+  // Counted here rather than in the component so a delete can tell the admin
+  // how many people it is about to send back to the enum fallback.
+  const holders: Record<string, number> = {}
+  for (const user of users ?? []) {
+    if (user.role_id) holders[user.role_id] = (holders[user.role_id] ?? 0) + 1
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div>
@@ -71,7 +87,9 @@ export default async function SettingsPage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {users && users.length > 0 && <UserTable users={users} currentUserId={profile.id} />}
+          {users && users.length > 0 && (
+            <UserTable users={users} currentUserId={profile.id} roles={roles ?? []} />
+          )}
 
           <div className="rounded-md border border-dashed p-4">
             <p className="flex items-center gap-2 text-sm font-medium">
@@ -103,6 +121,19 @@ export default async function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Roles are an admin capability, not a settings-manager one: the RLS
+          policies on `roles` and `role_features` require is_admin(), so a
+          settings manager who is not an admin would get a form that fails at
+          the database. */}
+      {profile.role === 'admin' && (
+        <RoleManager
+          roles={roles ?? []}
+          features={roleFeatures ?? []}
+          ownRoleId={profile.role_id}
+          holders={holders}
+        />
+      )}
 
       <Card>
         <CardHeader>

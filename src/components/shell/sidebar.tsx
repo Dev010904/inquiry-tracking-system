@@ -3,12 +3,21 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { FeatureKey } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, isActivePath } from './nav-items'
 
-export function Sidebar({ canManageSettings }: { canManageSettings: boolean }) {
+export function Sidebar({
+  canManageSettings,
+  visibleFeatures,
+}: {
+  canManageSettings: boolean
+  visibleFeatures: FeatureKey[]
+}) {
   const pathname = usePathname()
-  const items = NAV_ITEMS.filter((item) => !item.settingsManagerOnly || canManageSettings)
+  const items = NAV_ITEMS.filter((item) =>
+    item.feature ? visibleFeatures.includes(item.feature) : !item.settingsManagerOnly || canManageSettings
+  )
 
   return (
     <aside data-app-shell className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">

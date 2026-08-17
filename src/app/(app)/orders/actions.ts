@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { orderDetailsSchema, orderItemSchema, paymentSchema } from '@/lib/schemas/order'
 
@@ -28,7 +28,8 @@ function flatten(error: z.ZodError): Record<string, string> {
  * cannot drift from the ledger even if a payment is later edited or removed.
  */
 export async function addPayment(input: unknown): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('orders')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = paymentSchema.safeParse(input)
   if (!parsed.success) {
@@ -74,7 +75,8 @@ export async function addPayment(input: unknown): Promise<Result> {
  * rather than about enforcement.
  */
 export async function removePayment(paymentId: string, orderId: string): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('orders')
+  if (!profile) return NO_FEATURE_ACCESS
 
   if (profile.role !== 'admin') {
     return { ok: false, error: 'Only an admin can remove a payment.' }
@@ -116,7 +118,7 @@ const specSchema = z.object({
  * time the trigger fired.
  */
 export async function updateOrderSpec(input: unknown): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
 
   const parsed = specSchema.safeParse(input)
   if (!parsed.success) {
@@ -141,7 +143,7 @@ export async function updateOrderSpec(input: unknown): Promise<Result> {
 
 /** Delivery date, PO number, status and notes. Never money. */
 export async function updateOrderDetails(input: unknown): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
 
   const parsed = orderDetailsSchema.safeParse(input)
   if (!parsed.success) {
@@ -193,7 +195,8 @@ function zeroRateErrorOr(error: { message?: string }, fallback: string): Result 
  * follows the lines automatically and cannot be made to disagree with them.
  */
 export async function saveOrderItem(input: unknown): Promise<Result> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('orders')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = orderItemSchema.safeParse(input)
   if (!parsed.success) {
@@ -257,7 +260,7 @@ export async function saveOrderItem(input: unknown): Promise<Result> {
  * activity feed can still explain why the value dropped.
  */
 export async function removeOrderItem(itemId: string, orderId: string): Promise<Result> {
-  await requireProfile()
+  if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
 
   const { error } = await supabase

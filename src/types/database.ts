@@ -38,6 +38,30 @@ export type ProfileRow = Timestamps & {
   role: UserRole
   is_active: boolean
   can_manage_settings: boolean
+  /**
+   * Optional custom role. NULL means fall back to `role` above.
+   *
+   * This governs feature visibility only. The admin capability that RLS
+   * depends on is still `role`; the two must not be merged.
+   */
+  role_id: string | null
+}
+
+export type RoleRow = Timestamps & {
+  id: string
+  name: string
+  description: string | null
+  /** Seeded roles. Cannot be renamed or deleted — enforced by trigger. */
+  is_system: boolean
+  created_by: string | null
+}
+
+export type RoleFeatureRow = {
+  role_id: string
+  /** One of `FEATURE_KEYS`. Never 'settings' — the database refuses it. */
+  feature_key: string
+  can_view: boolean
+  can_edit: boolean
 }
 
 export type CompanyRow = Timestamps & {
@@ -487,6 +511,8 @@ export type Database = {
   public: {
     Tables: {
       profiles: { Row: ProfileRow; Insert: InsertOf<ProfileRow> & { id: string }; Update: InsertOf<ProfileRow>; Relationships: [] }
+      roles: { Row: RoleRow; Insert: InsertOf<RoleRow> & { name: string }; Update: InsertOf<RoleRow>; Relationships: [] }
+      role_features: { Row: RoleFeatureRow; Insert: RoleFeatureRow; Update: Partial<RoleFeatureRow>; Relationships: [] }
       companies: { Row: CompanyRow; Insert: InsertOf<CompanyRow> & { name: string }; Update: InsertOf<CompanyRow>; Relationships: [] }
       contacts: { Row: ContactRow; Insert: InsertOf<ContactRow> & { company_id: string; name: string }; Update: InsertOf<ContactRow>; Relationships: [] }
       inquiries: { Row: InquiryRow; Insert: InsertOf<InquiryRow> & { company_id: string }; Update: InsertOf<InquiryRow>; Relationships: [] }

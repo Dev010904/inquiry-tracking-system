@@ -182,6 +182,38 @@ export const USER_ROLE = { admin: 'Admin', staff: 'Staff' } as const
 export type UserRole = keyof typeof USER_ROLE
 
 /**
+ * Every part of the app a custom role can be granted or denied. The single
+ * source of truth: `nav-items.ts` builds the menu from this list, and the
+ * permission editor in Settings iterates it, so a feature cannot be added
+ * without appearing in both.
+ *
+ * The order is the order they appear in the sidebar and in the editor.
+ *
+ * `settings` is deliberately NOT here and must never be added. Settings is
+ * governed solely by `profiles.can_manage_settings`; if it were grantable,
+ * an admin could invent a role that hands themselves Settings and the Phase 3
+ * restriction would be gone. The database refuses it too — see the
+ * `role_features_key_grantable` constraint.
+ *
+ * These keys are stored in `role_features.feature_key`. Renaming one is a
+ * migration, not an edit.
+ */
+export const FEATURE_KEYS = [
+  'dashboard',
+  'inquiries',
+  'orders',
+  'rnd',
+  'ip',
+  'documents',
+  'meetings',
+  'companies',
+  'activity',
+  'reports',
+] as const
+
+export type FeatureKey = (typeof FEATURE_KEYS)[number]
+
+/**
  * Lead times for the dashboard alarm panel, in days.
  * IP renewals are irreversible if missed, so they surface far earlier.
  */

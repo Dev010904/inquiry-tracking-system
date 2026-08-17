@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { ipAssetSchema, ipEventSchema } from '@/lib/schemas/ip'
 
@@ -33,7 +33,8 @@ function splitInventors(value: string | undefined): string[] {
 }
 
 export async function createIpAsset(input: unknown): Promise<IpResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('ip')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = ipAssetSchema.safeParse(input)
   if (!parsed.success) {
@@ -78,7 +79,7 @@ export async function createIpAsset(input: unknown): Promise<IpResult> {
 }
 
 export async function updateIpAsset(id: string, input: unknown): Promise<IpResult> {
-  await requireProfile()
+  if (!(await editorOrNull('ip'))) return NO_FEATURE_ACCESS
 
   if (!z.string().uuid().safeParse(id).success) {
     return { ok: false, error: 'Unrecognised asset.' }
@@ -130,7 +131,8 @@ export async function updateIpAsset(id: string, input: unknown): Promise<IpResul
  * 90, 30 and 7 days out.
  */
 export async function addIpEvent(input: unknown): Promise<IpSimpleResult> {
-  const profile = await requireProfile()
+  const profile = await editorOrNull('ip')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = ipEventSchema.safeParse(input)
   if (!parsed.success) {

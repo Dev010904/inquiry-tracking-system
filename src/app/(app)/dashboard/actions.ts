@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { addDays } from 'date-fns'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { requireProfile } from '@/lib/auth'
+import { NO_FEATURE_ACCESS, editorOfAny } from '@/lib/permissions'
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -17,7 +17,9 @@ const snoozeSchema = z.union([z.literal(1), z.literal(3), z.literal(7)])
  * runs as the signed-in user.
  */
 export async function markFollowupDone(followupId: string, outcome?: string): Promise<ActionResult> {
-  await requireProfile()
+  // A follow-up belongs to an inquiry, but it is also the user's own work
+  // on the dashboard. Either right is enough to tick one off.
+  if (!(await editorOfAny(['inquiries', 'dashboard']))) return NO_FEATURE_ACCESS
 
   const parsed = idSchema.safeParse(followupId)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
@@ -41,7 +43,9 @@ export async function markFollowupDone(followupId: string, outcome?: string): Pr
  * day reappears tomorrow rather than staying overdue.
  */
 export async function snoozeFollowup(followupId: string, days: number): Promise<ActionResult> {
-  await requireProfile()
+  // A follow-up belongs to an inquiry, but it is also the user's own work
+  // on the dashboard. Either right is enough to tick one off.
+  if (!(await editorOfAny(['inquiries', 'dashboard']))) return NO_FEATURE_ACCESS
 
   const id = idSchema.safeParse(followupId)
   if (!id.success) return { ok: false, error: id.error.issues[0]!.message }

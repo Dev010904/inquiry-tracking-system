@@ -9,15 +9,17 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { setUserActive, setUserRole } from '@/app/(app)/settings/actions'
-import type { ProfileRow } from '@/types/database'
+import { setUserActive, setUserRole, setUserRoleId } from '@/app/(app)/settings/actions'
+import type { ProfileRow, RoleRow } from '@/types/database'
 
 export function UserTable({
   users,
   currentUserId,
+  roles,
 }: {
   users: ProfileRow[]
   currentUserId: string
+  roles: RoleRow[]
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -59,21 +61,42 @@ export function UserTable({
               </p>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {/* Two separate things, deliberately. The Admin/Staff setting is
+                  the capability the database enforces — who may delete, who
+                  may reassign work. The role beside it decides only which
+                  screens the person sees. */}
               <Select
-                aria-label={`Role for ${user.full_name}`}
+                aria-label={`Account type for ${user.full_name}`}
                 className="h-9 w-28"
                 value={user.role}
                 disabled={pending || isSelf}
                 onChange={(e) =>
                   run(
                     () => setUserRole(user.id, e.target.value as 'admin' | 'staff'),
-                    'Role updated'
+                    'Account type updated'
                   )
                 }
               >
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
+              </Select>
+
+              <Select
+                aria-label={`Role for ${user.full_name}`}
+                className="h-9 w-40"
+                value={user.role_id ?? ''}
+                disabled={pending || isSelf}
+                onChange={(e) =>
+                  run(() => setUserRoleId(user.id, e.target.value || null), 'Role updated')
+                }
+              >
+                <option value="">No role — sees everything</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
               </Select>
 
               <Button
