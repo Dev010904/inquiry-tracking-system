@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   COMPANY_TYPE,
+  CURRENCY,
   FOLLOWUP_CHANNEL,
   INQUIRY_STATUS,
   PRIORITY,
@@ -84,6 +85,11 @@ export const inquirySchema = z
           .max(999_999_999_99, 'That value looks wrong')
           .optional()
       ),
+    /**
+     * Picked here and inherited by the order and everything downstream. Tax
+     * documents still compute in INR whatever this says.
+     */
+    currency: z.enum(enumKeys(CURRENCY)).default('INR'),
     status: z.enum(enumKeys(INQUIRY_STATUS)).default('new'),
     priority: z.enum(enumKeys(PRIORITY)).default('medium'),
     owner_id: z.string().uuid().optional(),

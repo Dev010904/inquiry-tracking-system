@@ -40,6 +40,7 @@ export async function createRndProject(input: unknown): Promise<RndResult> {
       project_name: values.project_name,
       description: values.description ?? null,
       approx_budget: values.approx_budget ?? null,
+      currency: values.currency,
       start_date: values.start_date || null,
       target_date: values.target_date || null,
       actual_end_date: values.actual_end_date || null,
@@ -84,6 +85,7 @@ export async function updateRndProject(id: string, input: unknown): Promise<RndR
       project_name: values.project_name,
       description: values.description ?? null,
       approx_budget: values.approx_budget ?? null,
+      currency: values.currency,
       start_date: values.start_date || null,
       target_date: values.target_date || null,
       actual_end_date: values.actual_end_date || null,
@@ -121,9 +123,21 @@ export async function addRndExpense(input: unknown): Promise<SimpleResult> {
   const values = parsed.data
   const supabase = await createClient()
 
+  // Inherited from the project rather than asked for again — an expense in a
+  // different currency from the budget it draws down would make the
+  // budget-vs-spent bar meaningless.
+  const { data: project } = await supabase
+    .from('rnd_projects')
+    .select('currency')
+    .eq('id', values.project_id)
+    .maybeSingle()
+
+  if (!project) return { ok: false, error: 'That project no longer exists.' }
+
   const { error } = await supabase.from('rnd_expenses').insert({
     project_id: values.project_id,
     amount: values.amount,
+    currency: project.currency,
     spent_on: values.spent_on,
     kind: values.kind,
     description: values.description,

@@ -4,7 +4,7 @@ import { RaiseDocument } from '@/components/documents/raise-document'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DOCUMENT_STATUS, DOCUMENT_TYPE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import type { DocumentStatus, InvoiceRow } from '@/types/database'
 
 type Props = {
@@ -75,7 +75,7 @@ export function DocumentsPanel({
                     </p>
                   </div>
                   <span className="tnum text-sm font-medium">
-                    {formatINR(doc.grand_total, true)}
+                    {formatMoney(doc.grand_total, 'INR', true)}
                   </span>
                 </Link>
               </li>

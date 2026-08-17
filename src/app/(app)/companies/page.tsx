@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { COMPANY_TYPE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { listCompanies } from '@/lib/queries/companies'
 
@@ -44,7 +44,7 @@ export default async function CompaniesPage({
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground">Total business</p>
-          <p className="tnum mt-1 text-xl font-semibold">{formatINR(totalBusiness)}</p>
+          <p className="tnum mt-1 text-xl font-semibold">{formatMoney(totalBusiness, 'INR')}</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">Incl. GST, all orders</p>
         </Card>
         <Card className={cn('p-4', totalOutstanding > 0 && 'border-overdue/40 bg-overdue/5')}>
@@ -55,7 +55,7 @@ export default async function CompaniesPage({
               totalOutstanding > 0 && 'text-overdue'
             )}
           >
-            {formatINR(totalOutstanding)}
+            {formatMoney(totalOutstanding, 'INR')}
           </p>
         </Card>
       </div>
@@ -141,13 +141,13 @@ export default async function CompaniesPage({
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Business</dt>
-                    <dd className="tnum font-medium">{formatINR(company.totalBusiness)}</dd>
+                    <dd className="tnum font-medium">{formatMoney(company.totalBusiness, 'INR')}</dd>
                   </div>
                 </dl>
 
                 {company.balancePending > 0 && (
                   <p className="text-xs font-medium text-overdue">
-                    {formatINR(company.balancePending)} outstanding
+                    {formatMoney(company.balancePending, 'INR')} outstanding
                   </p>
                 )}
                 {company.lastInquiryDate && (

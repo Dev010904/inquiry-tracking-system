@@ -3,6 +3,7 @@ import 'server-only'
 import { differenceInCalendarDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 import type {
+  CurrencyCode,
   IpAssetRow,
   RndExpenseRow,
   RndProjectRow,
@@ -20,6 +21,7 @@ export type RndProjectCard = {
   description: string | null
   approxBudget: number | null
   spentToDate: number
+  currency: CurrencyCode
   /** Percentage of budget consumed; null when no budget is set. */
   budgetPct: number | null
   overBudget: boolean
@@ -54,6 +56,7 @@ function toCard(
     description: project.description,
     approxBudget: budget,
     spentToDate: spent,
+    currency: project.currency,
     budgetPct: budget && budget > 0 ? Math.round((spent / budget) * 100) : null,
     overBudget: Boolean(budget && budget > 0 && spent > budget),
     startDate: project.start_date,

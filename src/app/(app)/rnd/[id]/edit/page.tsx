@@ -47,6 +47,7 @@ export default async function EditRndProjectPage({
             project_name: project.project_name,
             description: project.description ?? '',
             approx_budget: project.approx_budget != null ? String(project.approx_budget) : '',
+            currency: project.currency,
             start_date: project.start_date ?? '',
             target_date: project.target_date ?? '',
             actual_end_date: project.actual_end_date ?? '',

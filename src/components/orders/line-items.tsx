@@ -12,13 +12,15 @@ import { Modal } from '@/components/ui/modal'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { ITEM_UNIT } from '@/lib/constants'
-import { formatINR } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import { removeOrderItem, saveOrderItem } from '@/app/(app)/orders/actions'
-import type { OrderItemRow } from '@/types/database'
+import type { CurrencyCode, OrderItemRow } from '@/types/database'
 
 type Props = {
   orderId: string
   items: OrderItemRow[]
+  /** The order's currency. Lines are priced in it; they never carry their own. */
+  currency: CurrencyCode
 }
 
 type Draft = {
@@ -64,7 +66,7 @@ function toDraft(item: OrderItemRow): Draft {
  * It is optional here so a line can be added before the code is looked up,
  * but invoicing will refuse to issue until every line has one.
  */
-export function LineItems({ orderId, items }: Props) {
+export function LineItems({ orderId, items, currency }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -176,9 +178,9 @@ export function LineItems({ orderId, items }: Props) {
                       <td className="py-2 text-right tnum">
                         {item.quantity} {ITEM_UNIT[item.unit]}
                       </td>
-                      <td className="py-2 text-right tnum">{formatINR(item.rate, true)}</td>
+                      <td className="py-2 text-right tnum">{formatMoney(item.rate, currency, true)}</td>
                       <td className="py-2 text-right tnum font-medium">
-                        {formatINR(item.amount, true)}
+                        {formatMoney(item.amount, currency, true)}
                       </td>
                       <td className="py-2">
                         <div className="flex justify-end gap-1">
@@ -219,10 +221,10 @@ export function LineItems({ orderId, items }: Props) {
                       <p className="text-xs text-muted-foreground">Line {item.line_no}</p>
                       <p className="font-medium">{item.description}</p>
                     </div>
-                    <p className="tnum font-semibold">{formatINR(item.amount, true)}</p>
+                    <p className="tnum font-semibold">{formatMoney(item.amount, currency, true)}</p>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground tnum">
-                    {item.quantity} {ITEM_UNIT[item.unit]} × {formatINR(item.rate, true)}
+                    {item.quantity} {ITEM_UNIT[item.unit]} × {formatMoney(item.rate, currency, true)}
                     {item.hsn_sac ? ` · HSN ${item.hsn_sac}` : ''}
                   </p>
                   <div className="mt-2 flex gap-2">
@@ -241,7 +243,7 @@ export function LineItems({ orderId, items }: Props) {
 
             <div className="flex items-baseline justify-between border-t pt-3 text-sm font-semibold">
               <span>Order value (excl. GST)</span>
-              <span className="tnum">{formatINR(subtotal, true)}</span>
+              <span className="tnum">{formatMoney(subtotal, currency, true)}</span>
             </div>
           </>
         )}
@@ -343,7 +345,7 @@ export function LineItems({ orderId, items }: Props) {
 
           {preview !== null && (
             <p className="rounded-md bg-muted px-3 py-2 text-sm">
-              Amount: <span className="tnum font-semibold">{formatINR(preview, true)}</span>
+              Amount: <span className="tnum font-semibold">{formatMoney(preview, currency, true)}</span>
             </p>
           )}
 

@@ -13,14 +13,16 @@ import { Modal } from '@/components/ui/modal'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { PAYMENT_MODE, type PaymentMode } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { addPayment, removePayment } from '@/app/(app)/orders/actions'
-import type { PaymentRow } from '@/types/database'
+import type { CurrencyCode, PaymentRow } from '@/types/database'
 
 type Props = {
   orderId: string
   payments: PaymentRow[]
   balancePending: number
+  /** The order's currency. Payments are recorded in it, not per payment. */
+  currency: CurrencyCode
   isAdmin: boolean
 }
 
@@ -28,7 +30,7 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function PaymentsLedger({ orderId, payments, balancePending, isAdmin }: Props) {
+export function PaymentsLedger({ orderId, payments, balancePending, currency, isAdmin }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -101,7 +103,7 @@ export function PaymentsLedger({ orderId, payments, balancePending, isAdmin }: P
         <div>
           <CardTitle className="text-base">Payments</CardTitle>
           <p className="text-sm text-muted-foreground">
-            {payments.length} recorded · {formatINR(total)}
+            {payments.length} recorded · {formatMoney(total, currency)}
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}>
@@ -124,7 +126,7 @@ export function PaymentsLedger({ orderId, payments, balancePending, isAdmin }: P
             {payments.map((payment) => (
               <li key={payment.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <p className="tnum font-medium">{formatINR(payment.amount, true)}</p>
+                  <p className="tnum font-medium">{formatMoney(payment.amount, currency, true)}</p>
                   <p className="text-sm text-muted-foreground">
                     {formatDate(payment.paid_on)} · <Badge variant="muted">{PAYMENT_MODE[payment.mode]}</Badge>
                   </p>
@@ -174,7 +176,7 @@ export function PaymentsLedger({ orderId, payments, balancePending, isAdmin }: P
             htmlFor="amount"
             required
             error={errors.amount}
-            hint={balancePending > 0 ? `Balance pending: ${formatINR(balancePending, true)}` : undefined}
+            hint={balancePending > 0 ? `Balance pending: ${formatMoney(balancePending, currency, true)}` : undefined}
           >
             <Input
               id="amount"

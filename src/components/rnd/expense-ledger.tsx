@@ -13,15 +13,17 @@ import { Modal } from '@/components/ui/modal'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { RND_EXPENSE_KIND, type RndExpenseKind } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { addRndExpense, removeRndExpense } from '@/app/(app)/rnd/actions'
-import type { RndExpenseRow } from '@/types/database'
+import type { CurrencyCode, RndExpenseRow } from '@/types/database'
 
 type Props = {
   projectId: string
   expenses: RndExpenseRow[]
   budget: number | null
   spent: number
+  /** The project's currency. The ledger is denominated in it throughout. */
+  currency: CurrencyCode
   isAdmin: boolean
 }
 
@@ -34,7 +36,7 @@ function today(): string {
  * sum of these rows, so this ledger is the single source of truth for the
  * budget bar — there is no separate figure to keep in step.
  */
-export function ExpenseLedger({ projectId, expenses, budget, spent, isAdmin }: Props) {
+export function ExpenseLedger({ projectId, expenses, budget, spent, currency, isAdmin }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -103,7 +105,7 @@ export function ExpenseLedger({ projectId, expenses, budget, spent, isAdmin }: P
         <div>
           <CardTitle className="text-base">Spend ledger</CardTitle>
           <p className="text-sm text-muted-foreground">
-            {expenses.length} {expenses.length === 1 ? 'entry' : 'entries'} · {formatINR(spent)}
+            {expenses.length} {expenses.length === 1 ? 'entry' : 'entries'} · {formatMoney(spent, currency)}
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}>
@@ -127,7 +129,7 @@ export function ExpenseLedger({ projectId, expenses, budget, spent, isAdmin }: P
               <li key={expense.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="tnum font-medium">{formatINR(expense.amount, true)}</span>
+                    <span className="tnum font-medium">{formatMoney(expense.amount, currency, true)}</span>
                     <Badge variant="muted">{RND_EXPENSE_KIND[expense.kind]}</Badge>
                     <span className="text-xs text-muted-foreground">
                       {formatDate(expense.spent_on)}
@@ -184,7 +186,9 @@ export function ExpenseLedger({ projectId, expenses, budget, spent, isAdmin }: P
               htmlFor="expense_amount"
               required
               error={errors.amount}
-              hint={remaining != null ? `${formatINR(remaining)} left in budget` : undefined}
+              hint={
+                remaining != null ? `${formatMoney(remaining, currency)} left in budget` : undefined
+              }
             >
               <Input
                 id="expense_amount"

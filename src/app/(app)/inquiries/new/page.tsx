@@ -4,12 +4,17 @@ import { ArrowLeft } from 'lucide-react'
 import { InquiryForm } from '@/components/inquiries/inquiry-form'
 import { requireProfile } from '@/lib/auth'
 import { getFormOptions } from '@/lib/queries/inquiries'
+import { getCompanySettings } from '@/lib/queries/documents'
 
 export const metadata: Metadata = { title: 'New inquiry · Inquiry Tracking System' }
 export const dynamic = 'force-dynamic'
 
 export default async function NewInquiryPage() {
-  const [profile, { companies, staff }] = await Promise.all([requireProfile(), getFormOptions()])
+  const [profile, { companies, staff }, settings] = await Promise.all([
+    requireProfile(),
+    getFormOptions(),
+    getCompanySettings(),
+  ])
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -33,6 +38,7 @@ export default async function NewInquiryPage() {
         companies={companies}
         staff={staff}
         currentUserId={profile.id}
+        defaultCurrency={settings?.default_currency ?? 'INR'}
       />
     </div>
   )

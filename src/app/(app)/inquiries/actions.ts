@@ -92,6 +92,7 @@ export async function createInquiry(input: InquiryInput): Promise<SaveResult> {
       source: values.source ?? null,
       requirement_summary: values.requirement_summary,
       estimated_value: values.estimated_value ?? null,
+      currency: values.currency,
       status: values.status,
       priority: values.priority,
       owner_id: values.owner_id ?? profile.id,
@@ -164,6 +165,7 @@ export async function updateInquiry(id: string, input: InquiryInput): Promise<Sa
       source: values.source ?? null,
       requirement_summary: values.requirement_summary,
       estimated_value: values.estimated_value ?? null,
+      currency: values.currency,
       status: values.status,
       priority: values.priority,
       owner_id: values.owner_id ?? null,
@@ -236,7 +238,7 @@ export async function convertToOrder(
 
   const { data: inquiry } = await supabase
     .from('inquiries')
-    .select('id, status')
+    .select('id, status, currency')
     .eq('id', values.inquiry_id)
     .is('deleted_at', null)
     .maybeSingle()
@@ -258,6 +260,9 @@ export async function convertToOrder(
       inquiry_id: values.inquiry_id,
       order_date: values.order_date,
       order_value: values.order_value,
+      // Inherited, never re-chosen. An order in a different currency from the
+      // inquiry it came off would be a data-entry slip, not a business case.
+      currency: inquiry.currency,
       delivery_date: values.delivery_date || null,
       po_number: values.po_number ?? null,
       technical_specification: values.technical_specification,

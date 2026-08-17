@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { OrderStatusBadge } from '@/components/orders/order-status-badge'
 import { COMPANY_TYPE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { getCompanyDetail } from '@/lib/queries/companies'
 
@@ -67,7 +67,7 @@ export default async function CompanyDetailPage({
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground">Total business</p>
-          <p className="tnum mt-1 text-xl font-semibold">{formatINR(card.totalBusiness)}</p>
+          <p className="tnum mt-1 text-xl font-semibold">{formatMoney(card.totalBusiness, 'INR')}</p>
         </Card>
         <Card className={cn('p-4', card.balancePending > 0 && 'border-overdue/40 bg-overdue/5')}>
           <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
@@ -77,7 +77,7 @@ export default async function CompanyDetailPage({
               card.balancePending > 0 && 'text-overdue'
             )}
           >
-            {formatINR(card.balancePending)}
+            {formatMoney(card.balancePending, 'INR')}
           </p>
         </Card>
       </div>
@@ -162,7 +162,7 @@ export default async function CompanyDetailPage({
                         <div className="flex shrink-0 flex-col items-end gap-1">
                           <StatusBadge status={inquiry.status} />
                           <span className="tnum text-xs">
-                            {formatINR(inquiry.estimated_value)}
+                            {formatMoney(inquiry.estimated_value, inquiry.currency)}
                           </span>
                         </div>
                       </Link>
@@ -195,11 +195,11 @@ export default async function CompanyDetailPage({
                         <div className="flex shrink-0 flex-col items-end gap-1">
                           <OrderStatusBadge status={order.order_status} />
                           <span className="tnum text-xs">
-                            {formatINR(order.total_with_gst)}
+                            {formatMoney(order.total_with_gst, order.currency)}
                           </span>
                           {Number(order.balance_pending ?? 0) > 0 && (
                             <span className="tnum text-xs font-medium text-overdue">
-                              {formatINR(order.balance_pending)} due
+                              {formatMoney(order.balance_pending, order.currency)} due
                             </span>
                           )}
                         </div>

@@ -6,6 +6,7 @@ import type {
   CompanyRow,
   CompanyType,
   ContactRow,
+  CurrencyCode,
   FollowupRow,
   InquiryRow,
   InquiryStatus,
@@ -35,6 +36,7 @@ export type InquiryListRow = {
   status: InquiryStatus
   priority: PriorityLevel
   estimatedValue: number | null
+  currency: CurrencyCode
   requirementSummary: string
   companyId: string
   companyName: string
@@ -203,6 +205,7 @@ async function decorate(inquiries: InquiryRow[]): Promise<InquiryListRow[]> {
       status: inquiry.status,
       priority: inquiry.priority,
       estimatedValue: inquiry.estimated_value,
+      currency: inquiry.currency,
       requirementSummary: inquiry.requirement_summary,
       companyId: inquiry.company_id,
       companyName: company?.name ?? 'Unknown company',

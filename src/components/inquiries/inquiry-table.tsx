@@ -3,7 +3,7 @@ import { ClipboardList, Package } from 'lucide-react'
 import { Badge, StatusBadge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { COMPANY_TYPE, PRIORITY } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { InquiryListRow } from '@/lib/queries/inquiries'
 import type { PriorityLevel } from '@/types/database'
@@ -117,7 +117,7 @@ export function InquiryTable({
                   </div>
                 </td>
                 <td className="tnum px-3 py-3 text-right whitespace-nowrap">
-                  {formatINR(row.estimatedValue)}
+                  {formatMoney(row.estimatedValue, row.currency)}
                 </td>
                 <td className="px-3 py-3">
                   <FollowupCell at={row.nextFollowupAt} />
@@ -160,7 +160,7 @@ export function InquiryTable({
               )}
 
               <div className="flex items-center justify-between gap-2 pt-1">
-                <span className="tnum text-sm font-medium">{formatINR(row.estimatedValue)}</span>
+                <span className="tnum text-sm font-medium">{formatMoney(row.estimatedValue, row.currency)}</span>
                 <span className="text-xs">
                   <FollowupCell at={row.nextFollowupAt} />
                 </span>

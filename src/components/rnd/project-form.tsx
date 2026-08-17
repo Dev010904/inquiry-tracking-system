@@ -11,7 +11,7 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { RND_STAGE } from '@/lib/constants'
+import { CURRENCY, RND_STAGE } from '@/lib/constants'
 import { rndProjectSchema } from '@/lib/schemas/rnd'
 import { createRndProject, updateRndProject } from '@/app/(app)/rnd/actions'
 
@@ -20,6 +20,7 @@ type Fields = {
   project_name: string
   description: string
   approx_budget: string
+  currency: keyof typeof CURRENCY
   start_date: string
   target_date: string
   actual_end_date: string
@@ -50,6 +51,7 @@ export function ProjectForm({ mode, staff, currentUserId, initial }: Props) {
       project_name: '',
       description: '',
       approx_budget: '',
+      currency: 'INR',
       start_date: new Date().toISOString().slice(0, 10),
       target_date: '',
       actual_end_date: '',
@@ -66,6 +68,7 @@ export function ProjectForm({ mode, staff, currentUserId, initial }: Props) {
       project_name: fields.project_name,
       description: fields.description || undefined,
       approx_budget: fields.approx_budget,
+      currency: fields.currency,
       start_date: fields.start_date,
       target_date: fields.target_date,
       actual_end_date: fields.actual_end_date,
@@ -139,7 +142,7 @@ export function ProjectForm({ mode, staff, currentUserId, initial }: Props) {
             />
           </Field>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Field
               label="Approx. budget"
               htmlFor="approx_budget"
@@ -154,6 +157,11 @@ export function ProjectForm({ mode, staff, currentUserId, initial }: Props) {
                 step="0.01"
                 {...register('approx_budget')}
               />
+            </Field>
+            <Field label="Currency" htmlFor="currency" hint="Budget and every expense line">
+              <Select id="currency" {...register('currency')}>
+                {optionsFrom(CURRENCY)}
+              </Select>
             </Field>
             <Field label="Stage" htmlFor="stage">
               <Select id="stage" {...register('stage')}>

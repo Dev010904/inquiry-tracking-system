@@ -16,7 +16,7 @@ import {
   INQUIRY_STATUS,
   PRIORITY,
 } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { getInquiryDetail } from '@/lib/queries/inquiries'
 
 export const dynamic = 'force-dynamic'
@@ -94,6 +94,7 @@ export default async function InquiryDetailPage({
               enabled={convertible && !alreadyOrdered}
               disabledReason={disabledReason}
               estimatedValue={inquiry.estimated_value}
+              currency={inquiry.currency}
             />
           </div>
         </div>
@@ -105,8 +106,8 @@ export default async function InquiryDetailPage({
             <div>
               <p className="font-medium">Converted to {order.order_no ?? 'an order'}</p>
               <p className="text-sm text-muted-foreground">
-                {formatINR(order.total_with_gst)} incl. GST · balance{' '}
-                {formatINR(order.balance_pending)}
+                {formatMoney(order.total_with_gst, order.currency)} incl. GST · balance{' '}
+                {formatMoney(order.balance_pending, order.currency)}
               </p>
             </div>
             <Link href={`/orders/${order.id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -128,7 +129,7 @@ export default async function InquiryDetailPage({
               <dl className="grid grid-cols-2 gap-4 border-t pt-4 text-sm sm:grid-cols-3">
                 <div>
                   <dt className="text-xs text-muted-foreground">Estimated value</dt>
-                  <dd className="tnum font-medium">{formatINR(inquiry.estimated_value)}</dd>
+                  <dd className="tnum font-medium">{formatMoney(inquiry.estimated_value, inquiry.currency)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Source</dt>

@@ -12,7 +12,7 @@ import { IpEvents } from '@/components/ip/ip-events'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IP_ROUTE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { getIpAssetDetail } from '@/lib/queries/ip'
 
@@ -119,7 +119,7 @@ export default async function IpAssetPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="flex justify-between gap-3 border-t pt-2">
                   <dt className="text-muted-foreground">Cost to date</dt>
-                  <dd className="tnum font-medium">{formatINR(asset.cost_to_date)}</dd>
+                  <dd className="tnum font-medium">{formatMoney(asset.cost_to_date, 'INR')}</dd>
                 </div>
               </dl>
               <p className="mt-2 text-xs text-muted-foreground">

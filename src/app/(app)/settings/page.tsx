@@ -5,6 +5,7 @@ import { ProfileForm } from '@/components/settings/profile-form'
 import { UserTable } from '@/components/settings/user-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notFound } from 'next/navigation'
+import { CURRENCY } from '@/lib/constants'
 import { settingsManagerOrNull } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanySettings, missingSettings } from '@/lib/queries/documents'
@@ -142,11 +143,15 @@ export default async function SettingsPage() {
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">GST rate</dt>
-              <dd className="font-medium">18% — fixed, not configurable</dd>
+              <dd className="font-medium">
+                {settings?.default_gst_rate ?? 18}% default · per line above
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Currency</dt>
-              <dd className="font-medium">INR (₹)</dd>
+              <dd className="font-medium">
+                {CURRENCY[settings?.default_currency ?? 'INR']} default · tax documents in INR
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Your role</dt>

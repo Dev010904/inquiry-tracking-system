@@ -11,7 +11,7 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { FOLLOWUP_CHANNEL, INQUIRY_STATUS, PRIORITY } from '@/lib/constants'
+import { CURRENCY, FOLLOWUP_CHANNEL, INQUIRY_STATUS, PRIORITY } from '@/lib/constants'
 import { inquirySchema, type InquiryInput } from '@/lib/schemas/inquiry'
 import { CompanyPicker, type CompanyOption, type NewCompanyDraft } from './company-picker'
 import {
@@ -39,6 +39,7 @@ type ScalarFields = {
   source: string
   requirement_summary: string
   estimated_value: string
+  currency: keyof typeof CURRENCY
   status: keyof typeof INQUIRY_STATUS
   priority: keyof typeof PRIORITY
   owner_id: string
@@ -53,6 +54,8 @@ export type InquiryFormProps = {
   companies: CompanyOption[]
   staff: { id: string; full_name: string }[]
   currentUserId: string
+  /** From company settings, so a mostly-export shop can change it once. */
+  defaultCurrency: keyof typeof CURRENCY
   initial?: {
     id: string
     values: Partial<ScalarFields>
@@ -75,7 +78,14 @@ function defaultFollowupDue(): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-export function InquiryForm({ mode, companies, staff, currentUserId, initial }: InquiryFormProps) {
+export function InquiryForm({
+  mode,
+  companies,
+  staff,
+  currentUserId,
+  defaultCurrency,
+  initial,
+}: InquiryFormProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -91,6 +101,7 @@ export function InquiryForm({ mode, companies, staff, currentUserId, initial }: 
       source: '',
       requirement_summary: '',
       estimated_value: '',
+      currency: defaultCurrency,
       status: 'new',
       priority: 'medium',
       owner_id: currentUserId,
@@ -159,6 +170,7 @@ export function InquiryForm({ mode, companies, staff, currentUserId, initial }: 
       source: fields.source || undefined,
       requirement_summary: fields.requirement_summary,
       estimated_value: fields.estimated_value,
+      currency: fields.currency,
       status: fields.status,
       priority: fields.priority,
       owner_id: fields.owner_id || undefined,
@@ -372,7 +384,7 @@ export function InquiryForm({ mode, companies, staff, currentUserId, initial }: 
             />
           </Field>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field
               label="Estimated value"
               htmlFor="estimated_value"
@@ -389,6 +401,18 @@ export function InquiryForm({ mode, companies, staff, currentUserId, initial }: 
                 {...register('estimated_value')}
               />
             </Field>
+            <Field
+              label="Currency"
+              htmlFor="currency"
+              hint="Carried through to the order. Tax documents are always in INR."
+            >
+              <Select id="currency" {...register('currency')}>
+                {optionsFrom(CURRENCY)}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Priority" htmlFor="priority">
               <Select id="priority" {...register('priority')}>
                 {optionsFrom(PRIORITY)}

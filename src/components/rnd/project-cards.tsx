@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AlertTriangle, FlaskConical } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { BudgetBar, StageBadge } from './stage-badge'
 import { ProgressBar } from '@/components/orders/order-status-badge'
@@ -69,11 +69,11 @@ export function ProjectCards({
                     project.overBudget && 'text-overdue'
                   )}
                 >
-                  {formatINR(project.spentToDate)}
+                  {formatMoney(project.spentToDate, project.currency)}
                   {project.approxBudget != null && (
                     <span className="font-normal text-muted-foreground">
                       {' / '}
-                      {formatINR(project.approxBudget)}
+                      {formatMoney(project.approxBudget, project.currency)}
                     </span>
                   )}
                 </span>
@@ -83,7 +83,7 @@ export function ProjectCards({
                 <p className="flex items-center gap-1 text-xs font-medium text-overdue">
                   <AlertTriangle className="h-3 w-3" aria-hidden />
                   Over budget by{' '}
-                  {formatINR(project.spentToDate - (project.approxBudget ?? 0))}
+                  {formatMoney(project.spentToDate - (project.approxBudget ?? 0), project.currency)}
                 </p>
               )}
             </div>

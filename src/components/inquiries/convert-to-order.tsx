@@ -10,8 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Textarea } from '@/components/ui/textarea'
 import { GST_LABEL } from '@/lib/constants'
-import { formatINR, previewOrderTotals } from '@/lib/format'
+import { formatMoney, previewOrderTotals } from '@/lib/format'
 import { convertToOrder } from '@/app/(app)/inquiries/actions'
+import type { CurrencyCode } from '@/types/database'
 
 type Props = {
   inquiryId: string
@@ -19,13 +20,15 @@ type Props = {
   enabled: boolean
   disabledReason?: string
   estimatedValue: number | null
+  /** Inherited from the inquiry — the order is agreed in the same currency. */
+  currency: CurrencyCode
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedValue }: Props) {
+export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedValue, currency }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -127,15 +130,15 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
           <dl className="space-y-1.5 rounded-md border bg-muted/40 p-3 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Order value (excl. GST)</dt>
-              <dd className="tnum">{formatINR(totals.orderValue, true)}</dd>
+              <dd className="tnum">{formatMoney(totals.orderValue, currency, true)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">{GST_LABEL}</dt>
-              <dd className="tnum">{formatINR(totals.gstAmount, true)}</dd>
+              <dd className="tnum">{formatMoney(totals.gstAmount, currency, true)}</dd>
             </div>
             <div className="flex justify-between border-t pt-1.5 font-semibold">
               <dt>Total with GST</dt>
-              <dd className="tnum">{formatINR(totals.totalWithGst, true)}</dd>
+              <dd className="tnum">{formatMoney(totals.totalWithGst, currency, true)}</dd>
             </div>
           </dl>
 

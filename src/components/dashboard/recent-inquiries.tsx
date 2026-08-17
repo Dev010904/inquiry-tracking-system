@@ -3,7 +3,7 @@ import { Inbox } from 'lucide-react'
 import { Badge, StatusBadge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COMPANY_TYPE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import type { RecentInquiry } from '@/lib/queries/dashboard'
 
 function ContactLine({ inquiry }: { inquiry: RecentInquiry }) {
@@ -94,7 +94,7 @@ export function RecentInquiries({ inquiries }: { inquiries: RecentInquiry[] }) {
                         <StatusBadge status={inquiry.status} />
                       </td>
                       <td className="tnum py-3 pr-3 text-right whitespace-nowrap">
-                        {formatINR(inquiry.estimatedValue)}
+                        {formatMoney(inquiry.estimatedValue, inquiry.currency)}
                       </td>
                       <td className="py-3 pr-3 whitespace-nowrap">
                         {inquiry.nextFollowupAt ? (
@@ -126,7 +126,7 @@ export function RecentInquiries({ inquiries }: { inquiries: RecentInquiry[] }) {
                     </p>
                     <ContactLine inquiry={inquiry} />
                     <div className="flex items-center justify-between gap-2 pt-1 text-sm">
-                      <span className="tnum font-medium">{formatINR(inquiry.estimatedValue)}</span>
+                      <span className="tnum font-medium">{formatMoney(inquiry.estimatedValue, inquiry.currency)}</span>
                       <span className="text-xs text-muted-foreground">
                         {inquiry.nextFollowupAt
                           ? `Next: ${formatDate(inquiry.nextFollowupAt)}`

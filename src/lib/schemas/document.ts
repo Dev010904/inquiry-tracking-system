@@ -67,6 +67,7 @@ export const companySettingsSchema = z.object({
   bank_branch: optional(120),
   signatory_name: optional(120),
   signatory_designation: optional(120),
+  default_currency: z.enum(['INR', 'USD', 'EUR', 'JPY', 'CNY']).default('INR'),
   default_gst_rate: z.preprocess(
     (v) => (v === '' || v === null || v === undefined ? 18 : Number(v)),
     z.number().min(0, 'Cannot be negative').max(28, 'GST does not go above 28%')

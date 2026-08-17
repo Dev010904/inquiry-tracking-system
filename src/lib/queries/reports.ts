@@ -32,9 +32,12 @@ export type ReportData = {
     lost: number
     open: number
     conversionPct: number | null
+    /** INR orders only, as is every money figure in this report. */
     orderValue: number
     outstanding: number
   }
+  /** True when foreign-currency orders exist and are therefore left out of the money. */
+  excludesForeignCurrency: boolean
   aging: AgingBucket[]
   lossReasons: LossReason[]
   ipByType: { type: IpType; count: number }[]
@@ -63,7 +66,7 @@ export async function getReportData(now = new Date()): Promise<ReportData> {
       .is('deleted_at', null),
     supabase
       .from('orders')
-      .select('inquiry_id, order_date, total_with_gst, balance_pending, order_status')
+      .select('inquiry_id, order_date, total_with_gst, balance_pending, order_status, currency')
       .is('deleted_at', null),
     supabase
       .from('ip_assets')
@@ -76,6 +79,18 @@ export async function getReportData(now = new Date()): Promise<ReportData> {
   const ipAssets = ipRes.data ?? []
 
   const orderByInquiry = new Map(orders.map((o) => [o.inquiry_id, o]))
+
+  /*
+   * Every money figure below counts INR orders only, and the report says so
+   * when a foreign-currency order exists.
+   *
+   * Counts and conversion rates still cover the whole book — an order is an
+   * order whatever it is priced in. Money is different: there is no exchange
+   * rate on an order, so a chart adding rupees to dollars would be plotting a
+   * quantity that does not exist.
+   */
+  const inrOrders = orders.filter((o) => o.currency === 'INR')
+  const excludesForeignCurrency = inrOrders.length !== orders.length
 
   // ---- Monthly cohorts -----------------------------------------------------
   const buckets = new Map<string, MonthlyPoint>()
@@ -102,7 +117,7 @@ export async function getReportData(now = new Date()): Promise<ReportData> {
     const order = orderByInquiry.get(inquiry.id)
     if (order) {
       bucket.orders += 1
-      bucket.orderValue += Number(order.total_with_gst ?? 0)
+      if (order.currency === 'INR') bucket.orderValue += Number(order.total_with_gst ?? 0)
     }
   }
 
@@ -129,7 +144,7 @@ export async function getReportData(now = new Date()): Promise<ReportData> {
     { label: '90+ days', count: 0, amount: 0 },
   ]
 
-  for (const order of orders) {
+  for (const order of inrOrders) {
     const balance = Number(order.balance_pending ?? 0)
     if (balance <= 0) continue
     const age = differenceInCalendarDays(today, new Date(order.order_date))
@@ -168,9 +183,10 @@ export async function getReportData(now = new Date()): Promise<ReportData> {
       // Measured against decided inquiries — counting still-open leads as
       // losses would understate the rate.
       conversionPct: decided > 0 ? Math.round((won / decided) * 100) : null,
-      orderValue: orders.reduce((sum, o) => sum + Number(o.total_with_gst ?? 0), 0),
-      outstanding: orders.reduce((sum, o) => sum + Number(o.balance_pending ?? 0), 0),
+      orderValue: inrOrders.reduce((sum, o) => sum + Number(o.total_with_gst ?? 0), 0),
+      outstanding: inrOrders.reduce((sum, o) => sum + Number(o.balance_pending ?? 0), 0),
     },
+    excludesForeignCurrency,
     aging,
     lossReasons,
     ipByType: [...typeCounts.entries()]

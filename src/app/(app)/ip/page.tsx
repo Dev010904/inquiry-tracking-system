@@ -12,7 +12,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { IP_STATUS, IP_TYPE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { listIpAssets } from '@/lib/queries/ip'
 import type { IpStatus, IpType } from '@/types/database'
@@ -83,7 +83,7 @@ export default async function IpPage({ searchParams }: { searchParams: Promise<S
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground">Spent to date</p>
-          <p className="tnum mt-1 text-xl font-semibold">{formatINR(totalCost)}</p>
+          <p className="tnum mt-1 text-xl font-semibold">{formatMoney(totalCost, 'INR')}</p>
         </Card>
       </div>
 

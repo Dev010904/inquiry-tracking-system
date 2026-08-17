@@ -8,6 +8,21 @@
 export const GST_RATE = 0.18
 export const GST_LABEL = 'GST @ 18%'
 
+/**
+ * The five currencies ANK trades in. Labels carry the code because "$" alone is
+ * ambiguous on a screen that can also show CN¥ and ¥.
+ *
+ * Currency is picked once, on the inquiry or order, and inherited by everything
+ * downstream — there is deliberately no selector on each form.
+ */
+export const CURRENCY = {
+  INR: 'INR — Indian Rupee',
+  USD: 'USD — US Dollar',
+  EUR: 'EUR — Euro',
+  JPY: 'JPY — Japanese Yen',
+  CNY: 'CNY — Chinese Yuan',
+} as const
+
 export const INQUIRY_STATUS = {
   new: 'New',
   in_discussion: 'In Discussion',

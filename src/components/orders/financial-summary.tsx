@@ -1,7 +1,7 @@
 import { Lock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GST_LABEL } from '@/lib/constants'
-import { formatINR } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { OrderRow } from '@/types/database'
 
@@ -29,22 +29,22 @@ export function FinancialSummary({ order }: { order: OrderRow }) {
         <dl className="space-y-2 text-sm">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-muted-foreground">Order value (excl. GST)</dt>
-            <dd className="tnum">{formatINR(order.order_value, true)}</dd>
+            <dd className="tnum">{formatMoney(order.order_value, order.currency, true)}</dd>
           </div>
 
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-muted-foreground">{GST_LABEL}</dt>
-            <dd className="tnum">{formatINR(order.gst_amount, true)}</dd>
+            <dd className="tnum">{formatMoney(order.gst_amount, order.currency, true)}</dd>
           </div>
 
           <div className="flex items-baseline justify-between gap-4 border-t pt-2 text-base font-semibold">
             <dt>Total with GST</dt>
-            <dd className="tnum">{formatINR(order.total_with_gst, true)}</dd>
+            <dd className="tnum">{formatMoney(order.total_with_gst, order.currency, true)}</dd>
           </div>
 
           <div className="flex items-baseline justify-between gap-4 pt-1">
             <dt className="text-muted-foreground">Advance received</dt>
-            <dd className="tnum">{formatINR(order.advance_received, true)}</dd>
+            <dd className="tnum">{formatMoney(order.advance_received, order.currency, true)}</dd>
           </div>
 
           <div
@@ -54,14 +54,14 @@ export function FinancialSummary({ order }: { order: OrderRow }) {
             )}
           >
             <dt>Balance pending</dt>
-            <dd className="tnum">{formatINR(balance, true)}</dd>
+            <dd className="tnum">{formatMoney(balance, order.currency, true)}</dd>
           </div>
         </dl>
 
         {settled && (
           <p className="mt-3 rounded-md bg-ok/10 px-3 py-2 text-sm text-ok">
             Fully paid.
-            {balance < 0 && ` Received ${formatINR(Math.abs(balance), true)} more than invoiced.`}
+            {balance < 0 && ` Received ${formatMoney(Math.abs(balance), order.currency, true)} more than invoiced.`}
           </p>
         )}
       </CardContent>

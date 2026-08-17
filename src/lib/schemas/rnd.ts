@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { RND_EXPENSE_KIND, RND_STAGE } from '@/lib/constants'
+import { CURRENCY, RND_EXPENSE_KIND, RND_STAGE } from '@/lib/constants'
 
 const enumKeys = <T extends Record<string, string>>(map: T) =>
   Object.keys(map) as [keyof T & string, ...(keyof T & string)[]]
@@ -18,6 +18,7 @@ export const rndProjectSchema = z
     project_code: z.string().trim().max(40).optional(),
     project_name: z.string().trim().min(3, 'Give the project a name').max(200),
     description: z.string().trim().max(4000).optional(),
+    currency: z.enum(enumKeys(CURRENCY)).default('INR'),
     approx_budget: moneyInput.pipe(
       z
         .number({ invalid_type_error: 'Enter a number' })

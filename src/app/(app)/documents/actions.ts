@@ -75,6 +75,7 @@ export async function saveCompanySettings(input: unknown): Promise<Result> {
       signatory_name: blank(v.signatory_name),
       signatory_designation: blank(v.signatory_designation),
       default_gst_rate: v.default_gst_rate,
+      default_currency: v.default_currency,
       invoice_terms: blank(v.invoice_terms),
     })
     .eq('id', existing!.id)

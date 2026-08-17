@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
 import { DOCUMENT_TYPE, DOCUMENT_STATUS } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { listDocuments, getCompanySettings, missingSettings } from '@/lib/queries/documents'
 import type { DocumentStatus, DocumentType } from '@/types/database'
 
@@ -101,7 +101,7 @@ export default async function DocumentsPage({
                       {formatDate(row.doc_date)}
                     </p>
                   </div>
-                  <p className="tnum font-semibold">{formatINR(row.grand_total, true)}</p>
+                  <p className="tnum font-semibold">{formatMoney(row.grand_total, 'INR', true)}</p>
                 </Link>
               </li>
             ))}

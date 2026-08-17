@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AlertTriangle, Package } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { GST_LABEL } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { OrderStatusBadge, ProgressBar } from './order-status-badge'
 import type { OrderListRow } from '@/lib/queries/orders'
@@ -82,16 +82,16 @@ export function OrderTable({ rows, filtered }: { rows: OrderListRow[]; filtered:
                   )}
                 </td>
                 <td className="tnum px-3 py-3 text-right whitespace-nowrap">
-                  {formatINR(row.orderValue)}
+                  {formatMoney(row.orderValue, row.currency)}
                 </td>
                 <td className="tnum px-3 py-3 text-right whitespace-nowrap text-muted-foreground">
-                  {formatINR(row.gstAmount)}
+                  {formatMoney(row.gstAmount, row.currency)}
                 </td>
                 <td className="tnum px-3 py-3 text-right font-medium whitespace-nowrap">
-                  {formatINR(row.totalWithGst)}
+                  {formatMoney(row.totalWithGst, row.currency)}
                 </td>
                 <td className="tnum px-3 py-3 text-right whitespace-nowrap">
-                  {formatINR(row.advanceReceived)}
+                  {formatMoney(row.advanceReceived, row.currency)}
                 </td>
                 <td
                   className={cn(
@@ -99,7 +99,7 @@ export function OrderTable({ rows, filtered }: { rows: OrderListRow[]; filtered:
                     row.balancePending > 0 ? 'text-overdue' : 'text-ok'
                   )}
                 >
-                  {formatINR(row.balancePending)}
+                  {formatMoney(row.balancePending, row.currency)}
                 </td>
                 <td className="px-3 py-3">
                   <DeliveryCell row={row} />
@@ -133,11 +133,11 @@ export function OrderTable({ rows, filtered }: { rows: OrderListRow[]; filtered:
               <dl className="grid grid-cols-3 gap-2 text-sm">
                 <div>
                   <dt className="text-[11px] text-muted-foreground">Total</dt>
-                  <dd className="tnum font-medium">{formatINR(row.totalWithGst)}</dd>
+                  <dd className="tnum font-medium">{formatMoney(row.totalWithGst, row.currency)}</dd>
                 </div>
                 <div>
                   <dt className="text-[11px] text-muted-foreground">Received</dt>
-                  <dd className="tnum">{formatINR(row.advanceReceived)}</dd>
+                  <dd className="tnum">{formatMoney(row.advanceReceived, row.currency)}</dd>
                 </div>
                 <div>
                   <dt className="text-[11px] text-muted-foreground">Balance</dt>
@@ -147,7 +147,7 @@ export function OrderTable({ rows, filtered }: { rows: OrderListRow[]; filtered:
                       row.balancePending > 0 ? 'text-overdue' : 'text-ok'
                     )}
                   >
-                    {formatINR(row.balancePending)}
+                    {formatMoney(row.balancePending, row.currency)}
                   </dd>
                 </div>
               </dl>

@@ -9,6 +9,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type CompanyType = 'company' | 'school' | 'institution'
+export type CurrencyCode = 'INR' | 'USD' | 'EUR' | 'JPY' | 'CNY'
 export type Confidentiality = 'public' | 'internal' | 'restricted'
 export type FollowupChannel = 'call' | 'email' | 'whatsapp' | 'visit' | 'other'
 export type InquiryStatus =
@@ -75,6 +76,7 @@ export type InquiryRow = Timestamps & {
   source: string | null
   requirement_summary: string
   estimated_value: number | null
+  currency: CurrencyCode
   status: InquiryStatus
   priority: PriorityLevel
   owner_id: string | null
@@ -108,6 +110,7 @@ export type OrderRow = Timestamps & {
   order_date: string
   po_number: string | null
   order_value: number
+  currency: CurrencyCode
   advance_received: number
   /** Generated column — read only. */
   gst_amount: number | null
@@ -240,6 +243,7 @@ export type CompanySettingsRow = Timestamps & {
   signatory_name: string | null
   signatory_designation: string | null
   default_gst_rate: number
+  default_currency: CurrencyCode
   invoice_terms: string | null
 }
 
@@ -273,6 +277,12 @@ export type InvoiceRow = Timestamps & {
   total_tax: number
   round_off: number
   grand_total: number
+  /**
+   * Both null unless the parent order is priced in a foreign currency. The tax
+   * columns above are always INR; these record what that INR was derived from.
+   */
+  exchange_rate: number | null
+  base_currency: CurrencyCode | null
   amount_in_words: string | null
   notes: string | null
   terms: string | null
@@ -342,6 +352,7 @@ export type RndProjectRow = Timestamps & {
   project_name: string
   description: string | null
   approx_budget: number | null
+  currency: CurrencyCode
   spent_to_date: number
   start_date: string | null
   target_date: string | null
@@ -358,6 +369,7 @@ export type RndExpenseRow = Timestamps & {
   id: string
   project_id: string
   amount: number
+  currency: CurrencyCode
   spent_on: string
   kind: RndExpenseKind
   description: string

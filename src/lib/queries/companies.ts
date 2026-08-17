@@ -61,13 +61,13 @@ export async function listCompanies(search?: string): Promise<CompanyCard[]> {
   const { data: orders } = inquiries.length
     ? await supabase
         .from('orders')
-        .select('inquiry_id, total_with_gst, balance_pending')
+        .select('inquiry_id, total_with_gst, balance_pending, currency')
         .in(
           'inquiry_id',
           inquiries.map((i) => i.id)
         )
         .is('deleted_at', null)
-    : { data: [] as Pick<OrderRow, 'inquiry_id' | 'total_with_gst' | 'balance_pending'>[] }
+    : { data: [] as Pick<OrderRow, 'inquiry_id' | 'total_with_gst' | 'balance_pending' | 'currency'>[] }
 
   const inquiryCompany = new Map(inquiries.map((i) => [i.id, i.company_id]))
 
@@ -80,8 +80,12 @@ export async function listCompanies(search?: string): Promise<CompanyCard[]> {
     if (!companyId) continue
     const entry = stats.get(companyId) ?? { orders: 0, business: 0, balance: 0 }
     entry.orders += 1
-    entry.business += Number(order.total_with_gst ?? 0)
-    entry.balance += Number(order.balance_pending ?? 0)
+    // Money is INR only; an order carries no rate to convert with. The order
+    // count above still covers every currency.
+    if (order.currency === 'INR') {
+      entry.business += Number(order.total_with_gst ?? 0)
+      entry.balance += Number(order.balance_pending ?? 0)
+    }
     stats.set(companyId, entry)
   }
 
@@ -181,8 +185,13 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     inquiryCount: inquiries.length,
     openInquiryCount: inquiries.filter((i) => OPEN_STATUSES.includes(i.status)).length,
     orderCount: orderRows.length,
-    totalBusiness: orderRows.reduce((sum, o) => sum + Number(o.total_with_gst ?? 0), 0),
-    balancePending: orderRows.reduce((sum, o) => sum + Number(o.balance_pending ?? 0), 0),
+    // INR only, as on the list — see listCompanies.
+    totalBusiness: orderRows
+      .filter((o) => o.currency === 'INR')
+      .reduce((sum, o) => sum + Number(o.total_with_gst ?? 0), 0),
+    balancePending: orderRows
+      .filter((o) => o.currency === 'INR')
+      .reduce((sum, o) => sum + Number(o.balance_pending ?? 0), 0),
     lastInquiryDate: inquiries[0]?.inquiry_date ?? null,
   }
 

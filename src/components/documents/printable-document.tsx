@@ -1,5 +1,5 @@
 import { DOCUMENT_TYPE, INVOICE_COPIES, TAXABLE_DOCUMENT_TYPES } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import type { CompanySettingsRow, InvoiceLineRow, InvoiceRow } from '@/types/database'
 
 type Props = {
@@ -155,25 +155,25 @@ export function PrintableDocument({ invoice, lines, settings, copies }: Props) {
                   <td className="py-1 pr-2 text-right">
                     {line.quantity} {line.unit}
                   </td>
-                  <td className="py-1 pr-2 text-right">{formatINR(line.rate, true)}</td>
-                  <td className="py-1 pr-2 text-right">{formatINR(line.taxable_value, true)}</td>
+                  <td className="py-1 pr-2 text-right">{formatMoney(line.rate, 'INR', true)}</td>
+                  <td className="py-1 pr-2 text-right">{formatMoney(line.taxable_value, 'INR', true)}</td>
                   {isTax &&
                     (intrastate ? (
                       <>
                         <td className="py-1 pr-2 text-right">
-                          {line.gst_rate / 2}% {formatINR(line.cgst_amount, true)}
+                          {line.gst_rate / 2}% {formatMoney(line.cgst_amount, 'INR', true)}
                         </td>
                         <td className="py-1 pr-2 text-right">
-                          {line.gst_rate / 2}% {formatINR(line.sgst_amount, true)}
+                          {line.gst_rate / 2}% {formatMoney(line.sgst_amount, 'INR', true)}
                         </td>
                       </>
                     ) : (
                       <td className="py-1 pr-2 text-right">
-                        {line.gst_rate}% {formatINR(line.igst_amount, true)}
+                        {line.gst_rate}% {formatMoney(line.igst_amount, 'INR', true)}
                       </td>
                     ))}
                   <td className="py-1 text-right font-medium">
-                    {formatINR(line.line_total, true)}
+                    {formatMoney(line.line_total, 'INR', true)}
                   </td>
                 </tr>
               ))}
@@ -184,35 +184,35 @@ export function PrintableDocument({ invoice, lines, settings, copies }: Props) {
             <dl className="w-64 space-y-1">
               <div className="flex justify-between">
                 <dt>Taxable value</dt>
-                <dd>{formatINR(invoice.taxable_value, true)}</dd>
+                <dd>{formatMoney(invoice.taxable_value, 'INR', true)}</dd>
               </div>
               {isTax && intrastate && (
                 <>
                   <div className="flex justify-between">
                     <dt>CGST</dt>
-                    <dd>{formatINR(invoice.cgst_amount, true)}</dd>
+                    <dd>{formatMoney(invoice.cgst_amount, 'INR', true)}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt>SGST</dt>
-                    <dd>{formatINR(invoice.sgst_amount, true)}</dd>
+                    <dd>{formatMoney(invoice.sgst_amount, 'INR', true)}</dd>
                   </div>
                 </>
               )}
               {isTax && !intrastate && invoice.igst_amount > 0 && (
                 <div className="flex justify-between">
                   <dt>IGST</dt>
-                  <dd>{formatINR(invoice.igst_amount, true)}</dd>
+                  <dd>{formatMoney(invoice.igst_amount, 'INR', true)}</dd>
                 </div>
               )}
               {Number(invoice.round_off) !== 0 && (
                 <div className="flex justify-between">
                   <dt>Rounding</dt>
-                  <dd>{formatINR(invoice.round_off, true)}</dd>
+                  <dd>{formatMoney(invoice.round_off, 'INR', true)}</dd>
                 </div>
               )}
               <div className="flex justify-between border-t border-black/30 pt-1 text-sm font-bold">
                 <dt>Grand total</dt>
-                <dd>{formatINR(invoice.grand_total, true)}</dd>
+                <dd>{formatMoney(invoice.grand_total, 'INR', true)}</dd>
               </div>
             </dl>
           </section>

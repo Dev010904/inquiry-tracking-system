@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IP_STATUS, IP_TYPE } from '@/lib/constants'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { requireProfile } from '@/lib/auth'
 import { getRndProjectDetail } from '@/lib/queries/rnd'
@@ -90,6 +90,7 @@ export default async function RndProjectPage({
             expenses={expenses}
             budget={card.approxBudget}
             spent={card.spentToDate}
+            currency={project.currency}
             isAdmin={profile.role === 'admin'}
           />
 
@@ -110,19 +111,19 @@ export default async function RndProjectPage({
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Approx. budget</dt>
-                  <dd className="tnum">{formatINR(card.approxBudget)}</dd>
+                  <dd className="tnum">{formatMoney(card.approxBudget, project.currency)}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Spent to date</dt>
                   <dd className={cn('tnum font-medium', card.overBudget && 'text-overdue')}>
-                    {formatINR(card.spentToDate)}
+                    {formatMoney(card.spentToDate, project.currency)}
                   </dd>
                 </div>
                 {card.approxBudget != null && (
                   <div className="flex justify-between gap-3 border-t pt-2 font-semibold">
                     <dt>{card.overBudget ? 'Over by' : 'Remaining'}</dt>
                     <dd className={cn('tnum', card.overBudget ? 'text-overdue' : 'text-ok')}>
-                      {formatINR(Math.abs(card.approxBudget - card.spentToDate))}
+                      {formatMoney(Math.abs(card.approxBudget - card.spentToDate), project.currency)}
                     </dd>
                   </div>
                 )}

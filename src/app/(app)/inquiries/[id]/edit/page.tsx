@@ -44,6 +44,8 @@ export default async function EditInquiryPage({
         companies={companies}
         staff={staff}
         currentUserId={profile.id}
+        // On edit the stored value below wins; this only covers a null column.
+        defaultCurrency={inquiry.currency}
         initial={{
           id: inquiry.id,
           companyId: inquiry.company_id,
@@ -61,6 +63,7 @@ export default async function EditInquiryPage({
             source: inquiry.source ?? '',
             requirement_summary: inquiry.requirement_summary,
             estimated_value: inquiry.estimated_value != null ? String(inquiry.estimated_value) : '',
+            currency: inquiry.currency,
             status: inquiry.status,
             priority: inquiry.priority,
             owner_id: inquiry.owner_id ?? '',

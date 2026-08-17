@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { formatINR } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import type { AgingBucket, MonthlyPoint } from '@/lib/queries/reports'
 
 /** Compact axis labels — ₹12,50,000 does not fit on a phone. */
@@ -42,7 +42,7 @@ function TooltipBox({
         <p key={i} style={{ color: entry.color }}>
           {entry.name}:{' '}
           {entry.name === 'Order value'
-            ? formatINR(Number(entry.value))
+            ? formatMoney(Number(entry.value), 'INR')
             : entry.name === 'Conversion'
               ? `${entry.value}%`
               : entry.value}
@@ -140,7 +140,7 @@ export function AgingChart({ data }: { data: AgingBucket[] }) {
             return (
               <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md">
                 <p className="mb-1 font-medium">{label}</p>
-                <p>{formatINR(bucket.amount)}</p>
+                <p>{formatMoney(bucket.amount, 'INR')}</p>
                 <p className="text-muted-foreground">
                   {bucket.count} order{bucket.count === 1 ? '' : 's'}
                 </p>

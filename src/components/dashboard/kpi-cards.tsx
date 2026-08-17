@@ -1,7 +1,7 @@
 import { AlertTriangle, ClipboardList, IndianRupee, TrendingUp, Wallet } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { formatINR } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import type { Kpis } from '@/lib/queries/dashboard'
 
 type Tile = {
@@ -23,14 +23,16 @@ export function KpiCards({ kpis }: { kpis: Kpis }) {
     },
     {
       label: 'Order value MTD',
-      value: formatINR(kpis.orderValueMtd),
-      hint: 'Incl. GST @ 18%',
+      value: formatMoney(kpis.orderValueMtd, 'INR'),
+      hint: kpis.excludesForeignCurrency ? 'Incl. GST · INR orders only' : 'Incl. GST',
       icon: IndianRupee,
     },
     {
       label: 'Balance pending',
-      value: formatINR(kpis.totalBalancePending),
-      hint: 'Across all open orders',
+      value: formatMoney(kpis.totalBalancePending, 'INR'),
+      hint: kpis.excludesForeignCurrency
+        ? 'Open INR orders · foreign currency excluded'
+        : 'Across all open orders',
       icon: Wallet,
       alert: kpis.totalBalancePending > 0,
     },

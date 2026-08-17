@@ -1,25 +1,61 @@
 import { format, formatDistanceToNowStrict, isValid, parseISO } from 'date-fns'
 import { GST_RATE } from './constants'
+import type { CurrencyCode } from '@/types/database'
 
-const inr = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 0,
-})
+/**
+ * Locale per currency, because digit grouping belongs to the money and not to
+ * the reader. INR groups in lakhs and crores (₹12,34,567); the rest group in
+ * thousands, so formatting a dollar amount with en-IN would print
+ * "$12,34,567.89" to an export customer.
+ *
+ * JPY and CNY use en-US for the glyph: ja-JP renders a fullwidth "￥" and zh-CN
+ * renders CNY as a bare "¥", which is indistinguishable from yen on a document
+ * that could carry either. en-US gives "¥" and "CN¥".
+ *
+ * No entry states a decimal count. Intl takes that from the currency itself,
+ * which is what keeps JPY off the minor unit it does not have.
+ */
+const CURRENCY_LOCALE: Record<CurrencyCode, string> = {
+  INR: 'en-IN',
+  USD: 'en-US',
+  EUR: 'en-IE',
+  JPY: 'en-US',
+  CNY: 'en-US',
+}
 
-const inrPaise = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
+const wholeUnits = new Map<CurrencyCode, Intl.NumberFormat>()
+const minorUnits = new Map<CurrencyCode, Intl.NumberFormat>()
 
-/** ₹1,23,456 — Indian digit grouping. Pass exact=true for paise. */
-export function formatINR(value: number | string | null | undefined, exact = false): string {
+function formatterFor(currency: CurrencyCode, exact: boolean): Intl.NumberFormat {
+  const cache = exact ? minorUnits : wholeUnits
+  let formatter = cache.get(currency)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
+      style: 'currency',
+      currency,
+      // Rounding to whole units is a display choice and safe for every
+      // currency. Asking for two decimals would not be: it would print
+      // "¥1,200.00" for a currency with no sen.
+      ...(exact ? {} : { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+    })
+    cache.set(currency, formatter)
+  }
+  return formatter
+}
+
+/**
+ * ₹12,34,567 · $1,234,567 · ¥1,200. Pass exact=true for the minor unit where
+ * the currency has one.
+ */
+export function formatMoney(
+  value: number | string | null | undefined,
+  currency: CurrencyCode = 'INR',
+  exact = false
+): string {
   if (value === null || value === undefined || value === '') return '—'
   const n = typeof value === 'string' ? Number(value) : value
   if (!Number.isFinite(n)) return '—'
-  return exact ? inrPaise.format(n) : inr.format(n)
+  return formatterFor(currency, exact).format(n)
 }
 
 function toDate(value: string | Date | null | undefined): Date | null {

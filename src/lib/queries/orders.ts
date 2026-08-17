@@ -5,6 +5,7 @@ import { OPEN_ORDER_STATUSES } from '@/lib/constants'
 import type {
   CompanyRow,
   ContactRow,
+  CurrencyCode,
   InquiryRow,
   OrderItemRow,
   OrderRow,
@@ -35,6 +36,7 @@ export type OrderListRow = {
   companyName: string
   inquiryNo: string | null
   orderValue: number
+  currency: CurrencyCode
   gstAmount: number
   totalWithGst: number
   advanceReceived: number
@@ -46,11 +48,24 @@ export type OrderListRow = {
   deliveryOverdue: boolean
 }
 
-export type OrderSummary = {
+export type CurrencyTotals = {
+  currency: CurrencyCode
   totalOrderValue: number
   totalReceived: number
   totalOutstanding: number
   count: number
+}
+
+/**
+ * Totals split by currency, never added across them.
+ *
+ * A single figure covering orders in rupees and dollars would be a number with
+ * no meaning that still looks authoritative, which is worse than showing
+ * nothing. `count` is the order count and is safe to total; the money is not.
+ */
+export type OrderSummary = {
+  count: number
+  byCurrency: CurrencyTotals[]
 }
 
 export type OrderListResult = {
@@ -142,7 +157,7 @@ export async function listOrders(filters: OrderFilters): Promise<OrderListResult
 
   let summaryQuery = supabase
     .from('orders')
-    .select('order_value, advance_received, balance_pending')
+    .select('order_value, advance_received, balance_pending, currency')
     .is('deleted_at', null)
 
   if (filters.status) {
@@ -178,11 +193,25 @@ export async function listOrders(filters: OrderFilters): Promise<OrderListResult
   const total = listRes.count ?? 0
   const summaryRows = summaryRes.data ?? []
 
+  const totalsByCurrency = new Map<CurrencyCode, CurrencyTotals>()
+  for (const row of summaryRows) {
+    const currency = (row.currency ?? 'INR') as CurrencyCode
+    const bucket =
+      totalsByCurrency.get(currency) ??
+      { currency, totalOrderValue: 0, totalReceived: 0, totalOutstanding: 0, count: 0 }
+    bucket.totalOrderValue += Number(row.order_value ?? 0)
+    bucket.totalReceived += Number(row.advance_received ?? 0)
+    bucket.totalOutstanding += Number(row.balance_pending ?? 0)
+    bucket.count += 1
+    totalsByCurrency.set(currency, bucket)
+  }
+
   const summary: OrderSummary = {
     count: summaryRows.length,
-    totalOrderValue: summaryRows.reduce((sum, o) => sum + Number(o.order_value ?? 0), 0),
-    totalReceived: summaryRows.reduce((sum, o) => sum + Number(o.advance_received ?? 0), 0),
-    totalOutstanding: summaryRows.reduce((sum, o) => sum + Number(o.balance_pending ?? 0), 0),
+    // INR first, then by value — the domestic book is what staff read first.
+    byCurrency: [...totalsByCurrency.values()].sort((a, b) =>
+      a.currency === 'INR' ? -1 : b.currency === 'INR' ? 1 : b.totalOrderValue - a.totalOrderValue
+    ),
   }
 
   if (orders.length === 0) {
@@ -216,6 +245,7 @@ export async function listOrders(filters: OrderFilters): Promise<OrderListResult
       companyName: company?.name ?? 'Unknown company',
       inquiryNo: inquiry?.inquiry_no ?? null,
       orderValue: Number(order.order_value ?? 0),
+      currency: order.currency,
       gstAmount: Number(order.gst_amount ?? 0),
       totalWithGst: Number(order.total_with_gst ?? 0),
       advanceReceived: Number(order.advance_received ?? 0),

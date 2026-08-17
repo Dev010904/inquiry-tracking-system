@@ -7,7 +7,7 @@ import { StageFilter } from '@/components/rnd/stage-filter'
 import { Card } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { RND_STAGE } from '@/lib/constants'
-import { formatINR } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { listRndProjects } from '@/lib/queries/rnd'
 import type { RndStage } from '@/types/database'
@@ -24,8 +24,13 @@ export default async function RndPage({ searchParams }: { searchParams: Promise<
 
   const projects = await listRndProjects(stage)
 
-  const totalBudget = projects.reduce((sum, p) => sum + (p.approxBudget ?? 0), 0)
-  const totalSpent = projects.reduce((sum, p) => sum + p.spentToDate, 0)
+  // Portfolio totals are INR only. A project budget has no exchange rate, so a
+  // combined figure across currencies would not be a quantity at all. Each card
+  // below still shows its own project in its own currency.
+  const inrProjects = projects.filter((p) => p.currency === 'INR')
+  const excludesForeignCurrency = inrProjects.length !== projects.length
+  const totalBudget = inrProjects.reduce((sum, p) => sum + (p.approxBudget ?? 0), 0)
+  const totalSpent = inrProjects.reduce((sum, p) => sum + p.spentToDate, 0)
   const overBudgetCount = projects.filter((p) => p.overBudget).length
   const overdueCount = projects.filter((p) => p.overdue).length
 
@@ -36,6 +41,7 @@ export default async function RndPage({ searchParams }: { searchParams: Promise<
           <h2 className="text-xl font-semibold tracking-tight">R&amp;D projects</h2>
           <p className="text-sm text-muted-foreground">
             Spend is summed from each project&apos;s expense ledger — never typed directly.
+            {excludesForeignCurrency && ' Portfolio totals below are INR projects only.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -54,7 +60,7 @@ export default async function RndPage({ searchParams }: { searchParams: Promise<
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground">Total budget</p>
-          <p className="tnum mt-1 text-xl font-semibold">{formatINR(totalBudget)}</p>
+          <p className="tnum mt-1 text-xl font-semibold">{formatMoney(totalBudget, 'INR')}</p>
         </Card>
         <Card className={cn('p-4', totalSpent > totalBudget && 'border-overdue/40 bg-overdue/5')}>
           <p className="text-xs font-medium text-muted-foreground">Total spent</p>
@@ -64,7 +70,7 @@ export default async function RndPage({ searchParams }: { searchParams: Promise<
               totalSpent > totalBudget && 'text-overdue'
             )}
           >
-            {formatINR(totalSpent)}
+            {formatMoney(totalSpent, 'INR')}
           </p>
         </Card>
         <Card

@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { GST_STATES } from '@/lib/constants'
+import { CURRENCY, GST_STATES } from '@/lib/constants'
 import { saveCompanySettings } from '@/app/(app)/documents/actions'
 import type { CompanySettingsRow } from '@/types/database'
 
@@ -54,6 +54,7 @@ export function CompanySettingsForm({ settings, missing }: Props) {
     signatory_name: str(settings?.signatory_name),
     signatory_designation: str(settings?.signatory_designation),
     default_gst_rate: str(settings?.default_gst_rate ?? 18),
+    default_currency: settings?.default_currency ?? 'INR',
     invoice_terms: str(settings?.invoice_terms),
   })
 
@@ -288,6 +289,20 @@ export function CompanySettingsForm({ settings, missing }: Props) {
                 value={form.default_gst_rate}
                 onChange={(e) => set('default_gst_rate')(e.target.value)}
               />
+            </Field>
+            <Field
+              label="Default currency"
+              htmlFor="default_currency"
+              error={errors.default_currency}
+              hint="Pre-selected on a new inquiry. Tax documents stay in INR."
+            >
+              <Select
+                id="default_currency"
+                value={form.default_currency}
+                onChange={(e) => set('default_currency')(e.target.value)}
+              >
+                {optionsFrom(CURRENCY)}
+              </Select>
             </Field>
           </div>
 

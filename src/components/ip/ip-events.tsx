@@ -11,7 +11,7 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Textarea } from '@/components/ui/textarea'
-import { formatDate, formatINR } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { addIpEvent } from '@/app/(app)/ip/actions'
 import type { IpEventRow } from '@/types/database'
 
@@ -85,7 +85,7 @@ export function IpEvents({ assetId, events }: { assetId: string; events: Entry[]
         <div>
           <CardTitle className="text-base">Events</CardTitle>
           <p className="text-sm text-muted-foreground">
-            {events.length} recorded · {formatINR(totalCost)} in costs
+            {events.length} recorded · {formatMoney(totalCost, 'INR')} in costs
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}>
@@ -122,7 +122,7 @@ export function IpEvents({ assetId, events }: { assetId: string; events: Entry[]
                       {formatDate(event.event_date)}
                     </span>
                     {event.cost != null && Number(event.cost) > 0 && (
-                      <Badge variant="muted">{formatINR(event.cost)}</Badge>
+                      <Badge variant="muted">{formatMoney(event.cost, 'INR')}</Badge>
                     )}
                     {event.due_date && (
                       <Badge variant={overdue ? 'overdue' : 'duesoon'}>

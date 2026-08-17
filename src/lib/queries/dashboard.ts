@@ -6,6 +6,7 @@ import { FOLLOWUP_LEAD_DAYS, IP_LEAD_DAYS } from '@/lib/constants'
 import type {
   CompanyRow,
   ContactRow,
+  CurrencyCode,
   FollowupChannel,
   InquiryRow,
   InquiryStatus,
@@ -52,7 +53,10 @@ export type Alarms = {
 export type Kpis = {
   openInquiries: number
   confirmedThisMonth: number
+  /** INR orders only — see getKpis. */
   orderValueMtd: number
+  /** True when non-INR orders exist, so the money tiles can say they exclude them. */
+  excludesForeignCurrency: boolean
   totalBalancePending: number
   overdueFollowups: number
 }
@@ -63,6 +67,7 @@ export type RecentInquiry = {
   inquiryDate: string
   status: InquiryStatus
   estimatedValue: number | null
+  currency: CurrencyCode
   companyName: string
   companyType: CompanyRow['type'] | null
   contactName: string | null
@@ -264,7 +269,7 @@ export async function getKpis(now = new Date()): Promise<Omit<Kpis, 'overdueFoll
   const supabase = await createClient()
   const monthStart = startOfMonth(now).toISOString().slice(0, 10)
 
-  const [openRes, monthOrdersRes, allOrdersRes] = await Promise.all([
+  const [openRes, monthOrdersRes, allOrdersRes, foreignRes] = await Promise.all([
     supabase
       .from('inquiries')
       .select('id', { count: 'exact', head: true })
@@ -272,22 +277,41 @@ export async function getKpis(now = new Date()): Promise<Omit<Kpis, 'overdueFoll
       .in('status', OPEN_STATUSES),
     supabase
       .from('orders')
-      .select('total_with_gst')
+      .select('total_with_gst, currency')
       .is('deleted_at', null)
       .gte('order_date', monthStart),
-    supabase.from('orders').select('balance_pending').is('deleted_at', null),
+    supabase.from('orders').select('balance_pending, currency').is('deleted_at', null),
+    supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .neq('currency', 'INR'),
   ])
 
   const monthOrders = monthOrdersRes.data ?? []
+  const foreignCount = foreignRes.count ?? 0
+
+  /*
+   * The two money tiles are INR only, and say so when anything else exists.
+   *
+   * A KPI tile is one number, and there is no honest single number across
+   * currencies — an order has no exchange rate, only the document that invoices
+   * it does. Summing rupees with dollars would read as authoritative and be
+   * wrong, so the foreign book is excluded and the exclusion is stated. The
+   * order count above it is a count, so it still covers everything.
+   */
+  const inr = <T extends { currency: string }>(rows: T[]) =>
+    rows.filter((row) => row.currency === 'INR')
 
   return {
     openInquiries: openRes.count ?? 0,
     confirmedThisMonth: monthOrders.length,
-    orderValueMtd: monthOrders.reduce((sum, o) => sum + Number(o.total_with_gst ?? 0), 0),
-    totalBalancePending: (allOrdersRes.data ?? []).reduce(
+    orderValueMtd: inr(monthOrders).reduce((sum, o) => sum + Number(o.total_with_gst ?? 0), 0),
+    totalBalancePending: inr(allOrdersRes.data ?? []).reduce(
       (sum, o) => sum + Number(o.balance_pending ?? 0),
       0
     ),
+    excludesForeignCurrency: foreignCount > 0,
   }
 }
 
@@ -351,6 +375,7 @@ export async function getRecentInquiries(limit = 8): Promise<RecentInquiry[]> {
       inquiryDate: inquiry.inquiry_date,
       status: inquiry.status,
       estimatedValue: inquiry.estimated_value,
+      currency: inquiry.currency,
       companyName: company?.name ?? 'Unknown company',
       companyType: company?.type ?? null,
       contactName: contact?.name ?? null,

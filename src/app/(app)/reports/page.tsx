@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { AgingChart, MonthlyChart, OrderValueChart } from '@/components/reports/report-charts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IP_STATUS, IP_TYPE } from '@/lib/constants'
-import { formatINR } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { getReportData } from '@/lib/queries/reports'
 
@@ -24,6 +24,14 @@ export default async function ReportsPage() {
           Last 6 months. Conversion counts an order in the month its inquiry was logged, not the
           month it closed.
         </p>
+        {data.excludesForeignCurrency && (
+          <p className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            Every money figure here is <strong className="font-medium text-foreground">INR only</strong>.
+            Foreign-currency orders are counted in the inquiry and conversion figures but left out of
+            the values — an order carries no exchange rate, so adding them to rupees would give a
+            total that looks precise and means nothing.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -42,7 +50,7 @@ export default async function ReportsPage() {
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted-foreground">Order value</p>
-          <p className="tnum mt-1 text-xl font-semibold">{formatINR(totals.orderValue)}</p>
+          <p className="tnum mt-1 text-xl font-semibold">{formatMoney(totals.orderValue, 'INR')}</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">Incl. GST, all time</p>
         </Card>
         <Card className={cn('p-4', totals.outstanding > 0 && 'border-overdue/40 bg-overdue/5')}>
@@ -53,7 +61,7 @@ export default async function ReportsPage() {
               totals.outstanding > 0 && 'text-overdue'
             )}
           >
-            {formatINR(totals.outstanding)}
+            {formatMoney(totals.outstanding, 'INR')}
           </p>
         </Card>
       </div>
@@ -84,14 +92,14 @@ export default async function ReportsPage() {
           <CardHeader>
             <CardTitle className="text-base">Payment aging</CardTitle>
             <p className="text-sm text-muted-foreground">
-              {formatINR(agingTotal)} outstanding, aged from the order date.
+              {formatMoney(agingTotal, 'INR')} outstanding, aged from the order date.
             </p>
           </CardHeader>
           <CardContent>
             <AgingChart data={aging} />
             {over90 > 0 && (
               <p className="mt-3 rounded-md border border-overdue/30 bg-overdue/5 p-3 text-sm text-overdue">
-                {formatINR(over90)} has been outstanding for more than 90 days.
+                {formatMoney(over90, 'INR')} has been outstanding for more than 90 days.
               </p>
             )}
           </CardContent>
@@ -145,7 +153,7 @@ export default async function ReportsPage() {
           <CardHeader>
             <CardTitle className="text-base">IP portfolio</CardTitle>
             <p className="text-sm text-muted-foreground">
-              {formatINR(ipCost)} spent on protection to date.
+              {formatMoney(ipCost, 'INR')} spent on protection to date.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
