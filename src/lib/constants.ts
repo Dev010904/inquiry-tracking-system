@@ -19,8 +19,24 @@ export const INQUIRY_STATUS = {
 } as const
 export type InquiryStatus = keyof typeof INQUIRY_STATUS
 
-/** Statuses from which an inquiry may be converted into a confirmed order. */
-export const CONVERTIBLE_STATUSES: InquiryStatus[] = ['quoted', 'negotiation']
+/**
+ * Statuses from which an inquiry may be converted into a confirmed order.
+ *
+ * `confirmed` is here because a user can set that status by hand. Converting
+ * also sets it, so an inquiry confirmed manually would otherwise have no path
+ * to an order at all. The real guard against a duplicate is the unique
+ * constraint on `orders.inquiry_id`, not this list.
+ */
+export const CONVERTIBLE_STATUSES: InquiryStatus[] = ['quoted', 'negotiation', 'confirmed']
+
+/**
+ * Derived from the list above so the two cannot drift apart — the copy naming
+ * only Quoted and Negotiation outlived the list it described once already.
+ */
+export const CONVERTIBLE_STATUS_LABEL = ((labels: string[]) =>
+  `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`)(
+  CONVERTIBLE_STATUSES.map((s) => INQUIRY_STATUS[s])
+)
 
 export const PRIORITY = {
   low: 'Low',

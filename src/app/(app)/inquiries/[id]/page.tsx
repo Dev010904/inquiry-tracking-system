@@ -9,7 +9,13 @@ import { Timeline } from '@/components/inquiries/timeline'
 import { Badge, StatusBadge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { COMPANY_TYPE, CONVERTIBLE_STATUSES, INQUIRY_STATUS, PRIORITY } from '@/lib/constants'
+import {
+  COMPANY_TYPE,
+  CONVERTIBLE_STATUSES,
+  CONVERTIBLE_STATUS_LABEL,
+  INQUIRY_STATUS,
+  PRIORITY,
+} from '@/lib/constants'
 import { formatDate, formatINR } from '@/lib/format'
 import { getInquiryDetail } from '@/lib/queries/inquiries'
 
@@ -44,7 +50,7 @@ export default async function InquiryDetailPage({
   const disabledReason = alreadyOrdered
     ? `Already converted to ${order?.order_no ?? 'an order'}.`
     : !convertible
-      ? `Only Quoted or Negotiation inquiries can be converted. This one is ${INQUIRY_STATUS[inquiry.status]}.`
+      ? `Only ${CONVERTIBLE_STATUS_LABEL} inquiries can be converted. This one is ${INQUIRY_STATUS[inquiry.status]}.`
       : undefined
 
   return (

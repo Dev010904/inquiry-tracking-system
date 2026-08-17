@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { requireProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyContacts } from '@/lib/queries/inquiries'
-import { CONVERTIBLE_STATUSES } from '@/lib/constants'
+import { CONVERTIBLE_STATUSES, CONVERTIBLE_STATUS_LABEL } from '@/lib/constants'
 import {
   convertToOrderSchema,
   inquirySchema,
@@ -248,7 +248,7 @@ export async function convertToOrder(
   if (!CONVERTIBLE_STATUSES.includes(inquiry.status)) {
     return {
       ok: false,
-      error: 'Only inquiries at Quoted or Negotiation can be converted to an order.',
+      error: `Only inquiries at ${CONVERTIBLE_STATUS_LABEL} can be converted to an order.`,
     }
   }
 

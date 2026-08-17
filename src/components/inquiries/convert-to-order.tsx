@@ -15,7 +15,7 @@ import { convertToOrder } from '@/app/(app)/inquiries/actions'
 
 type Props = {
   inquiryId: string
-  /** False when the status is not quoted/negotiation, or an order exists. */
+  /** False when the status is not convertible, or an order already exists. */
   enabled: boolean
   disabledReason?: string
   estimatedValue: number | null
