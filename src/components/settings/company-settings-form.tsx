@@ -61,9 +61,17 @@ export function CompanySettingsForm({ settings, missing }: Props) {
     payment_terms: str(settings?.payment_terms),
     delivery_timeline: str(settings?.delivery_timeline),
     quotation_terms: str(settings?.quotation_terms),
+    // Absent on a settings row saved before the column existed, and that must
+    // read as on — see the migration.
+    print_supplier_header: settings?.print_supplier_header ?? true,
   })
 
-  const set = (key: keyof typeof form) => (value: string) => setForm({ ...form, [key]: value })
+  const set =
+    (key: keyof typeof form) =>
+    (value: string) =>
+      setForm({ ...form, [key]: value })
+
+  const setFlag = (key: keyof typeof form) => (value: boolean) => setForm({ ...form, [key]: value })
 
   function submit() {
     setErrors({})
@@ -419,6 +427,28 @@ export function CompanySettingsForm({ settings, missing }: Props) {
               onChange={(e) => set('quotation_terms')(e.target.value)}
             />
           </Field>
+
+          {/* ANK prints onto pre-printed letterhead, which already carries the
+              name, address and GSTIN. A browser print does not, and a tax
+              invoice missing the supplier GSTIN is invalid — so this stays on
+              unless the paper supplies those details. */}
+          <label className="flex items-start gap-3 rounded-md border p-3">
+            <input
+              type="checkbox"
+              id="print_supplier_header"
+              className="mt-0.5 h-4 w-4"
+              checked={form.print_supplier_header}
+              onChange={(e) => setFlag('print_supplier_header')(e.target.checked)}
+            />
+            <span className="text-sm">
+              <span className="font-medium">Print our name and GSTIN at the top of documents</span>
+              <span className="mt-0.5 block text-muted-foreground">
+                Leave this on for plain paper. Turn it off only if you print onto letterhead
+                that already shows the name, address and GSTIN — without them a tax invoice is
+                not valid.
+              </span>
+            </span>
+          </label>
         </section>
 
         <div className="flex justify-end border-t pt-4">

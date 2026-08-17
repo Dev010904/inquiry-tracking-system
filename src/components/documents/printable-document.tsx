@@ -129,7 +129,11 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
           {/* The supplied sheet has no supplier block — it was printed on
               letterhead. A browser print has no letterhead, and a tax invoice
               without the supplier's name and GSTIN is not a valid one, so the
-              identity is printed here for every type. */}
+              identity is printed unless Settings says the stationery already
+              carries it. Compared against false, not merely truthy: a document
+              issued before the setting existed has no such key in its snapshot,
+              and that must keep printing the header rather than lose it. */}
+          {supplier?.print_supplier_header !== false && (
           <header className="border-b border-black/30 pb-2 text-center">
             <h1 className="text-sm font-bold uppercase">
               {supplier?.legal_name ?? 'Company name not set'}
@@ -151,6 +155,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </p>
             )}
           </header>
+          )}
 
           <h2 className="border-b border-black/30 py-1.5 text-center text-sm font-bold">
             {DOCUMENT_TITLE[invoice.doc_type]}

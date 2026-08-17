@@ -81,6 +81,11 @@ export const companySettingsSchema = z.object({
   payment_terms: optional(500),
   delivery_timeline: optional(500),
   quotation_terms: optional(2000),
+  // A checkbox posts nothing at all when unticked, so an absent value has to
+  // mean false here — while a settings row that predates the column still
+  // defaults to true in the database. On rather than off is the safe default:
+  // a print with no supplier GSTIN is not a valid tax invoice.
+  print_supplier_header: z.preprocess((v) => v === true || v === 'true' || v === 'on', z.boolean()),
 })
 
 export type CompanySettingsValues = z.output<typeof companySettingsSchema>

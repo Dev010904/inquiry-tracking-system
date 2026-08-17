@@ -291,6 +291,7 @@ export type CompanySettingsRow = Timestamps & {
   payment_terms: string | null
   delivery_timeline: string | null
   quotation_terms: string | null
+  print_supplier_header: boolean
 }
 
 export type InvoiceRow = Timestamps & {
