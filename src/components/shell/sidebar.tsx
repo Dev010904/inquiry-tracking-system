@@ -20,7 +20,15 @@ export function Sidebar({
   )
 
   return (
-    <aside data-app-shell className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
+    // Pinned to the viewport, like the header above the content. Without the
+    // explicit height it stretches to the full document and there is nothing
+    // for sticky to hold on to, so the menu scrolls away on a long page — the
+    // nav below keeps its own overflow so a long menu still scrolls inside a
+    // short window. self-start stops the flex row stretching it back.
+    <aside
+      data-app-shell
+      className="hidden w-60 shrink-0 border-r bg-card md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:self-start"
+    >
       <div className="flex h-16 items-center gap-2.5 border-b px-4">
         <Image
           src="/logo-mark.png"
