@@ -186,10 +186,18 @@
      *
      * vh in paged media resolves against the page area itself, so this is the
      * page's real height whatever it turns out to be, measured rather than
-     * assumed. The 2mm comes off to absorb sub-millimetre rounding, which is
-     * all it takes to tip a block onto the next sheet.
+     * assumed.
+     *
+     * 12mm comes off rather than 2mm because the owner prints with the
+     * browser's own header and footer switched on. Chromium draws those inside
+     * the page box and takes the room from the content area, but 100vh still
+     * measures the box. At 2mm every copy was a few millimetres too tall: a
+     * tax invoice pushed its bank details, declaration and signature onto a
+     * second sheet, three copies printed on five pages, and the last sheet
+     * came out blank. The margin absorbs the header and footer and still
+     * leaves mt-auto holding the signature at the foot of the page.
      */
-    min-height: calc(100vh - 2mm) !important;
+    min-height: calc(100vh - 12mm) !important;
   }
 
   .print-root {
