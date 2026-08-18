@@ -166,7 +166,13 @@
   .doc-copy {
     border: none !important;
     padding: 0 !important;
-    break-inside: avoid;
+    /*
+     * Deliberately no break-inside here. Chromium cannot honour it on a block
+     * taller than a page and fragments wherever it likes instead, which is
+     * what tore the totals and the signature in half. The blocks that must
+     * stay whole now each say so, and those Chromium can keep.
+     */
+
     /*
      * The copy has to fill the sheet so the bank details, declaration and
      * signature sit at the foot of the page rather than halfway up it — but it
@@ -199,5 +205,17 @@
    */
   .print-root > * + * {
     margin-top: 0 !important;
+  }
+
+  /*
+   * A document long enough to run past one sheet leaves page two as a column
+   * of bare figures unless the headings come with it.
+   */
+  .doc-copy thead {
+    display: table-header-group;
+  }
+
+  .doc-copy tr {
+    break-inside: avoid;
   }
 }
