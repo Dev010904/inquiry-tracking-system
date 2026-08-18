@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
+import { dbMessage } from '@/lib/db-message'
 import { orderDetailsSchema, orderItemSchema, paymentSchema } from '@/lib/schemas/order'
 
 export type Result =
@@ -162,7 +163,10 @@ export async function updateOrderDetails(input: unknown): Promise<Result> {
     })
     .eq('id', values.order_id)
 
-  if (error) return { ok: false, error: 'Could not save your changes.' }
+  // The dispatch gate lives in Postgres and refuses in a full sentence naming
+  // what is missing. Swallowing it left someone staring at "Could not save
+  // your changes." with no idea a QA check was the thing in the way.
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not save your changes.') }
 
   revalidatePath(`/orders/${values.order_id}`)
   revalidatePath('/orders')

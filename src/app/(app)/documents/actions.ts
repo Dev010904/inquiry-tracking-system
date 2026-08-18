@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { settingsManagerOrNull } from '@/lib/auth'
 import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
+import { dbMessage } from '@/lib/db-message'
 import { companySettingsSchema, createDocumentSchema } from '@/lib/schemas/document'
 import { GST_STATES } from '@/lib/constants'
 
@@ -27,11 +28,6 @@ function flatten(error: z.ZodError): Record<string, string> {
  * messages are written for staff to read, so they are passed through rather
  * than replaced with something vaguer.
  */
-function dbMessage(message: string, fallback: string): string {
-  const cleaned = message.replace(/^ERROR:\s*/i, '').trim()
-  return cleaned.length > 0 && cleaned.length < 300 ? cleaned : fallback
-}
-
 /** Saves the supplier's own details. Admin only, enforced by RLS as well. */
 export async function saveCompanySettings(input: unknown): Promise<Result> {
   // Lives here rather than in settings/actions.ts, but it is a settings write
