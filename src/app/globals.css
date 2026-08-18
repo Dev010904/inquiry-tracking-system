@@ -126,6 +126,19 @@
 }
 
 /*
+ * The logo, in the header and behind the watermark.
+ *
+ * Browsers save ink by default, and the navy would otherwise print washed out
+ * or not at all. This asks for the colour as authored on paper as well as on
+ * screen. It sits outside the print block on purpose — the property only ever
+ * applies to printing, and burying it in a media query is how it gets lost.
+ */
+.doc-ink {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/*
  * Printing an invoice.
  *
  * Browser print is used rather than a PDF library: the layout is then

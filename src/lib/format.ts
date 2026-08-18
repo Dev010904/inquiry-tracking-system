@@ -139,3 +139,31 @@ export function previewOrderTotals(orderValue: number, advanceReceived = 0) {
     balancePending: totalWithGst - advanceReceived,
   }
 }
+
+/**
+ * One address line, from parts that were typed by hand.
+ *
+ * Staff fill these fields in Settings and on the company record, and ending a
+ * line with a comma is the natural way to write an address that continues on
+ * the next one. Joining those parts with ", " then prints
+ * "…Mari Mata No Khacho,, Marimata Lane" on a document that goes to a
+ * customer. Rather than police what is typed, each part is stripped of
+ * surrounding whitespace and commas before the join, and any doubled comma or
+ * run of spaces still left inside a part is collapsed. A missing space after a
+ * comma is closed up at the same time, since it comes from the same habit.
+ *
+ * Empty and null parts drop out, so a blank line two never leaves a dangling
+ * separator behind it.
+ */
+export function joinAddress(...parts: (string | null | undefined)[]): string {
+  return parts
+    .map((part) => (part ?? '').replace(/^[\s,]+|[\s,]+$/g, ''))
+    .filter(Boolean)
+    .join(', ')
+    // Comma runs first: a single-comma rule applied to "A,,B" would space it
+    // out into "A, , B" rather than close it up.
+    .replace(/\s*,(?:\s*,)+\s*/g, ', ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}

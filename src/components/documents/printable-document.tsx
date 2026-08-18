@@ -6,7 +6,7 @@ import {
   TAXABLE_DOCUMENT_TYPES,
   TAX_DISPLAYING_DOCUMENT_TYPES,
 } from '@/lib/constants'
-import { formatDate, formatMoney } from '@/lib/format'
+import { formatDate, formatMoney, joinAddress } from '@/lib/format'
 import type { CompanySettingsRow, InvoiceLineRow, InvoiceRow } from '@/types/database'
 
 type Props = {
@@ -97,6 +97,17 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
   const showsTax = TAX_DISPLAYING_DOCUMENT_TYPES.includes(invoice.doc_type)
   const isDraft = invoice.status === 'draft'
 
+  // The word carries the meaning and the logo sits behind it. A sheet marked
+  // only with a faint logo is indistinguishable from a real document at a
+  // glance, which is the exact mistake the watermark exists to prevent. The
+  // ink weights are the ones the text watermarks already used.
+  // The two statuses are mutually exclusive, so at most one ever applies.
+  const watermark = isDraft
+    ? { word: 'Draft', size: 80, ink: '0.06' }
+    : invoice.status === 'cancelled'
+      ? { word: 'Cancelled', size: 70, ink: '0.08' }
+      : null
+
   // Intrastate splits into CGST + SGST, interstate into IGST. Decided by what
   // Postgres actually put on the lines, not re-derived from the state codes.
   const intrastate = Number(invoice.cgst_amount) > 0 || Number(invoice.sgst_amount) > 0
@@ -115,15 +126,30 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
           className="doc-copy relative mx-auto flex min-h-[277mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
           style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
-          {isDraft && (
-            <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[80px] font-bold uppercase tracking-widest text-black/[0.06]">
-              Draft
-            </p>
-          )}
-          {invoice.status === 'cancelled' && (
-            <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[70px] font-bold uppercase tracking-widest text-black/[0.08]">
-              Cancelled
-            </p>
+          {watermark && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+              {/* An <img> rather than a CSS background: print stylesheets drop
+                  background images routinely, which would leave the watermark
+                  looking right on screen and missing on paper. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/print-logo.svg"
+                alt=""
+                width={480}
+                height={317}
+                className="doc-ink absolute"
+                style={{ opacity: Number(watermark.ink) }}
+              />
+              <p
+                className="relative font-bold uppercase tracking-widest"
+                style={{
+                  fontSize: `${watermark.size}px`,
+                  color: `rgb(0 0 0 / ${watermark.ink})`,
+                }}
+              >
+                {watermark.word}
+              </p>
+            </div>
           )}
 
           {/* The supplied sheet has no supplier block — it was printed on
@@ -134,26 +160,39 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               issued before the setting existed has no such key in its snapshot,
               and that must keep printing the header rather than lose it. */}
           {supplier?.print_supplier_header !== false && (
-          <header className="border-b border-black/30 pb-2 text-center">
-            <h1 className="text-sm font-bold uppercase">
-              {supplier?.legal_name ?? 'Company name not set'}
-            </h1>
-            <p>
-              {[supplier?.address_line1, supplier?.address_line2].filter(Boolean).join(', ')}
-            </p>
-            <p>
-              {[supplier?.city, supplier?.state_name, supplier?.pincode]
-                .filter(Boolean)
-                .join(', ')}
-              {supplier?.phone ? ` · ${supplier.phone}` : ''}
-              {supplier?.email ? ` · ${supplier.email}` : ''}
-            </p>
-            {supplier?.gstin && (
-              <p className="font-medium">
-                GSTIN: {supplier.gstin}
-                {supplier.pan ? ` · PAN: ${supplier.pan}` : ''}
+          <header className="flex items-center gap-3 border-b border-black/30 pb-2">
+            {/* Sized to the identity block beside it so the header keeps the
+                height it had before the logo was added — a taller header is
+                what would push a long document onto a second sheet. The width
+                and height are explicit so print does not reflow while the
+                image is still being fetched.
+                The SVG is used rather than the PNG: it came from a vector
+                original and stays sharp at any print resolution. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/print-logo.svg"
+              alt=""
+              width={64}
+              height={42}
+              className="doc-ink shrink-0"
+            />
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold uppercase">
+                {supplier?.legal_name ?? 'Company name not set'}
+              </h1>
+              <p>{joinAddress(supplier?.address_line1, supplier?.address_line2)}</p>
+              <p>
+                {joinAddress(supplier?.city, supplier?.state_name, supplier?.pincode)}
+                {supplier?.phone ? ` · ${supplier.phone}` : ''}
+                {supplier?.email ? ` · ${supplier.email}` : ''}
               </p>
-            )}
+              {supplier?.gstin && (
+                <p className="font-medium">
+                  GSTIN: {supplier.gstin}
+                  {supplier.pan ? ` · PAN: ${supplier.pan}` : ''}
+                </p>
+              )}
+            </div>
           </header>
           )}
 
@@ -183,7 +222,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               )}
               <p>
                 <span className="text-black/60">Address:</span>{' '}
-                {[buyer?.address, buyer?.city].filter(Boolean).join(', ') || '—'}
+                {joinAddress(buyer?.address, buyer?.city) || '—'}
               </p>
               <p>
                 <span className="text-black/60">GSTIN/UIN :</span> {buyer?.gstin || '-'}
