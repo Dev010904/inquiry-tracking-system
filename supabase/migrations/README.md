@@ -38,3 +38,49 @@ This folder starts the record from Phase 2A onward. It does not backfill the gap
 
 If a verification query fails its pass condition, stop and report it rather than
 continuing to the next file.
+
+## Checking the money survived a migration
+
+Order totals are the one thing no migration may disturb. `pre_phase3.orders`
+is a copy of `public.orders` taken before Phase 3 began — see
+`20260817_3_00_pre_phase3_snapshot.sql` — and it is the reference the live
+table is checked against.
+
+Earlier sessions compared an md5 "fingerprint" of the order money. That is
+abandoned: the formula behind the hash was never written down, so a later
+session could not reproduce the number and could not tell a real change from a
+differently-spelled query. **Compare the rows instead.** It proves more, it
+explains itself, and it names the offending order when it fails.
+
+Run this after any migration that touches `orders`, `order_items` or
+`recalc_order_value()`:
+
+```sql
+select o.order_no,
+       o.order_value,     p.order_value     as was_order_value,
+       o.gst_amount,      p.gst_amount      as was_gst_amount,
+       o.total_with_gst,  p.total_with_gst  as was_total_with_gst
+from public.orders o
+join pre_phase3.orders p using (id)
+where o.order_value    is distinct from p.order_value
+   or o.gst_amount     is distinct from p.gst_amount
+   or o.total_with_gst is distinct from p.total_with_gst;
+```
+
+**Pass condition: zero rows.** `is distinct from` rather than `<>` so a value
+that became null is caught rather than silently comparing to unknown.
+
+An order created after the snapshot has no row in `pre_phase3.orders` and so is
+not covered by the join. Check that the two sides still line up, and that the
+only ids missing are ones you can account for:
+
+```sql
+select (select count(*) from public.orders)     as live,
+       (select count(*) from pre_phase3.orders) as snapshot,
+       (select count(*) from public.orders o
+          join pre_phase3.orders p using (id))  as compared;
+```
+
+If `live` exceeds `snapshot`, the extra orders are genuinely new and the first
+query cannot speak for them. If `compared` is lower than `snapshot`, a
+pre-existing order has **lost its id or been deleted** — stop and report it.
