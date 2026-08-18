@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyContacts } from '@/lib/queries/inquiries'
-import { CONVERTIBLE_STATUSES, CONVERTIBLE_STATUS_LABEL } from '@/lib/constants'
+import { CONVERTIBLE_STATUSES, CONVERTIBLE_STATUS_LABEL, INQUIRY_STATUS } from '@/lib/constants'
 import {
   convertToOrderSchema,
   inquirySchema,
@@ -15,6 +15,9 @@ import {
 export type SaveResult =
   | { ok: true; id: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> }
+
+const enumKeys = <T extends Record<string, string>>(map: T) =>
+  Object.keys(map) as [keyof T & string, ...(keyof T & string)[]]
 
 function flatten(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {}
@@ -316,4 +319,61 @@ export async function fetchCompanyContacts(companyId: string) {
   if (!(await editorOrNull('inquiries'))) return []
   if (!z.string().uuid().safeParse(companyId).success) return []
   return getCompanyContacts(companyId)
+}
+
+/**
+ * Changes only the status, from the inquiry screen.
+ *
+ * Status is the field that moves most and it used to need the whole edit form
+ * — open it, change one select, save every other field back over itself. This
+ * writes the one column, so nothing else on the record can be disturbed by
+ * someone doing the thing they do ten times a day.
+ *
+ * Confirming is deliberately not reachable here when there is no order yet:
+ * the screen sends that case to Convert to order instead, because an inquiry
+ * marked confirmed with nothing to deliver against is a record that lies.
+ */
+export async function setInquiryStatus(
+  id: string,
+  status: string,
+  lostReason?: string
+): Promise<SaveResult> {
+  if (!(await editorOrNull('inquiries'))) return NO_FEATURE_ACCESS
+
+  if (!z.string().uuid().safeParse(id).success) {
+    return { ok: false, error: 'Unrecognised inquiry.' }
+  }
+
+  const parsed = z.enum(enumKeys(INQUIRY_STATUS)).safeParse(status)
+  if (!parsed.success) return { ok: false, error: 'Unrecognised status.' }
+
+  const reason = lostReason?.trim() ?? ''
+  // Same rule the full form enforces: a lost inquiry has to say why, or the
+  // pipeline reports a loss nobody can explain.
+  if (parsed.data === 'lost' && !reason) {
+    return {
+      ok: false,
+      error: 'Say why it was lost.',
+      fieldErrors: { lost_reason: 'Say why it was lost — price, timing, competitor.' },
+    }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('inquiries')
+    .update({
+      status: parsed.data,
+      // Cleared on any other status, so a reason cannot outlive the loss it
+      // described and sit under an inquiry that is live again.
+      lost_reason: parsed.data === 'lost' ? reason : null,
+    })
+    .eq('id', id)
+    .is('deleted_at', null)
+
+  if (error) return { ok: false, error: 'Could not change the status.' }
+
+  revalidatePath('/inquiries')
+  revalidatePath(`/inquiries/${id}`)
+  revalidatePath('/dashboard')
+  return { ok: true, id }
 }

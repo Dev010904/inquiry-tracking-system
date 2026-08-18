@@ -3,20 +3,14 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Building2, Mail, Pencil, Phone, User } from 'lucide-react'
 import { AddFollowup } from '@/components/inquiries/add-followup'
-import { ConvertToOrder } from '@/components/inquiries/convert-to-order'
+import { ChangeStatus } from '@/components/inquiries/change-status'
 import { RaiseQuotation } from '@/components/inquiries/raise-quotation'
 import { FollowupItem } from '@/components/inquiries/followup-item'
 import { Timeline } from '@/components/inquiries/timeline'
-import { Badge, StatusBadge } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  COMPANY_TYPE,
-  CONVERTIBLE_STATUSES,
-  CONVERTIBLE_STATUS_LABEL,
-  INQUIRY_STATUS,
-  PRIORITY,
-} from '@/lib/constants'
+import { COMPANY_TYPE, PRIORITY } from '@/lib/constants'
 import { formatDate, formatMoney } from '@/lib/format'
 import { getInquiryDetail } from '@/lib/queries/inquiries'
 
@@ -44,15 +38,10 @@ export default async function InquiryDetailPage({
   const { inquiry, company, contact, followups, order, ownerName, timeline } = detail
   const pending = followups.filter((f) => !f.is_done)
 
-  // Converting is gated on both the status and the absence of an existing
-  // order. The server action re-checks; this only explains why.
+  // Confirming an inquiry with no order behind it means creating one, so the
+  // status control hands that case to the order form. The unique constraint on
+  // orders.inquiry_id is what actually prevents a second one.
   const alreadyOrdered = Boolean(order)
-  const convertible = CONVERTIBLE_STATUSES.includes(inquiry.status)
-  const disabledReason = alreadyOrdered
-    ? `Already converted to ${order?.order_no ?? 'an order'}.`
-    : !convertible
-      ? `Only ${CONVERTIBLE_STATUS_LABEL} inquiries can be converted. This one is ${INQUIRY_STATUS[inquiry.status]}.`
-      : undefined
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
@@ -70,7 +59,6 @@ export default async function InquiryDetailPage({
             <h2 className="text-xl font-semibold tracking-tight">
               {inquiry.inquiry_no ?? 'Inquiry'}
             </h2>
-            <StatusBadge status={inquiry.status} />
             <Badge variant={inquiry.priority === 'high' ? 'overdue' : 'muted'}>
               {PRIORITY[inquiry.priority]} priority
             </Badge>
@@ -93,15 +81,20 @@ export default async function InquiryDetailPage({
             inquiryId={inquiry.id}
             defaultStateCode={company?.gstin ? company.gstin.slice(0, 2) : null}
           />
-          <div>
-            <ConvertToOrder
-              inquiryId={inquiry.id}
-              enabled={convertible && !alreadyOrdered}
-              disabledReason={disabledReason}
-              estimatedValue={inquiry.estimated_value}
-              currency={inquiry.currency}
-            />
-          </div>
+          {/*
+            Replaces the old Convert to order button, at the owner's request.
+            Status is what actually moves here, and conversion is reachable
+            through Confirmed rather than sitting as a button that is disabled
+            most of the time.
+          */}
+          <ChangeStatus
+            inquiryId={inquiry.id}
+            status={inquiry.status}
+            lostReason={inquiry.lost_reason}
+            alreadyOrdered={alreadyOrdered}
+            estimatedValue={inquiry.estimated_value}
+            currency={inquiry.currency}
+          />
         </div>
       </div>
 

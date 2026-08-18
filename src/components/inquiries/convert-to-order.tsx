@@ -22,15 +22,39 @@ type Props = {
   estimatedValue: number | null
   /** Inherited from the inquiry — the order is agreed in the same currency. */
   currency: CurrencyCode
+  /**
+   * Driven from outside instead of by its own button.
+   *
+   * Confirming an inquiry through Change status *is* converting it, so that
+   * control opens this dialog rather than duplicating the order form.
+   */
+  controlledOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  hideTrigger?: boolean
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedValue, currency }: Props) {
+export function ConvertToOrder({
+  inquiryId,
+  enabled,
+  disabledReason,
+  estimatedValue,
+  currency,
+  controlledOpen,
+  onOpenChange,
+  hideTrigger,
+}: Props) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [ownOpen, setOwnOpen] = useState(false)
+
+  const open = controlledOpen ?? ownOpen
+  const setOpen = (next: boolean) => {
+    setOwnOpen(next)
+    onOpenChange?.(next)
+  }
   const [pending, startTransition] = useTransition()
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string>()
@@ -79,16 +103,20 @@ export function ConvertToOrder({ inquiryId, enabled, disabledReason, estimatedVa
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        disabled={!enabled}
-        title={enabled ? undefined : disabledReason}
-      >
-        <Package className="h-4 w-4" aria-hidden />
-        Convert to order
-      </Button>
-      {!enabled && disabledReason && (
-        <p className="mt-1 text-xs text-muted-foreground">{disabledReason}</p>
+      {!hideTrigger && (
+        <>
+          <Button
+            onClick={() => setOpen(true)}
+            disabled={!enabled}
+            title={enabled ? undefined : disabledReason}
+          >
+            <Package className="h-4 w-4" aria-hidden />
+            Convert to order
+          </Button>
+          {!enabled && disabledReason && (
+            <p className="mt-1 text-xs text-muted-foreground">{disabledReason}</p>
+          )}
+        </>
       )}
 
       <Modal
