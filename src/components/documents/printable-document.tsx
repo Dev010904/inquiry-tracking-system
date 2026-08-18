@@ -121,9 +121,14 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
   return (
     <div className="print-root space-y-6">
       {sheets.map((copy, index) => (
+        // min-h is 273mm: A4 (297mm) less the 12mm top and bottom margin set
+        // on @page. It was 277mm, which assumes a 10mm margin, and those extra
+        // 4mm fragmented every document onto a second, blank sheet. The
+        // min-height is what holds the totals and signature block down at the
+        // foot of the page, so it stays — it just has to match the page box.
         <article
           key={copy}
-          className="doc-copy relative mx-auto flex min-h-[277mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
+          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
           style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
           {watermark && (

@@ -172,4 +172,15 @@
   .print-root {
     margin: 0;
   }
+
+  /*
+   * A tax invoice prints two or three copies, and on screen they are spaced
+   * apart so they read as separate sheets. On paper each copy already starts
+   * its own page, so that gap has nothing to separate — it would just land at
+   * the top of pages two and three and push them past the bottom of the page
+   * box, which is the same 4mm overflow the copies were sized to avoid.
+   */
+  .print-root > * + * {
+    margin-top: 0 !important;
+  }
 }
