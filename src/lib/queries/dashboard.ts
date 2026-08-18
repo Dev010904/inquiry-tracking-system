@@ -129,9 +129,16 @@ export async function getAlarms(now = new Date()): Promise<Alarms> {
 
   const inquiryIds = [...new Set(relevant.map((entry) => entry.row.inquiry_id))]
 
+  // Deleted inquiries excluded, and their follow-ups dropped below. A
+  // follow-up outlives the inquiry it belongs to — nothing cascades to it —
+  // so without this the panel goes on demanding a call about an inquiry that
+  // no longer exists and cannot be opened, with no way to clear it.
   const { data: inquiries } = inquiryIds.length
-    ? await supabase.from('inquiries').select('*').in('id', inquiryIds)
+    ? await supabase.from('inquiries').select('*').in('id', inquiryIds).is('deleted_at', null)
     : { data: [] as InquiryRow[] }
+
+  const live = new Set((inquiries ?? []).map((i) => i.id))
+  const alive = relevant.filter((entry) => live.has(entry.row.inquiry_id))
 
   const companyIds = [...new Set((inquiries ?? []).map((i) => i.company_id))]
   const contactIds = [
@@ -158,7 +165,7 @@ export async function getAlarms(now = new Date()): Promise<Alarms> {
   const contactById = indexBy(contactsRes.data)
   const ownerById = indexBy(ownersRes.data)
 
-  const alarms: FollowupAlarm[] = relevant.map(({ row, effectiveDue, bucket }) => {
+  const alarms: FollowupAlarm[] = alive.map(({ row, effectiveDue, bucket }) => {
     const inquiry = inquiryById.get(row.inquiry_id)
     const company = inquiry ? companyById.get(inquiry.company_id) : undefined
     const contact = inquiry?.contact_id ? contactById.get(inquiry.contact_id) : undefined

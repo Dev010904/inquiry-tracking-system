@@ -37,10 +37,15 @@ export async function getMyFollowups(userId: string, now = new Date()): Promise<
   const rows = data ?? []
   if (rows.length === 0) return []
 
+  // Deleted inquiries excluded, and their follow-ups dropped below — the same
+  // rule the alarm panel applies. Nothing cascades from an inquiry to its
+  // follow-ups, so a deleted one would otherwise sit in someone's work list
+  // pointing at a record they cannot open.
   const { data: inquiries } = await supabase
     .from('inquiries')
     .select('id, inquiry_no, companies(name)')
     .in('id', [...new Set(rows.map((row) => row.inquiry_id))])
+    .is('deleted_at', null)
 
   const context = new Map(
     (inquiries ?? []).map((row) => {
@@ -54,6 +59,7 @@ export async function getMyFollowups(userId: string, now = new Date()): Promise<
   horizon.setDate(horizon.getDate() + 14)
 
   return rows
+    .filter((row) => context.has(row.inquiry_id))
     .map((row) => ({
       id: row.id,
       inquiryId: row.inquiry_id,

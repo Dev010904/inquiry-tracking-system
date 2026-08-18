@@ -75,7 +75,14 @@ export async function getPendingTasks(
   return decorate(data ?? [])
 }
 
-/** Everything outstanding that belongs to one person, for the My work dashboard. */
+/**
+ * Everything outstanding that belongs to one person, for the My work dashboard.
+ *
+ * Work whose order or project has been deleted is dropped. Nothing cascades
+ * from either parent to `tasks`, and the card on the parent page cannot show
+ * it because that page is gone — so this is the one place it would surface,
+ * as a job pointing at nothing, with no way to clear it.
+ */
 export async function getMyTasks(userId: string): Promise<PendingTask[]> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -84,7 +91,30 @@ export async function getMyTasks(userId: string): Promise<PendingTask[]> {
     .eq('assigned_to', userId)
     .in('status', OPEN_TASK_STATUSES)
 
-  return decorate(data ?? [])
+  const rows = data ?? []
+  if (rows.length === 0) return []
+
+  const idsOf = (kind: ParentKind) =>
+    [...new Set(rows.filter((row) => row.parent_type === kind).map((row) => row.parent_id))]
+
+  const orderIds = idsOf('order')
+  const projectIds = idsOf('rnd')
+
+  const [ordersRes, projectsRes] = await Promise.all([
+    orderIds.length
+      ? supabase.from('orders').select('id').in('id', orderIds).is('deleted_at', null)
+      : Promise.resolve({ data: [] as { id: string }[] }),
+    projectIds.length
+      ? supabase.from('rnd_projects').select('id').in('id', projectIds).is('deleted_at', null)
+      : Promise.resolve({ data: [] as { id: string }[] }),
+  ])
+
+  const liveParents = new Set([
+    ...(ordersRes.data ?? []).map((row) => row.id),
+    ...(projectsRes.data ?? []).map((row) => row.id),
+  ])
+
+  return decorate(rows.filter((row) => liveParents.has(row.parent_id)))
 }
 
 /** Active staff, for the assignee picker. */
