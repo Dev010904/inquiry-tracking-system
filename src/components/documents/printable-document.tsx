@@ -431,8 +431,12 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </div>
               <div className="p-2 text-center">
                 <p>For {supplier?.legal_name ?? ''}</p>
-                <p className="mt-10">{supplier?.signatory_name ?? ''}</p>
-                <p className="text-[11px]">
+                {/* The firm signs by office rather than by name, so only the
+                    designation prints. signatory_name is still held in company
+                    settings and in every issued document's supplier snapshot —
+                    it is simply not put on the page. The gap above is the room
+                    to sign. */}
+                <p className="mt-12 text-[11px]">
                   {supplier?.signatory_designation ?? 'Authorised Signatory'}
                 </p>
               </div>
