@@ -120,6 +120,7 @@ export async function createDocument(input: unknown): Promise<Result> {
     p_parent_invoice_id: v.parent_invoice_id || null,
     p_notes: v.notes || null,
     p_reason: v.reason || null,
+    p_payment_due_days: v.payment_due_days,
   })
 
   if (error) return { ok: false, error: dbMessage(error.message, 'Could not raise that document.') }
@@ -188,6 +189,22 @@ export async function deleteDraft(invoiceId: string): Promise<Result> {
   if (error) return { ok: false, error: 'Could not delete that draft.' }
 
   revalidatePath('/documents')
+  return { ok: true }
+}
+
+/** Changes the printed credit period. The database refuses once issued. */
+export async function setPaymentDueDays(invoiceId: string, days: number): Promise<Result> {
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('set_payment_due_days', {
+    p_invoice_id: invoiceId,
+    p_days: days,
+  })
+
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not change the payment terms.') }
+
+  revalidatePath(`/documents/${invoiceId}`)
   return { ok: true }
 }
 

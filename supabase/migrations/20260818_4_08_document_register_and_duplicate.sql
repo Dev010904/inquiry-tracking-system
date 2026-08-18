@@ -184,3 +184,53 @@ end $$;
 
 revoke all on function public.document_number_register() from public, anon;
 grant execute on function public.document_number_register() to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 4. Payment terms on the document (added later the same day, at the owner's
+--    request: a credit period under the date, defaulting to 15 days)
+-- ---------------------------------------------------------------------------
+-- company_settings already holds a free-text payment_terms line printed near
+-- the foot of the page. This is a different thing: a number of days, per
+-- document, printed beside the date where a customer looks for it, because the
+-- credit period is negotiated per customer rather than fixed for the business.
+alter table public.invoices
+  add column if not exists payment_due_days integer not null default 15
+  constraint invoices_payment_due_days_sane check (payment_due_days between 0 and 365);
+
+comment on column public.invoices.payment_due_days is
+  'Credit period printed on the document, in days. Defaults to 15 and is editable while the document is a draft.';
+
+-- create_document gains p_payment_due_days with the same default. The previous
+-- eight-argument signature is DROPPED rather than left in place: two overloads
+-- differing only by a defaulted trailing parameter make an eight-argument call
+-- ambiguous, and PostgREST resolves by named arguments.
+--   drop function public.create_document(uuid, document_type, date, text, text, uuid, text, text);
+-- See the deployed definition for the full body; only the new parameter, the
+-- new insert column and this drop differ from section 2 of the file above.
+
+-- Changing it after the draft exists. guard_issued_document already refuses any
+-- update to an issued row; the status test here is what turns that into a
+-- readable message rather than a constraint violation.
+create or replace function public.set_payment_due_days(p_invoice_id uuid, p_days integer)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+begin
+  if not public.is_active_member() then raise exception 'Not permitted'; end if;
+  if p_days is null or p_days < 0 or p_days > 365 then
+    raise exception 'Payment terms must be between 0 and 365 days.';
+  end if;
+
+  update public.invoices
+     set payment_due_days = p_days
+   where id = p_invoice_id and status = 'draft';
+
+  if not found then
+    raise exception 'Payment terms can only be changed while the document is a draft.';
+  end if;
+end $$;
+
+revoke all on function public.set_payment_due_days(uuid, integer) from public, anon;
+grant execute on function public.set_payment_due_days(uuid, integer) to authenticated;

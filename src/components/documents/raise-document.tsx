@@ -41,6 +41,7 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
   const [stateCode, setStateCode] = useState(defaultStateCode ?? '')
   const [parentId, setParentId] = useState('')
   const [notes, setNotes] = useState('')
+  const [dueDays, setDueDays] = useState('15')
 
   const available = (Object.keys(DOCUMENT_TYPE) as DocumentType[]).filter((type) => {
     if (TAXABLE_DOCUMENT_TYPES.includes(type)) return gstApplicable
@@ -61,6 +62,7 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
         place_of_supply_code: stateCode,
         parent_invoice_id: parentId,
         notes,
+        payment_due_days: dueDays,
       })
       if (result.ok && result.id) {
         toast.success('Draft created')
@@ -121,6 +123,25 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
               onChange={(e) => setDocDate(e.target.value)}
             />
           </Field>
+
+          {/* A challan moves goods rather than charging for them, so it prints
+              no terms and there is nothing to set. */}
+          {docType !== 'delivery_challan' && (
+            <Field
+              label="Payment terms"
+              htmlFor="due_days"
+              hint="Days from the document date. 0 prints “Due on receipt”."
+            >
+              <Input
+                id="due_days"
+                type="number"
+                min={0}
+                max={365}
+                value={dueDays}
+                onChange={(e) => setDueDays(e.target.value)}
+              />
+            </Field>
+          )}
 
           {isTax && (
             <Field

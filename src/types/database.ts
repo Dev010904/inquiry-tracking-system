@@ -344,6 +344,8 @@ export type InvoiceRow = Timestamps & {
   issued_by: string | null
   cancelled_at: string | null
   cancel_reason: string | null
+  /** Credit period printed on the document, in days. Defaults to 15. */
+  payment_due_days: number
   /** Null on rows cancelled before the column existed. */
   cancelled_by: string | null
   created_by: string | null
@@ -598,6 +600,7 @@ export type Database = {
           p_parent_invoice_id?: string | null
           p_notes?: string | null
           p_reason?: string | null
+          p_payment_due_days?: number
         }
         Returns: string
       }
@@ -622,6 +625,11 @@ export type Database = {
       /** Allocates the number and freezes the snapshots. Returns the doc no. */
       issue_document: { Args: { p_invoice_id: string }; Returns: string }
       cancel_document: { Args: { p_invoice_id: string; p_reason: string }; Returns: undefined }
+      /** Changes the printed credit period. Draft only; raises otherwise. */
+      set_payment_due_days: {
+        Args: { p_invoice_id: string; p_days: number }
+        Returns: undefined
+      }
       /** Copies a document into a fresh draft — no number, no snapshots. */
       duplicate_document: { Args: { p_invoice_id: string }; Returns: string }
       /**

@@ -104,6 +104,14 @@ export const createDocumentSchema = z.object({
   parent_invoice_id: z.string().uuid().optional().or(z.literal('')),
   notes: optional(2000),
   reason: optional(500),
+  // The credit period printed on the document. 15 days is the house default;
+  // it is typed per document because it is negotiated per customer.
+  payment_due_days: z.coerce
+    .number()
+    .int('Whole days only')
+    .min(0, 'Cannot be negative')
+    .max(365, '365 days at most')
+    .default(15),
 })
 
 export type CreateDocumentValues = z.output<typeof createDocumentSchema>

@@ -168,19 +168,22 @@
     padding: 0 !important;
     break-inside: avoid;
     /*
-     * On screen the copy is held at a page's height so the totals and the
-     * signature sit at the foot of the sheet. On paper that same fixed height
-     * is a liability: the browser puts its own header and footer inside the
-     * page box when "Headers and footers" is ticked, and "Default" margins are
-     * not necessarily the 12mm @page asks for. Either one eats into the height
-     * the copy was pinned to, and the overflow becomes a second sheet carrying
-     * nothing but the signature line.
+     * The copy has to fill the sheet so the bank details, declaration and
+     * signature sit at the foot of the page rather than halfway up it — but it
+     * must not exceed the sheet, or the remainder becomes a second page
+     * carrying nothing but the signature line.
      *
-     * Letting content decide removes the assumption entirely. A short document
-     * then takes exactly the room it needs and has nothing left over to spill,
-     * whatever the person at the printer has chosen.
+     * A millimetre count cannot do both. 277mm assumed a 10mm margin, 273mm
+     * assumed 12mm, and neither survives the browser putting its own header
+     * and footer inside the page box or the person at the printer choosing
+     * different margins.
+     *
+     * vh in paged media resolves against the page area itself, so this is the
+     * page's real height whatever it turns out to be, measured rather than
+     * assumed. The 2mm comes off to absorb sub-millimetre rounding, which is
+     * all it takes to tip a block onto the next sheet.
      */
-    min-height: auto !important;
+    min-height: calc(100vh - 2mm) !important;
   }
 
   .print-root {

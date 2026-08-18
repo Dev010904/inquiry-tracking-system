@@ -241,6 +241,17 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               <p>
                 <span className="text-black/60">Date:</span> {formatDate(invoice.doc_date)}
               </p>
+              {/* The credit period, directly under the date where a customer
+                  looks for it. A challan moves goods rather than charging for
+                  them, so it carries no terms. */}
+              {invoice.doc_type !== 'delivery_challan' && (
+                <p>
+                  <span className="text-black/60">Payment terms:</span>{' '}
+                  {invoice.payment_due_days === 0
+                    ? 'Due on receipt'
+                    : `${invoice.payment_due_days} days`}
+                </p>
+              )}
               <p>
                 <span className="text-black/60">{DOCUMENT_NO_LABEL[invoice.doc_type]}:</span>{' '}
                 <span className="font-semibold">{invoice.doc_no ?? 'Not yet issued'}</span>

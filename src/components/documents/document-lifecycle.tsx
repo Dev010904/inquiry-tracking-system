@@ -6,7 +6,8 @@ import { Copy, FileWarning, Loader2, Lock, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
-import { deleteDraft, duplicateDocument } from '@/app/(app)/documents/actions'
+import { Input } from '@/components/ui/input'
+import { deleteDraft, duplicateDocument, setPaymentDueDays } from '@/app/(app)/documents/actions'
 import { DOCUMENT_TYPE } from '@/lib/constants'
 import type { DocumentStatus, DocumentType } from '@/types/database'
 
@@ -15,6 +16,7 @@ type Props = {
   docType: DocumentType
   docNo: string | null
   status: DocumentStatus
+  paymentDueDays: number
   isAdmin: boolean
 }
 
@@ -27,11 +29,42 @@ type Props = {
  * had no way to know he already had what he wanted. This panel says it, in the
  * two places it matters, at the moment it matters.
  */
-export function DocumentLifecycle({ invoiceId, docType, docNo, status, isAdmin }: Props) {
+export function DocumentLifecycle({
+  invoiceId,
+  docType,
+  docNo,
+  status,
+  paymentDueDays,
+  isAdmin,
+}: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [dueDays, setDueDays] = useState(String(paymentDueDays))
   const [error, setError] = useState<string>()
+
+  // A challan carries no terms, so there is nothing to offer.
+  const hasTerms = docType !== 'delivery_challan'
+
+  function saveTerms() {
+    const days = Number(dueDays)
+    if (!Number.isInteger(days) || days < 0 || days > 365) {
+      toast.error('Payment terms must be a whole number of days, 0 to 365.')
+      setDueDays(String(paymentDueDays))
+      return
+    }
+    if (days === paymentDueDays) return
+    startTransition(async () => {
+      const result = await setPaymentDueDays(invoiceId, days)
+      if (result.ok) {
+        toast.success('Payment terms updated')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+        setDueDays(String(paymentDueDays))
+      }
+    })
+  }
 
   const noun = DOCUMENT_TYPE[docType].toLowerCase()
 
@@ -76,6 +109,28 @@ export function DocumentLifecycle({ invoiceId, docType, docNo, status, isAdmin }
                 customer&rsquo;s onto it, and after that it cannot be edited or deleted — only
                 cancelled, or corrected with a credit or debit note.
               </p>
+              {hasTerms && (
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  <label htmlFor="due_days_edit" className="text-sm">
+                    Payment terms
+                  </label>
+                  <Input
+                    id="due_days_edit"
+                    type="number"
+                    min={0}
+                    max={365}
+                    className="h-8 w-20"
+                    value={dueDays}
+                    disabled={pending}
+                    onChange={(e) => setDueDays(e.target.value)}
+                    onBlur={saveTerms}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    days from the document date
+                  </span>
+                </div>
+              )}
+
               {isAdmin && (
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   <Button
