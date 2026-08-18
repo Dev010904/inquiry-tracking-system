@@ -102,8 +102,15 @@ export default async function CompaniesPage({
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {companies.map((company) => (
-            <Card key={company.id} className="p-4 transition-colors hover:border-primary/40">
-              <Link href={`/companies/${company.id}`} className="flex h-full flex-col gap-2.5">
+            <Card
+              key={company.id}
+              className="flex flex-col p-4 transition-colors hover:border-primary/40"
+            >
+              {/*
+                flex-1 rather than h-full: the footer below is a sibling, and a
+                full-height link would push it past the bottom of the card.
+              */}
+              <Link href={`/companies/${company.id}`} className="flex flex-1 flex-col gap-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{company.name}</p>

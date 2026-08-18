@@ -171,6 +171,9 @@ export function ContactEditor({ companyId, contacts, canEdit }: Props) {
             <Input
               id="contact-name"
               value={draft.name}
+              // Native <dialog> puts focus on the first focusable thing, which
+              // is the close button. Someone opening this wants to type a name.
+              autoFocus
               onChange={(e) => set('name')(e.target.value)}
             />
           </Field>
