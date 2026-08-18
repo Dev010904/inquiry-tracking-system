@@ -8,12 +8,18 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Modal } from '@/components/ui/modal'
 import { Textarea } from '@/components/ui/textarea'
-import { INVOICE_COPIES, type InvoiceCopy } from '@/lib/constants'
+import {
+  INVOICE_COPIES,
+  TAXABLE_DOCUMENT_TYPES,
+  type DocumentType,
+  type InvoiceCopy,
+} from '@/lib/constants'
 import { cancelDocument, issueDocument } from '@/app/(app)/documents/actions'
 import type { DocumentStatus } from '@/types/database'
 
 type Props = {
   invoiceId: string
+  docType: DocumentType
   status: DocumentStatus
   isAdmin: boolean
   copies: InvoiceCopy[]
@@ -30,6 +36,7 @@ type Props = {
  */
 export function DocumentActions({
   invoiceId,
+  docType,
   status,
   isAdmin,
   copies,
@@ -77,6 +84,11 @@ export function DocumentActions({
     )
   }
 
+  // Original / Duplicate / Triplicate is a tax-invoice rule. The layout prints
+  // one sheet for anything else no matter what is ticked here, so offering the
+  // choice on a quotation is a control that silently does nothing.
+  const marksCopies = TAXABLE_DOCUMENT_TYPES.includes(docType)
+
   return (
     <div className="flex flex-wrap items-center gap-2 print:hidden">
       {status === 'draft' && (
@@ -98,20 +110,27 @@ export function DocumentActions({
         </Button>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="text-muted-foreground">Copies:</span>
-        {(Object.keys(INVOICE_COPIES) as InvoiceCopy[]).map((copy) => (
-          <label key={copy} className="flex items-center gap-1.5">
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={copies.includes(copy)}
-              onChange={() => toggleCopy(copy)}
-            />
-            <span className="capitalize">{copy}</span>
-          </label>
-        ))}
-      </div>
+      {marksCopies && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-muted-foreground">Copies:</span>
+          {(Object.keys(INVOICE_COPIES) as InvoiceCopy[]).map((copy) => (
+            <label key={copy} className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={copies.includes(copy)}
+                onChange={() => toggleCopy(copy)}
+              />
+              <span className="capitalize">{copy}</span>
+            </label>
+          ))}
+        </div>
+      )}
+
+      <p className="basis-full text-xs text-muted-foreground">
+        For a clean copy, turn off &ldquo;Headers and footers&rdquo; in the print dialogue —
+        otherwise the browser prints the page address and the date across the document.
+      </p>
 
       <Modal
         open={confirmIssue}

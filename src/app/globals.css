@@ -167,6 +167,20 @@
     border: none !important;
     padding: 0 !important;
     break-inside: avoid;
+    /*
+     * On screen the copy is held at a page's height so the totals and the
+     * signature sit at the foot of the sheet. On paper that same fixed height
+     * is a liability: the browser puts its own header and footer inside the
+     * page box when "Headers and footers" is ticked, and "Default" margins are
+     * not necessarily the 12mm @page asks for. Either one eats into the height
+     * the copy was pinned to, and the overflow becomes a second sheet carrying
+     * nothing but the signature line.
+     *
+     * Letting content decide removes the assumption entirely. A short document
+     * then takes exactly the room it needs and has nothing left over to spill,
+     * whatever the person at the printer has chosen.
+     */
+    min-height: auto !important;
   }
 
   .print-root {
