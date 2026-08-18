@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Building2, Mail, Phone } from 'lucide-react'
+import { AlertTriangle, Building2, Mail, Pencil, Phone } from 'lucide-react'
 import { CompanySearch } from '@/components/companies/company-search'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { COMPANY_TYPE } from '@/lib/constants'
 import { formatDate, formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { currentAccess } from '@/lib/permissions'
 import { listCompanies } from '@/lib/queries/companies'
 
 export const metadata: Metadata = { title: 'Companies · ANK Inquiry Tracking' }
@@ -23,10 +25,14 @@ export default async function CompaniesPage({
   const params = await searchParams
   const q = (Array.isArray(params.q) ? params.q[0] : params.q) || undefined
 
-  const companies = await listCompanies(q)
+  const [{ features }, companies] = await Promise.all([currentAccess(), listCompanies(q)])
+  const canEdit = features.companies.canEdit
 
   const totalBusiness = companies.reduce((sum, c) => sum + c.totalBusiness, 0)
   const totalOutstanding = companies.reduce((sum, c) => sum + c.balancePending, 0)
+  // Only a GST-applicable client needs one. A client marked exempt is
+  // complete without a GSTIN and must not be counted as unfinished work.
+  const missingGstin = companies.filter((c) => c.gstApplicable && !c.gstin).length
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
@@ -61,6 +67,23 @@ export default async function CompaniesPage({
       </div>
 
       <CompanySearch />
+
+      {/*
+        Said on the list because it is a list-shaped problem: an invoice cannot
+        be raised compliantly for any of these, and the owner needs to know how
+        many there are, not to find out one at a time.
+      */}
+      {missingGstin > 0 && !q && (
+        <Card className="border-duesoon/40 bg-duesoon/5 p-3">
+          <p className="flex items-start gap-2 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-duesoon" aria-hidden />
+            <span>
+              {missingGstin} of {companies.length} client{companies.length === 1 ? '' : 's'} have no
+              GSTIN recorded. A B2B tax invoice raised for them would not be compliant.
+            </span>
+          </p>
+        </Card>
+      )}
 
       {companies.length === 0 ? (
         <Card>
@@ -156,6 +179,32 @@ export default async function CompaniesPage({
                   </p>
                 )}
               </Link>
+
+              {/*
+                Outside the Link above, not inside it — a link nested in a link
+                is invalid and the browser resolves it however it likes.
+              */}
+              {(canEdit || (company.gstApplicable && !company.gstin)) && (
+                <div className="mt-2.5 flex items-center justify-between gap-2 border-t pt-2.5">
+                  {company.gstApplicable && !company.gstin ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-duesoon">
+                      <AlertTriangle className="h-3 w-3" aria-hidden />
+                      No GSTIN
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  {canEdit && (
+                    <Link
+                      href={`/companies/${company.id}/edit`}
+                      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                    >
+                      <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      Edit
+                    </Link>
+                  )}
+                </div>
+              )}
             </Card>
           ))}
         </div>

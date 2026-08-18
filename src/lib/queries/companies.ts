@@ -10,6 +10,7 @@ export type CompanyCard = {
   city: string | null
   state: string | null
   gstin: string | null
+  gstApplicable: boolean
   contactCount: number
   primaryContact: ContactRow | null
   inquiryCount: number
@@ -106,6 +107,7 @@ export async function listCompanies(search?: string): Promise<CompanyCard[]> {
       city: company.city,
       state: company.state,
       gstin: company.gstin,
+      gstApplicable: company.gst_applicable,
       contactCount: own.length,
       primaryContact: own.find((c) => c.is_primary) ?? own[0] ?? null,
       inquiryCount: theirInquiries.length,
@@ -180,6 +182,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     city: company.city,
     state: company.state,
     gstin: company.gstin,
+    gstApplicable: company.gst_applicable,
     contactCount: contacts.length,
     primaryContact: contacts.find((c) => c.is_primary) ?? contacts[0] ?? null,
     inquiryCount: inquiries.length,

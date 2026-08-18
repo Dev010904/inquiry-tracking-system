@@ -378,3 +378,21 @@ export const MEETING_TYPE = {
 export const QA_GATED_STATUSES = ['dispatched', 'delivered', 'closed']
 
 export const QA_BUCKET = 'qa-evidence'
+
+/**
+ * The state a GSTIN belongs to, from its first two digits.
+ *
+ * The document flow already derives place of supply this way —
+ * `create_document()` fills `place_of_supply_code` from `left(comp.gstin, 2)`
+ * and `place_of_supply_name` from `companies.state`. So the two have to agree,
+ * and this is the single place that says what agreement means.
+ *
+ * Returns null for a GSTIN whose prefix is not an allotted code, which is a
+ * malformed GSTIN rather than a new state.
+ */
+export function gstStateFor(gstin: string | null | undefined): { code: string; name: string } | null {
+  const code = gstin?.trim().slice(0, 2)
+  if (!code) return null
+  const name = GST_STATES[code]
+  return name ? { code, name } : null
+}
