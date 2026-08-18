@@ -97,16 +97,20 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
   const showsTax = TAX_DISPLAYING_DOCUMENT_TYPES.includes(invoice.doc_type)
   const isDraft = invoice.status === 'draft'
 
-  // The word carries the meaning and the logo sits behind it. A sheet marked
-  // only with a faint logo is indistinguishable from a real document at a
-  // glance, which is the exact mistake the watermark exists to prevent. The
-  // ink weights are the ones the text watermarks already used.
-  // The two statuses are mutually exclusive, so at most one ever applies.
-  const watermark = isDraft
+  // The logo is printed behind every document, at the owner's request — a real
+  // invoice carries it as branding and it makes a sheet harder to pass off.
+  //
+  // What separates a valid document from one that is not is the WORD over the
+  // top, not the logo: only a draft or a cancelled document gets one, and it
+  // stays legible over the mark. A sheet carrying nothing but a faint logo is
+  // therefore the real thing, which is exactly what it now looks like.
+  // The two statuses are mutually exclusive, so at most one word ever applies.
+  const stamp = isDraft
     ? { word: 'Draft', size: 80, ink: '0.06' }
     : invoice.status === 'cancelled'
       ? { word: 'Cancelled', size: 70, ink: '0.08' }
       : null
+  const markInk = stamp ? stamp.ink : '0.06'
 
   // Intrastate splits into CGST + SGST, interstate into IGST. Decided by what
   // Postgres actually put on the lines, not re-derived from the state codes.
@@ -131,31 +135,31 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
           className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
           style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
-          {watermark && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-              {/* An <img> rather than a CSS background: print stylesheets drop
-                  background images routinely, which would leave the watermark
-                  looking right on screen and missing on paper. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/print-logo.svg"
-                alt=""
-                width={480}
-                height={317}
-                className="doc-ink absolute"
-                style={{ opacity: Number(watermark.ink) }}
-              />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+            {/* An <img> rather than a CSS background: print stylesheets drop
+                background images routinely, which would leave the watermark
+                looking right on screen and missing on paper. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/print-logo.svg"
+              alt=""
+              width={480}
+              height={317}
+              className="doc-ink absolute"
+              style={{ opacity: Number(markInk) }}
+            />
+            {stamp && (
               <p
                 className="relative font-bold uppercase tracking-widest"
                 style={{
-                  fontSize: `${watermark.size}px`,
-                  color: `rgb(0 0 0 / ${watermark.ink})`,
+                  fontSize: `${stamp.size}px`,
+                  color: `rgb(0 0 0 / ${stamp.ink})`,
                 }}
               >
-                {watermark.word}
+                {stamp.word}
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* The supplied sheet has no supplier block — it was printed on
               letterhead. A browser print has no letterhead, and a tax invoice
