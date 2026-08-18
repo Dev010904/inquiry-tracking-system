@@ -4,10 +4,12 @@ import { Plus } from 'lucide-react'
 import { AlarmPanel } from '@/components/dashboard/alarm-panel'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { RecentChanges } from '@/components/dashboard/recent-changes'
+import { NumberRegisterPanel } from '@/components/dashboard/number-register-panel'
 import { RecentInquiries } from '@/components/dashboard/recent-inquiries'
 import { buttonVariants } from '@/components/ui/button'
 import { MyWorkDashboard } from '@/components/dashboard/my-work-dashboard'
 import { getAlarms, getKpis, getRecentInquiries } from '@/lib/queries/dashboard'
+import { getNumberRegister } from '@/lib/queries/documents'
 import { recentActivity } from '@/lib/queries/activity'
 import { getMyFollowups } from '@/lib/queries/my-work'
 import { getMyTasks } from '@/lib/queries/tasks'
@@ -52,11 +54,15 @@ export default async function DashboardPage() {
   // rather than re-counted, so nothing has to wait on anything else — with
   // the database a round trip away, sequential queries are what make a page
   // feel slow.
-  const [alarms, kpiTotals, recent, changes] = await Promise.all([
+  // The number register is admin-only in the database as well: the function
+  // raises for anyone else, so a non-admin who reached this branch would get
+  // an empty list rather than a partial one.
+  const [alarms, kpiTotals, recent, changes, register] = await Promise.all([
     getAlarms(now),
     getKpis(now),
     getRecentInquiries(8),
     recentActivity(5),
+    profile.role === 'admin' ? getNumberRegister() : Promise.resolve([]),
   ])
 
   const kpis = { ...kpiTotals, overdueFollowups: alarms.overdueCount }
@@ -86,7 +92,10 @@ export default async function DashboardPage() {
           <RecentInquiries inquiries={recent} />
           <RecentChanges rows={changes} />
         </div>
-        <AlarmPanel alarms={alarms} />
+        <div className="space-y-5">
+          <AlarmPanel alarms={alarms} />
+          {profile.role === 'admin' && <NumberRegisterPanel rows={register} />}
+        </div>
       </div>
     </div>
   )

@@ -89,7 +89,17 @@ export default async function DocumentsPage({
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">
+                      {/* A cancelled document is struck through and its total
+                          greyed, so the list reads the way a deletion would
+                          without anything actually being removed. The number
+                          stays visible because that is the point of it. */}
+                      <span
+                        className={
+                          row.status === 'cancelled'
+                            ? 'font-medium line-through decoration-overdue/60'
+                            : 'font-medium'
+                        }
+                      >
                         {row.doc_no ?? `${DOCUMENT_TYPE[row.doc_type]} — draft`}
                       </span>
                       <Badge variant={STATUS_VARIANT[row.status]}>
@@ -101,7 +111,15 @@ export default async function DocumentsPage({
                       {formatDate(row.doc_date)}
                     </p>
                   </div>
-                  <p className="tnum font-semibold">{formatMoney(row.grand_total, 'INR', true)}</p>
+                  <p
+                    className={
+                      row.status === 'cancelled'
+                        ? 'tnum font-semibold text-muted-foreground line-through'
+                        : 'tnum font-semibold'
+                    }
+                  >
+                    {formatMoney(row.grand_total, 'INR', true)}
+                  </p>
                 </Link>
               </li>
             ))}

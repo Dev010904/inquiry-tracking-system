@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DocumentActions } from '@/components/documents/document-actions'
+import { DocumentLifecycle } from '@/components/documents/document-lifecycle'
 import { PrintableDocument } from '@/components/documents/printable-document'
 import type { InvoiceCopy } from '@/lib/constants'
 import type {
@@ -33,8 +34,17 @@ export function DocumentView({ invoice, lines, settings, company, contact, isAdm
 
   return (
     <div className="space-y-4">
+      <DocumentLifecycle
+        invoiceId={invoice.id}
+        docType={invoice.doc_type}
+        docNo={invoice.doc_no}
+        status={invoice.status}
+        isAdmin={isAdmin}
+      />
+
       <DocumentActions
         invoiceId={invoice.id}
+        docType={invoice.doc_type}
         status={invoice.status}
         isAdmin={isAdmin}
         copies={copies}

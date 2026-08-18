@@ -191,6 +191,32 @@ export async function deleteDraft(invoiceId: string): Promise<Result> {
   return { ok: true }
 }
 
+/**
+ * Raises a new draft pre-filled from an existing document.
+ *
+ * This is the answer to "let me edit an invoice I have already issued". An
+ * issued invoice is a statutory record and cannot be rewritten, but the thing
+ * behind the request — something was wrong, so send a corrected one quickly —
+ * is served by duplicating it, fixing the copy, and crediting the original.
+ *
+ * The copy is always a draft: no number, no snapshots, no issue history.
+ */
+export async function duplicateDocument(invoiceId: string): Promise<Result> {
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('duplicate_document', {
+    p_invoice_id: invoiceId,
+  })
+
+  if (error) {
+    return { ok: false, error: dbMessage(error.message, 'Could not duplicate that document.') }
+  }
+
+  revalidatePath('/documents')
+  return { ok: true, id: data as string }
+}
+
 const quotationSchema = z.object({
   inquiry_id: z.string().uuid(),
   doc_date: z.string().min(1, 'Pick a date'),

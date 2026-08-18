@@ -7,6 +7,7 @@ import type {
   DocumentStatus,
   DocumentType,
   CompanySettingsRow,
+  DocumentNumberRegisterRow,
   InvoiceLineRow,
   InvoiceRow,
   OrderRow,
@@ -151,4 +152,23 @@ export async function issuedTaxInvoices(orderId: string): Promise<InvoiceRow[]> 
     .eq('status', 'issued')
     .order('doc_date', { ascending: false })
   return data ?? []
+}
+
+/**
+ * Every statutory number that is not a live document.
+ *
+ * Two different things, which the panel must never blur together. A
+ * `cancelled` number is ordinary bookkeeping: it is reported as cancelled and
+ * never reused. A `missing` one means the counter handed out a number that no
+ * document row accounts for at all, which should not be possible and points at
+ * something removed from underneath the series.
+ *
+ * The function refuses a non-admin outright, so this returns nothing rather
+ * than a partial answer if it is ever called from the wrong page.
+ */
+export async function getNumberRegister(): Promise<DocumentNumberRegisterRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('document_number_register')
+  if (error) return []
+  return (data ?? []) as DocumentNumberRegisterRow[]
 }

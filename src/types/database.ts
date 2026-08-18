@@ -344,6 +344,8 @@ export type InvoiceRow = Timestamps & {
   issued_by: string | null
   cancelled_at: string | null
   cancel_reason: string | null
+  /** Null on rows cancelled before the column existed. */
+  cancelled_by: string | null
   created_by: string | null
 }
 
@@ -620,6 +622,17 @@ export type Database = {
       /** Allocates the number and freezes the snapshots. Returns the doc no. */
       issue_document: { Args: { p_invoice_id: string }; Returns: string }
       cancel_document: { Args: { p_invoice_id: string; p_reason: string }; Returns: undefined }
+      /** Copies a document into a fresh draft — no number, no snapshots. */
+      duplicate_document: { Args: { p_invoice_id: string }; Returns: string }
+      /**
+       * Every statutory number that is not a live document: cancelled ones,
+       * and genuine gaps where the counter issued a number no row accounts
+       * for. Admin only — raises otherwise.
+       */
+      document_number_register: {
+        Args: Record<string, never>
+        Returns: DocumentNumberRegisterRow[]
+      }
       /** Updates the spec and records the reason in one transaction. */
       update_order_spec: {
         Args: {
@@ -658,4 +671,25 @@ export type Database = {
     }
     CompositeTypes: Record<string, never>
   }
+}
+
+/**
+ * One row of the statutory number register.
+ *
+ * `kind` separates the two cases the panel must never blur together: a
+ * `cancelled` number is normal and is reported as cancelled, while a `missing`
+ * one means the counter handed out a number no document accounts for, which
+ * should be impossible.
+ */
+export type DocumentNumberRegisterRow = {
+  kind: 'cancelled' | 'missing'
+  doc_type: DocumentType
+  fy: string | null
+  seq_number: number | null
+  doc_no: string | null
+  doc_date: string | null
+  company_name: string | null
+  cancelled_at: string | null
+  cancelled_by_name: string | null
+  cancel_reason: string | null
 }
