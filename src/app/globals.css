@@ -146,9 +146,24 @@
  * platform, and each copy is a real page rather than an image.
  */
 @media print {
+  /*
+   * Zero margin is what removes the browser's own header and footer.
+   *
+   * Chromium draws the date, the page title and the page address into the
+   * @page margin box. It is not content and no stylesheet can select it — but
+   * with no margin there is nowhere to draw it, so it is dropped even when
+   * "Headers and footers" is left ticked in the print dialogue. That checkbox
+   * is per-browser and per-machine, so it was never a control that survived
+   * three staff on four devices.
+   *
+   * The 12mm that used to live here is now padding inside each copy, so the
+   * ink sits in the same place on the sheet as before. The page box is
+   * therefore the full 297mm of A4 rather than 273mm, and .doc-copy's
+   * min-height matches it.
+   */
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 0;
   }
 
   body {

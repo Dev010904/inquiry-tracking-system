@@ -125,14 +125,18 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
   return (
     <div className="print-root space-y-6">
       {sheets.map((copy, index) => (
-        // min-h is 273mm: A4 (297mm) less the 12mm top and bottom margin set
-        // on @page. It was 277mm, which assumes a 10mm margin, and those extra
-        // 4mm fragmented every document onto a second, blank sheet. The
-        // min-height is what holds the totals and signature block down at the
-        // foot of the page, so it stays — it just has to match the page box.
+        // The sheet is now the whole of A4, because @page carries no margin —
+        // that is what stops the browser printing its own header and footer,
+        // which it draws in the margin box. The 12mm that used to be @page
+        // margin is print:p-[12mm] here instead, so the ink lands in the same
+        // place on the paper.
+        //
+        // min-height has to equal the page box exactly. Chromium cannot honour
+        // break-inside on a block taller than the page and fragments it onto a
+        // second, blank sheet — which is what a 4mm mismatch did once already.
         <article
           key={copy}
-          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
+          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black print:min-h-[297mm] print:max-w-none print:border-0 print:p-[12mm]"
           style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
