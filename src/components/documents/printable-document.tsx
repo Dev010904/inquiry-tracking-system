@@ -296,9 +296,20 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </tr>
             </thead>
             <tbody>
-              {lines.map((line) => (
+              {lines.map((line, index) => (
                 <tr key={line.id} className="align-top">
-                  <td className="px-1 py-0.5">{line.line_no}</td>
+                  {/*
+                   * The position in the list, not `line_no`.
+                   *
+                   * `line_no` is allocated as max+1 and never reused, so
+                   * removing a line from a draft leaves its number behind as a
+                   * hole — a six-line quotation printed 1, 3, 4, 5, 6, 7. It is
+                   * a label for the reader, not an identity: nothing refers to
+                   * a line by number from outside the document, and the lines
+                   * arrive here already ordered by `line_no`. Numbering by
+                   * position makes a gap impossible to print.
+                   */}
+                  <td className="px-1 py-0.5">{index + 1}</td>
                   <td className="px-1 py-0.5">
                     {line.description}
                     {Number(line.gst_rate ?? 0) === 0 && line.zero_rate_reason && (

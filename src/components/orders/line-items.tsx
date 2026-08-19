@@ -152,8 +152,8 @@ export function LineItems({
     })
   }
 
-  function remove(item: OrderItemRow) {
-    if (!confirm(`Remove line ${item.line_no} — ${item.description}?`)) return
+  function remove(item: OrderItemRow, position: number) {
+    if (!confirm(`Remove line ${position} — ${item.description}?`)) return
     setRemovingId(item.id)
     startTransition(async () => {
       const result = await removeOrderItem(item.id, orderId)
@@ -208,9 +208,14 @@ export function LineItems({
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
+                  {items.map((item, index) => (
                     <tr key={item.id} className="border-b last:border-0 align-top">
-                      <td className="py-2 tnum text-muted-foreground">{item.line_no}</td>
+                      {/*
+                       * Position, not `line_no`. `line_no` is max+1 and never
+                       * reused, so a removed line leaves a hole in the numbers
+                       * the reader sees. Same fix as the document lines.
+                       */}
+                      <td className="py-2 tnum text-muted-foreground">{index + 1}</td>
                       <td className="py-2">
                         <p className="font-medium">{item.description}</p>
                         {item.notes && (
@@ -243,7 +248,7 @@ export function LineItems({
                           <Button
                             size="sm"
                             variant="ghost"
-                            aria-label={`Edit line ${item.line_no}`}
+                            aria-label={`Edit line ${index + 1}`}
                             onClick={() => edit(item)}
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
@@ -251,9 +256,9 @@ export function LineItems({
                           <Button
                             size="sm"
                             variant="ghost"
-                            aria-label={`Remove line ${item.line_no}`}
+                            aria-label={`Remove line ${index + 1}`}
                             disabled={pending && removingId === item.id}
-                            onClick={() => remove(item)}
+                            onClick={() => remove(item, index + 1)}
                           >
                             {pending && removingId === item.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -270,11 +275,11 @@ export function LineItems({
             </div>
 
             <ul className="space-y-2 md:hidden">
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <li key={item.id} className="rounded-lg border p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs text-muted-foreground">Line {item.line_no}</p>
+                      <p className="text-xs text-muted-foreground">Line {index + 1}</p>
                       <p className="font-medium">{item.description}</p>
                     </div>
                     <p className="tnum font-semibold">{formatMoney(item.amount, currency, true)}</p>
@@ -292,7 +297,7 @@ export function LineItems({
                       <Pencil className="h-4 w-4" aria-hidden />
                       Edit
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => remove(item)}>
+                    <Button size="sm" variant="outline" onClick={() => remove(item, index + 1)}>
                       <Trash2 className="h-4 w-4" aria-hidden />
                       Remove
                     </Button>

@@ -112,8 +112,8 @@ export function DocumentLinesEditor({ invoiceId, lines, defaultGstRate, showsTax
     })
   }
 
-  function remove(line: InvoiceLineRow) {
-    if (!confirm(`Remove line ${line.line_no} — ${line.description}?`)) return
+  function remove(line: InvoiceLineRow, position: number) {
+    if (!confirm(`Remove line ${position} — ${line.description}?`)) return
     setRemovingId(line.id)
     startTransition(async () => {
       const result = await removeDocumentLine(line.id, invoiceId)
@@ -168,9 +168,14 @@ export function DocumentLinesEditor({ invoiceId, lines, defaultGstRate, showsTax
                 </tr>
               </thead>
               <tbody>
-                {lines.map((line) => (
+                {lines.map((line, index) => (
                   <tr key={line.id} className="border-b last:border-0 align-top">
-                    <td className="py-2 tnum text-muted-foreground">{line.line_no}</td>
+                    {/*
+                     * Position, not `line_no` — see the note in
+                     * printable-document.tsx. The editor and the printed sheet
+                     * must agree on what "line 4" means.
+                     */}
+                    <td className="py-2 tnum text-muted-foreground">{index + 1}</td>
                     <td className="py-2">
                       <p className="font-medium">{line.description}</p>
                       {Number(line.gst_rate ?? 0) === 0 && line.zero_rate_reason && (
@@ -193,7 +198,7 @@ export function DocumentLinesEditor({ invoiceId, lines, defaultGstRate, showsTax
                         <Button
                           size="sm"
                           variant="ghost"
-                          aria-label={`Edit line ${line.line_no}`}
+                          aria-label={`Edit line ${index + 1}`}
                           onClick={() => edit(line)}
                         >
                           <Pencil className="h-4 w-4" aria-hidden />
@@ -201,9 +206,9 @@ export function DocumentLinesEditor({ invoiceId, lines, defaultGstRate, showsTax
                         <Button
                           size="sm"
                           variant="ghost"
-                          aria-label={`Remove line ${line.line_no}`}
+                          aria-label={`Remove line ${index + 1}`}
                           disabled={pending && removingId === line.id}
-                          onClick={() => remove(line)}
+                          onClick={() => remove(line, index + 1)}
                         >
                           {pending && removingId === line.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
