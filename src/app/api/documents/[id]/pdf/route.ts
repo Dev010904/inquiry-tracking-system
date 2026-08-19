@@ -125,7 +125,26 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('PDF render failed', error)
+    // Chromium failing to start says almost nothing on its own — the message
+    // names a missing shared library and leaves you guessing which of the
+    // packaged archives did not arrive or did not unpack. These four facts
+    // separate "the binaries never shipped" from "the wrong library pack for
+    // this runtime", which need opposite fixes.
+    const { readdirSync } = await import('node:fs')
+    const listing = (path: string) => {
+      try {
+        return readdirSync(path).slice(0, 40).join(' ')
+      } catch {
+        return '<missing>'
+      }
+    }
+    console.error('PDF render failed', {
+      node: process.version,
+      ldLibraryPath: process.env.LD_LIBRARY_PATH ?? '<unset>',
+      tmp: listing('/tmp'),
+      bin: listing(`${process.cwd()}/node_modules/@sparticuz/chromium/bin`),
+      error,
+    })
     return NextResponse.json(
       { error: 'Could not build the PDF. Use Print / Save as PDF instead.' },
       { status: 500 }
