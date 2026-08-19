@@ -219,58 +219,58 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
           <section className="grid grid-cols-[1.6fr_1fr] border-b border-black/30">
             <div className="border-r border-black/30 p-2">
               <p>
-                <span className="text-black/75">
+                <span>
                   {invoice.doc_type === 'quotation' ? 'Quote To:' : 'Bill To:'}
                 </span>{' '}
                 <span className="font-semibold">{buyer?.name ?? '—'}</span>
               </p>
               {buyer?.contact_name && (
                 <p>
-                  <span className="text-black/75">Customer&rsquo;s Name:</span>{' '}
+                  <span>Customer&rsquo;s Name:</span>{' '}
                   {buyer.contact_name}
                   {buyer.contact_phone ? ` (${buyer.contact_phone})` : ''}
                 </p>
               )}
               <p>
-                <span className="text-black/75">Address:</span>{' '}
+                <span>Address:</span>{' '}
                 {joinAddress(buyer?.address, buyer?.city) || '—'}
               </p>
               <p>
-                <span className="text-black/75">GSTIN/UIN :</span> {buyer?.gstin || '-'}
+                <span>GSTIN/UIN :</span> {buyer?.gstin || '-'}
               </p>
               <p>
-                <span className="text-black/75">State/U.T :</span> {buyer?.state || '-'}
+                <span>State/U.T :</span> {buyer?.state || '-'}
               </p>
             </div>
 
             <div className="p-2">
               <p>
-                <span className="text-black/75">Date:</span> {formatDate(invoice.doc_date)}
+                <span>Date:</span> {formatDate(invoice.doc_date)}
               </p>
               {/* The credit period, directly under the date where a customer
                   looks for it. A challan moves goods rather than charging for
                   them, so it carries no terms. */}
               {invoice.doc_type !== 'delivery_challan' && (
                 <p>
-                  <span className="text-black/75">Payment terms:</span>{' '}
+                  <span>Payment terms:</span>{' '}
                   {invoice.payment_due_days === 0
                     ? 'Due on receipt'
                     : `${invoice.payment_due_days} days`}
                 </p>
               )}
               <p>
-                <span className="text-black/75">{DOCUMENT_NO_LABEL[invoice.doc_type]}:</span>{' '}
+                <span>{DOCUMENT_NO_LABEL[invoice.doc_type]}:</span>{' '}
                 <span className="font-semibold">{invoice.doc_no ?? 'Not yet issued'}</span>
               </p>
               {isStatutoryTax && invoice.place_of_supply_code && (
                 <p>
-                  <span className="text-black/75">Place of supply:</span>{' '}
+                  <span>Place of supply:</span>{' '}
                   {invoice.place_of_supply_code} — {invoice.place_of_supply_name}
                 </p>
               )}
               {isStatutoryTax && (
                 <p>
-                  <span className="text-black/75">Reverse charge:</span>{' '}
+                  <span>Reverse charge:</span>{' '}
                   {invoice.reverse_charge ? 'Yes' : 'No'}
                 </p>
               )}
@@ -284,7 +284,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                   they read louder than the line items underneath, which are
                   the part anyone is actually looking at. 75% is the floor:
                   these get photocopied. */}
-              <tr className="border-b border-black/30 text-left align-bottom text-black/75">
+              <tr className="border-b border-black/30 text-left align-bottom">
                 <th className="w-10 px-1 py-1 font-semibold">SR. NO</th>
                 <th className="px-1 py-1 font-semibold">PRODUCT / SERVICE DESCRIPTION</th>
                 <th className="w-16 px-1 py-1 font-semibold">HSN/SAC</th>
@@ -313,7 +313,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                   <td className="px-1 py-0.5">
                     {line.description}
                     {Number(line.gst_rate ?? 0) === 0 && line.zero_rate_reason && (
-                      <span className="block text-[11px] text-black/75">
+                      <span className="block text-[11px]">
                         {line.zero_rate_reason}
                       </span>
                     )}
@@ -348,7 +348,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                           <dt>
                             CGST @ {slab.rate / 2}%
                             {!singleSlab && (
-                              <span className="text-black/75"> on {money(slab.taxable)}</span>
+                              <span> on {money(slab.taxable)}</span>
                             )}
                           </dt>
                           <dd>{money(slab.cgst)}</dd>
@@ -357,7 +357,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                           <dt>
                             SGST @ {slab.rate / 2}%
                             {!singleSlab && (
-                              <span className="text-black/75"> on {money(slab.taxable)}</span>
+                              <span> on {money(slab.taxable)}</span>
                             )}
                           </dt>
                           <dd>{money(slab.sgst)}</dd>
@@ -368,7 +368,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                         <dt>
                           IGST @ {slab.rate}%
                           {!singleSlab && (
-                            <span className="text-black/75"> on {money(slab.taxable)}</span>
+                            <span> on {money(slab.taxable)}</span>
                           )}
                         </dt>
                         <dd>{money(slab.igst)}</dd>
@@ -389,7 +389,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
 
             <div className="border-t border-black/30 pt-1 print:break-inside-avoid">
               <p>
-                <span className="text-black/75">Amount in words :</span>{' '}
+                <span>Amount in words :</span>{' '}
                 <span className="font-medium">{invoice.amount_in_words ?? '—'}</span>
               </p>
               {/* Both words lines are computed from the stored totals in
@@ -397,7 +397,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                   the layout was copied from. */}
               {showsTax && invoice.tax_amount_in_words && (
                 <p>
-                  <span className="text-black/75">Tax Amount (in words) :</span>{' '}
+                  <span>Tax Amount (in words) :</span>{' '}
                   <span className="font-medium">{invoice.tax_amount_in_words}</span>
                 </p>
               )}
@@ -431,12 +431,12 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
             <div className="border-t border-black/30 pt-1">
               {supplier?.payment_terms && (
                 <p>
-                  <span className="text-black/75">Payment Terms :</span> {supplier.payment_terms}
+                  <span>Payment Terms :</span> {supplier.payment_terms}
                 </p>
               )}
               {supplier?.delivery_timeline && (
                 <p>
-                  <span className="text-black/75">Delivery Timeline:</span>{' '}
+                  <span>Delivery Timeline:</span>{' '}
                   {supplier.delivery_timeline}
                 </p>
               )}
