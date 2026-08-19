@@ -209,6 +209,7 @@ export const FEATURE_KEYS = [
   'companies',
   'activity',
   'reports',
+  'payments',
 ] as const
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number]

@@ -9,6 +9,7 @@ import {
   BarChart3,
   Package,
   Settings,
+  Wallet,
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
@@ -60,6 +61,10 @@ const FEATURE_NAV: Record<FeatureKey, Omit<NavItem, 'feature'>> = {
   companies: { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
   activity: { href: '/activity', label: 'Recent changes', short: 'Changes', icon: History },
   reports: { href: '/reports', label: 'Reports', short: 'Reports', icon: BarChart3 },
+  // Money received and money owed. It used to live only inside a single
+  // order, so "what came in this year" and "who owes us" had no answer
+  // anywhere in the app — findable only by someone already told where it was.
+  payments: { href: '/payments', label: 'Ledger', short: 'Ledger', icon: Wallet },
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
