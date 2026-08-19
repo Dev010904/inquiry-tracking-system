@@ -58,9 +58,14 @@ export async function GET(
     browser = await puppeteer.launch(
       onVercel
         ? {
+            // Every one of these comes from the package rather than being
+            // written out here. `headless` in particular is its own value —
+            // this build wants the headless shell, and forcing `true` starts
+            // a browser it did not ship the pieces for.
             args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
             executablePath: await chromium.executablePath(),
-            headless: true,
+            headless: chromium.headless,
           }
         : {
             // Local development: use whatever Chrome or Edge is installed
