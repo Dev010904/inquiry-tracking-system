@@ -277,7 +277,12 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
 
           <table className="w-full border-collapse text-[13px]">
             <thead>
-              <tr className="border-b border-black/30 text-left align-bottom">
+              {/* Headings at the same weight as every other label on the page
+                  — GSTIN/UIN, Amount in words, Payment Terms. At full black
+                  they read louder than the line items underneath, which are
+                  the part anyone is actually looking at. 75% is the floor:
+                  these get photocopied. */}
+              <tr className="border-b border-black/30 text-left align-bottom text-black/75">
                 <th className="w-10 px-1 py-1 font-semibold">SR. NO</th>
                 <th className="px-1 py-1 font-semibold">PRODUCT / SERVICE DESCRIPTION</th>
                 <th className="w-16 px-1 py-1 font-semibold">HSN/SAC</th>
@@ -385,8 +390,32 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               )}
               <p className="mt-1">E. &amp; O.E</p>
             </div>
+          </section>
 
-            <div className="border-t border-black/30 pt-1 print:break-inside-avoid">
+          {/*
+           * Payment terms through the jurisdiction line are one block that
+           * breaks as a unit or not at all.
+           *
+           * They used to be two sections whose children each avoided breaking
+           * on their own, which binds nothing together: Chromium was free to
+           * break between them and strand the signature grid, or the
+           * jurisdiction line, alone at the top of a second sheet. Whole
+           * group or nothing — so an overflowing document carries the entire
+           * foot of the page over rather than spending a sheet on one line.
+           *
+           * The group is around 60-70mm, well inside the 273mm page box.
+           * `break-inside: avoid` is silently ignored on a block taller than
+           * the page, so if this ever grows past roughly 200mm the rule stops
+           * working with no warning.
+           *
+           * No mt-auto: it pushed this to the foot of a 273mm box and opened
+           * a band of white after Delivery Timeline on any document shorter
+           * than a full page. The owner asked for that gap closed, so the
+           * block now follows the terms directly and the white falls below
+           * the signature instead.
+           */}
+          <section className="print:break-inside-avoid">
+            <div className="border-t border-black/30 pt-1">
               {supplier?.payment_terms && (
                 <p>
                   <span className="text-black/75">Payment Terms :</span> {supplier.payment_terms}
@@ -401,17 +430,9 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               {invoice.notes && <p className="whitespace-pre-line">{invoice.notes}</p>}
               {invoice.terms && <p className="whitespace-pre-line">{invoice.terms}</p>}
             </div>
-          </section>
 
-          {/*
-           * Only this group is pushed to the foot of the sheet. The totals and
-           * the terms above follow the last item directly — mt-auto on the
-           * whole lot opened a band of white between the items and GROSS
-           * TOTAL, while the signature still has to land at the bottom.
-           */}
-          <section className="mt-auto">
             {supplier?.bank_name && (
-              <div className="border-t border-black/30 pt-1 print:break-inside-avoid">
+              <div className="border-t border-black/30 pt-1">
                 <p className="font-semibold">Company&rsquo;s Bank Details:</p>
                 <p>Bank Name : {supplier.bank_name}</p>
                 <p>A/c Name : {supplier.legal_name ?? '—'}</p>
@@ -420,7 +441,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </div>
             )}
 
-            <div className="grid grid-cols-[1.6fr_1fr] border-t border-black/30 print:break-inside-avoid">
+            <div className="grid grid-cols-[1.6fr_1fr] border-t border-black/30">
               <div className="border-r border-black/30 p-2">
                 <p className="font-semibold">Declaration</p>
                 {supplier?.msme_no && <p>MSME : {supplier.msme_no}</p>}
@@ -442,7 +463,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </div>
             </div>
 
-            <p className="border-t border-black/30 pt-1 text-center font-semibold uppercase print:break-inside-avoid">
+            <p className="border-t border-black/30 pt-1 text-center font-semibold uppercase">
               Subject to {supplier?.jurisdiction_city ?? 'Vadodara'} jurisdiction
             </p>
           </section>

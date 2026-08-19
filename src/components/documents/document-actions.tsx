@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Ban, Loader2, Printer, Stamp } from 'lucide-react'
+import { Ban, Download, Loader2, Printer, Stamp } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
@@ -84,6 +84,48 @@ export function DocumentActions({
     )
   }
 
+  const [downloading, setDownloading] = useState(false)
+
+  /**
+   * Fetched rather than linked, so a failure can be reported.
+   *
+   * A plain <a download> would navigate away and leave the user looking at a
+   * JSON error page if Chromium failed to start on the server.
+   */
+  async function downloadPdf() {
+    setDownloading(true)
+    try {
+      const query = copies.length > 0 ? copies.join(',') : 'original'
+      const response = await fetch(`/api/documents/${invoiceId}/pdf?copies=${query}`)
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        toast.error(body?.error ?? 'Could not build the PDF. Use Print instead.')
+        return
+      }
+
+      // The filename is the document number, set by the server on
+      // Content-Disposition. Read it back rather than rebuilding it here,
+      // so the two cannot disagree.
+      const disposition = response.headers.get('content-disposition') ?? ''
+      const named = /filename="([^"]+)"/.exec(disposition)?.[1]
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = named ?? 'document.pdf'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Could not build the PDF. Use Print instead.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   // Original / Duplicate / Triplicate is a tax-invoice rule. The layout prints
   // one sheet for anything else no matter what is ticked here, so offering the
   // choice on a quotation is a control that silently does nothing.
@@ -98,9 +140,25 @@ export function DocumentActions({
         </Button>
       )}
 
+      {/*
+        The download is the primary way out. Browser print puts the browser's
+        own header and footer on the sheet whenever that checkbox is ticked,
+        which is per-browser and has to be found and turned off again on every
+        machine. This route renders the same layout server-side and returns a
+        file with no chrome on it, for everyone.
+      */}
+      <Button size="sm" onClick={downloadPdf} disabled={downloading}>
+        {downloading ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          <Download className="h-4 w-4" aria-hidden />
+        )}
+        Download PDF
+      </Button>
+
       <Button size="sm" variant="outline" onClick={() => window.print()}>
         <Printer className="h-4 w-4" aria-hidden />
-        Print / Save as PDF
+        Print
       </Button>
 
       {status !== 'cancelled' && isAdmin && (
@@ -128,8 +186,10 @@ export function DocumentActions({
       )}
 
       <p className="basis-full text-xs text-muted-foreground">
-        For a clean copy, turn off &ldquo;Headers and footers&rdquo; in the print dialogue —
-        otherwise the browser prints the page address and the date across the document.
+        <strong className="font-medium">Download PDF</strong> is what to send a customer — no date,
+        no page address, whatever the machine. <strong className="font-medium">Print</strong> goes
+        through the browser, which adds those unless &ldquo;Headers and footers&rdquo; is turned off
+        in its dialogue.
       </p>
 
       <Modal
