@@ -147,23 +147,34 @@
  */
 @media print {
   /*
-   * Zero margin is what removes the browser's own header and footer.
+   * A small margin is what removes the browser's own header and footer.
    *
    * Chromium draws the date, the page title and the page address into the
    * @page margin box. It is not content and no stylesheet can select it — but
-   * with no margin there is nowhere to draw it, so it is dropped even when
-   * "Headers and footers" is left ticked in the print dialogue. That checkbox
-   * is per-browser and per-machine, so it was never a control that survived
+   * it needs room, and below a threshold it is dropped even when "Headers and
+   * footers" is left ticked in the print dialogue. That checkbox is
+   * per-browser and per-machine, so it was never a control that survived
    * three staff on four devices.
    *
-   * The 12mm that used to live here is now padding inside each copy, so the
-   * ink sits in the same place on the sheet as before. The page box is
-   * therefore the full 297mm of A4 rather than 273mm, and .doc-copy's
-   * min-height matches it.
+   * The threshold was measured on Chromium 151, printing a two-page sheet at
+   * one millimetre steps: clean up to and including 8mm, and at 9mm the date,
+   * the title and the URL all come back. 6mm sits below that with room to
+   * spare, so a point release moving the threshold slightly does not put the
+   * header back on the owner's quotations.
+   *
+   * Why not 0. A margin of zero also means no margin on a page BREAK. Padding
+   * on .doc-copy is drawn once, before its first fragment and after its last,
+   * so a document that runs onto a second sheet had its rows printing 2.5mm
+   * from the bottom of page one and 1.1mm from the top of page two — inside
+   * the few millimetres at the edge that most printers physically cannot
+   * reach. @page margin is the only thing that repeats on every sheet.
+   *
+   * The remaining 6mm is padding on .doc-copy, so the first and last edges
+   * still carry the full 12mm and the content column stays 186mm.
    */
   @page {
     size: A4;
-    margin: 0;
+    margin: 6mm;
   }
 
   body {
@@ -179,6 +190,19 @@
   }
 
   /*
+   * The one piece of the shell that cannot be hidden, because the document is
+   * inside it.
+   *
+   * Its screen padding is p-4 sm:p-6, and print media resolves `sm:` against
+   * the 793px width of an A4 page, so 24px — 6.35mm — was being added outside
+   * .doc-copy's own margin. The printed border measured 18.3mm rather than the
+   * 12mm intended, and the content column was 173mm rather than 186mm.
+   */
+  main[data-app-shell] {
+    padding: 0 !important;
+  }
+
+  /*
    * This block owns the printed box. Nothing on the element itself does.
    *
    * These carry !important, so `print:` utilities added to the component were
@@ -191,19 +215,15 @@
     max-width: none !important;
 
     /*
-     * The only thing keeping ink off the edge of the paper.
+     * The second half of the 12mm border round the document; @page carries the
+     * other 6mm and explains why the two are split.
      *
-     * @page carries no margin, because that margin box is where Chromium draws
-     * the date, the page title and the app's URL — removing it is what stops
-     * those printing. So the white border round the document has to come from
-     * inside, and without this the content runs into the few millimetres at
-     * the edge that most printers physically cannot reach, clipping the border
-     * and the outer text.
-     *
-     * 12mm on a 210mm sheet leaves 186mm of content, which is the width the
-     * layout was drawn against when the 12mm lived on @page.
+     * Together they leave 186mm of content on a 210mm sheet, which is the
+     * width the layout was drawn against. Measured on the printed sheet, not
+     * assumed: the margin came out at 18.3mm until main[data-app-shell] below
+     * stopped contributing its own padding to the printed page.
      */
-    padding: 12mm !important;
+    padding: 6mm !important;
 
     /*
      * No forced height, deliberately.

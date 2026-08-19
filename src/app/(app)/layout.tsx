@@ -51,7 +51,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* pb-24 clears the fixed mobile tab bar. */}
-        <main className="flex-1 animate-fade-in p-4 pb-24 sm:p-6 md:pb-8">{children}</main>
+        <main data-app-shell className="flex-1 animate-fade-in p-4 pb-24 sm:p-6 md:pb-8">
+          {children}
+        </main>
       </div>
 
       <BottomNav visibleFeatures={visible} />
