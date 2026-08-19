@@ -46,14 +46,31 @@ export async function GET(
 
   const copies = request.nextUrl.searchParams.get('copies') ?? 'original'
 
+  const onVercel = Boolean(process.env.VERCEL)
+
+  // Tell @sparticuz/chromium it is on Lambda, because it cannot tell.
+  //
+  // It decides whether to unpack the system libraries Chromium links against
+  // by reading AWS_EXECUTION_ENV / AWS_LAMBDA_JS_RUNTIME. Vercel runs these
+  // functions on Lambda but sets neither, so both checks came back false: it
+  // unpacked the fonts and the graphics stack, which are unconditional,
+  // skipped al2023.tar.br, and never touched LD_LIBRARY_PATH. Chromium then
+  // started and had nothing to link libnss3 against — which is precisely what
+  // the log showed, /tmp holding chromium and swiftshader and no al2023.
+  //
+  // Set before the import, not after: the package runs that check at module
+  // load, so importing it first freezes the wrong answer in.
+  //
+  // Must name the same major the function actually runs, which is why
+  // package.json pins engines to 22.x. If that pin moves, this moves with it.
+  if (onVercel) process.env.AWS_LAMBDA_JS_RUNTIME ??= 'nodejs22.x'
+
   let browser
   try {
     // Imported inside the handler so the ~76MB of Chromium never loads on any
     // other route's cold start.
     const puppeteer = (await import('puppeteer-core')).default
     const chromium = (await import('@sparticuz/chromium')).default
-
-    const onVercel = Boolean(process.env.VERCEL)
 
     browser = await puppeteer.launch(
       onVercel
