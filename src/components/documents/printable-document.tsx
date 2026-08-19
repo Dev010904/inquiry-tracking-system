@@ -125,18 +125,16 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
   return (
     <div className="print-root space-y-6">
       {sheets.map((copy, index) => (
-        // The sheet is now the whole of A4, because @page carries no margin —
-        // that is what stops the browser printing its own header and footer,
-        // which it draws in the margin box. The 12mm that used to be @page
-        // margin is print:p-[12mm] here instead, so the ink lands in the same
-        // place on the paper.
-        //
-        // min-height has to equal the page box exactly. Chromium cannot honour
-        // break-inside on a block taller than the page and fragments it onto a
-        // second, blank sheet — which is what a 4mm mismatch did once already.
+        // These classes are the on-screen preview only: a page-shaped white
+        // card so the layout reads as paper before it is printed. The printed
+        // box — width, padding, height, border — belongs entirely to the
+        // `.doc-copy` rule in globals.css, whose declarations carry !important
+        // and override anything set here. Adding `print:` utilities to this
+        // line does nothing; that is how the page margin went missing while
+        // looking as though it were set.
         <article
           key={copy}
-          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black print:min-h-[297mm] print:max-w-none print:border-0 print:p-[12mm]"
+          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
           style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">

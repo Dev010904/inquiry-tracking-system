@@ -178,41 +178,65 @@
     display: none !important;
   }
 
+  /*
+   * This block owns the printed box. Nothing on the element itself does.
+   *
+   * These carry !important, so `print:` utilities added to the component were
+   * silently doing nothing — which is how the padding went missing while
+   * appearing to be set in two places. One owner. If the printed box needs
+   * changing, it changes here.
+   */
   .doc-copy {
     border: none !important;
-    padding: 0 !important;
-    /*
-     * Deliberately no break-inside here. Chromium cannot honour it on a block
-     * taller than a page and fragments wherever it likes instead, which is
-     * what tore the totals and the signature in half. The blocks that must
-     * stay whole now each say so, and those Chromium can keep.
-     */
+    max-width: none !important;
 
     /*
-     * The copy has to fill the sheet so the bank details, declaration and
-     * signature sit at the foot of the page rather than halfway up it — but it
-     * must not exceed the sheet, or the remainder becomes a second page
-     * carrying nothing but the signature line.
+     * The only thing keeping ink off the edge of the paper.
      *
-     * A millimetre count cannot do both. 277mm assumed a 10mm margin, 273mm
-     * assumed 12mm, and neither survives the browser putting its own header
-     * and footer inside the page box or the person at the printer choosing
-     * different margins.
+     * @page carries no margin, because that margin box is where Chromium draws
+     * the date, the page title and the app's URL — removing it is what stops
+     * those printing. So the white border round the document has to come from
+     * inside, and without this the content runs into the few millimetres at
+     * the edge that most printers physically cannot reach, clipping the border
+     * and the outer text.
      *
-     * vh in paged media resolves against the page area itself, so this is the
-     * page's real height whatever it turns out to be, measured rather than
-     * assumed.
-     *
-     * 12mm comes off rather than 2mm because the owner prints with the
-     * browser's own header and footer switched on. Chromium draws those inside
-     * the page box and takes the room from the content area, but 100vh still
-     * measures the box. At 2mm every copy was a few millimetres too tall: a
-     * tax invoice pushed its bank details, declaration and signature onto a
-     * second sheet, three copies printed on five pages, and the last sheet
-     * came out blank. The margin absorbs the header and footer and still
-     * leaves mt-auto holding the signature at the foot of the page.
+     * 12mm on a 210mm sheet leaves 186mm of content, which is the width the
+     * layout was drawn against when the 12mm lived on @page.
      */
-    min-height: calc(100vh - 12mm) !important;
+    padding: 12mm !important;
+
+    /*
+     * No forced height, deliberately.
+     *
+     * This used to be a full page tall, so the signature block would sit at
+     * the foot of the sheet — but that only worked in partnership with
+     * `mt-auto` on the closing section, and mt-auto was removed because it
+     * opened a band of white after Delivery Timeline.
+     *
+     * Left in, the full-page box was actively harmful: it filled the sheet
+     * before the closing block was laid out, so on a six-line quotation that
+     * easily fits, the block could not fit in what remained and — being one
+     * unbreakable group — went wholesale onto a second page, leaving
+     * two-thirds of page one blank.
+     *
+     * With the height set by the content, both behaviours the owner asked for
+     * fall out on their own: a short document keeps everything on one sheet,
+     * and a long one overflows naturally, at which point break-inside-avoid on
+     * the closing group carries it over as a unit rather than stranding the
+     * jurisdiction line alone at the top of page two.
+     *
+     * Do not put a millimetre count back here. 277mm, 273mm and 297mm have
+     * each been tried and each was wrong, because the page box depends on the
+     * browser's header setting and on what the person at the printer chooses.
+     */
+    min-height: 0 !important;
+
+    /*
+     * Still no break-inside on the copy itself. Chromium cannot honour it on a
+     * block taller than a page and fragments wherever it likes instead, which
+     * is what tore the totals and the signature in half. The blocks that must
+     * stay whole each say so, and those Chromium can keep.
+     */
   }
 
   .print-root {
