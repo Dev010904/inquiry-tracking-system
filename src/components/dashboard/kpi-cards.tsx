@@ -16,13 +16,17 @@ export function KpiCards({ kpis }: { kpis: Kpis }) {
   const tiles: Tile[] = [
     { label: 'Open inquiries', value: String(kpis.openInquiries), icon: ClipboardList },
     {
-      label: 'Confirmed this month',
+      // Reads "this month" in the live year and the year's own label when a
+      // closed year is on show, because "this month" would then be a month
+      // outside it — and a tile reading zero for that reason says the wrong
+      // thing rather than nothing.
+      label: `Confirmed ${kpis.periodLabel}`,
       value: String(kpis.confirmedThisMonth),
       hint: 'Orders booked',
       icon: TrendingUp,
     },
     {
-      label: 'Order value MTD',
+      label: `Order value ${kpis.periodLabel === 'this month' ? 'MTD' : kpis.periodLabel}`,
       value: formatMoney(kpis.orderValueMtd, 'INR'),
       hint: kpis.excludesForeignCurrency ? 'Incl. GST · INR orders only' : 'Incl. GST',
       icon: IndianRupee,
@@ -30,9 +34,10 @@ export function KpiCards({ kpis }: { kpis: Kpis }) {
     {
       label: 'Balance pending',
       value: formatMoney(kpis.totalBalancePending, 'INR'),
+      // Always every year, never just the one on show — see totalBalancePending.
       hint: kpis.excludesForeignCurrency
-        ? 'Open INR orders · foreign currency excluded'
-        : 'Across all open orders',
+        ? 'All years · INR orders · foreign currency excluded'
+        : 'Across all open orders, every year',
       icon: Wallet,
       alert: kpis.totalBalancePending > 0,
     },

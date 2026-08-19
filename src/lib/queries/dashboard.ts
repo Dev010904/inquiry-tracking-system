@@ -2,6 +2,7 @@ import 'server-only'
 
 import { addDays, differenceInCalendarDays, endOfDay, startOfDay, startOfMonth } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
+import { activeFy } from '@/lib/fy-server'
 import { FOLLOWUP_LEAD_DAYS, IP_LEAD_DAYS } from '@/lib/constants'
 import type {
   CompanyRow,
@@ -57,8 +58,18 @@ export type Kpis = {
   orderValueMtd: number
   /** True when non-INR orders exist, so the money tiles can say they exclude them. */
   excludesForeignCurrency: boolean
+  /**
+   * Every rupee still owed, across every financial year.
+   *
+   * Deliberately not scoped to the year on show. The lists reset on 1 April;
+   * what customers owe does not, and a receivables figure that quietly dropped
+   * last year's unpaid invoices would understate the money the business is
+   * chasing on the one screen most likely to be trusted.
+   */
   totalBalancePending: number
   overdueFollowups: number
+  /** What the two period tiles actually cover — "this month", or a closed year. */
+  periodLabel: string
 }
 
 export type RecentInquiry = {
@@ -274,19 +285,33 @@ async function getIpAlarms(now: Date): Promise<IpAlarm[]> {
  */
 export async function getKpis(now = new Date()): Promise<Omit<Kpis, 'overdueFollowups'>> {
   const supabase = await createClient()
-  const monthStart = startOfMonth(now).toISOString().slice(0, 10)
+  const fy = await activeFy()
+
+  /*
+   * "This month" only means anything in the year we are actually in. Looking
+   * at a closed year, the same tiles cover that whole year instead — a tile
+   * reading zero because the month is outside the year on show would be read
+   * as "no orders", which is a different and wrong statement.
+   */
+  const periodFrom = fy.isPast ? fy.from : startOfMonth(now).toISOString().slice(0, 10)
+  const periodTo = fy.to
+  const periodLabel = fy.isPast ? fy.fy : 'this month'
 
   const [openRes, monthOrdersRes, allOrdersRes, foreignRes] = await Promise.all([
     supabase
       .from('inquiries')
       .select('id', { count: 'exact', head: true })
       .is('deleted_at', null)
-      .in('status', OPEN_STATUSES),
+      .in('status', OPEN_STATUSES)
+      .gte('inquiry_date', fy.from)
+      .lte('inquiry_date', fy.to),
     supabase
       .from('orders')
       .select('total_with_gst, currency')
       .is('deleted_at', null)
-      .gte('order_date', monthStart),
+      .gte('order_date', periodFrom)
+      .lte('order_date', periodTo),
+    // Not scoped: money owed carries across years.
     supabase.from('orders').select('balance_pending, currency').is('deleted_at', null),
     supabase
       .from('orders')
@@ -319,6 +344,7 @@ export async function getKpis(now = new Date()): Promise<Omit<Kpis, 'overdueFoll
       0
     ),
     excludesForeignCurrency: foreignCount > 0,
+    periodLabel,
   }
 }
 
@@ -326,10 +352,14 @@ export async function getKpis(now = new Date()): Promise<Omit<Kpis, 'overdueFoll
 export async function getRecentInquiries(limit = 8): Promise<RecentInquiry[]> {
   const supabase = await createClient()
 
+  const fy = await activeFy()
+
   const { data: inquiries } = await supabase
     .from('inquiries')
     .select('*')
     .is('deleted_at', null)
+    .gte('inquiry_date', fy.from)
+    .lte('inquiry_date', fy.to)
     .order('inquiry_date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(limit)

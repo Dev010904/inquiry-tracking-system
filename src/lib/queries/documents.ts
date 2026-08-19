@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { activeFy } from '@/lib/fy-server'
 import type {
   CompanyRow,
   ContactRow,
@@ -48,7 +49,16 @@ export async function listDocuments(filters: {
   const supabase = await createClient()
   const page = Math.max(1, filters.page ?? 1)
 
-  let query = supabase.from('invoices').select('*', { count: 'exact' })
+  const fy = await activeFy()
+
+  // The register is scoped to the year on show. Numbering already restarts on
+  // 1 April, so a register spanning years would list two documents numbered
+  // 0001 side by side with nothing to tell them apart.
+  let query = supabase
+    .from('invoices')
+    .select('*', { count: 'exact' })
+    .gte('doc_date', fy.from)
+    .lte('doc_date', fy.to)
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.docType) query = query.eq('doc_type', filters.docType)
 

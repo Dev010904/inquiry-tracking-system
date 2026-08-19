@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/shell/sidebar'
 import { UserMenu } from '@/components/shell/user-menu'
 import { initialsOf } from '@/lib/auth'
 import { currentAccess, visibleFeatures } from '@/lib/permissions'
+import { activeFy } from '@/lib/fy-server'
 
 /**
  * Shell for every signed-in screen. Middleware guarantees a session; this
@@ -14,6 +15,7 @@ import { currentAccess, visibleFeatures } from '@/lib/permissions'
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, features } = await currentAccess()
+  const fy = await activeFy()
 
   // Hiding a menu item is not access control — each route segment gates
   // itself and each server action re-checks. This is only so the menu stops
@@ -39,6 +41,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               className="h-auto w-12 shrink-0 md:hidden"
             />
             <PageTitle />
+
+            {/*
+              Only ever shown while a closed year is selected.
+
+              Someone reading last year's figures must not be able to forget it
+              — every list on the screen is filtered, and a screen that looks
+              normal but is missing this year's work is the one way this feature
+              could cause a real mistake. In the current year it renders nothing
+              at all, so the header is unchanged for staff.
+            */}
+            {fy.isPast && (
+              <span
+                className="shrink-0 rounded-full border border-duesoon/40 bg-duesoon/10 px-2.5 py-1 text-xs font-medium text-foreground"
+                title={`Showing the closed financial year ${fy.fy}. New records are still filed in ${fy.current}.`}
+              >
+                FY {fy.fy}
+              </span>
+            )}
           </div>
           <UserMenu
             fullName={profile.full_name}

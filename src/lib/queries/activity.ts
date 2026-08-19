@@ -2,6 +2,8 @@ import 'server-only'
 
 import { subDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
+import { fyRangeInstants } from '@/lib/fy'
+import { activeFy } from '@/lib/fy-server'
 import type { ActivityFeedRow } from '@/types/database'
 import type { ActivitySection } from '@/lib/activity'
 
@@ -32,9 +34,17 @@ export type ActivityResult = {
  */
 export async function listActivity(filters: ActivityFilters): Promise<ActivityResult> {
   const supabase = await createClient()
+  const fy = await activeFy()
+  const window = fyRangeInstants(fy.fy)
   const page = Math.max(1, filters.page ?? 1)
 
-  let query = supabase.from('activity_feed').select('*', { count: 'exact' })
+  // created_at is a timestamptz, so the year is bounded by instants carrying
+  // the IST offset rather than by bare dates — see fyRangeInstants.
+  let query = supabase
+    .from('activity_feed')
+    .select('*', { count: 'exact' })
+    .gte('created_at', window.from)
+    .lte('created_at', window.to)
 
   if (filters.actorId) query = query.eq('actor_id', filters.actorId)
   if (filters.section) query = query.eq('table_name', filters.section)

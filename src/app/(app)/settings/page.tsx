@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Info, Monitor, Smartphone, UserPlus } from 'lucide-react'
 import { CompanySettingsForm } from '@/components/settings/company-settings-form'
+import { FinancialYearCard } from '@/components/settings/financial-year-card'
 import { RoleManager } from '@/components/settings/role-manager'
 import { UserTable } from '@/components/settings/user-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,8 @@ import { CURRENCY } from '@/lib/constants'
 import { settingsManagerOrNull } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanySettings, missingSettings } from '@/lib/queries/documents'
+import { fyOptions } from '@/lib/fy'
+import { activeFy, earliestFy } from '@/lib/fy-server'
 
 export const metadata: Metadata = { title: 'Settings · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
@@ -40,6 +43,7 @@ export default async function SettingsPage() {
   if (!profile) notFound()
 
   const settings = await getCompanySettings()
+  const [fy, earliest] = await Promise.all([activeFy(), earliestFy()])
 
   const supabase = await createClient()
   const { data: users } = await supabase
@@ -75,6 +79,12 @@ export default async function SettingsPage() {
           .
         </p>
       </div>
+
+      <FinancialYearCard
+        active={fy.fy}
+        current={fy.current}
+        options={fyOptions(earliest)}
+      />
 
       <CompanySettingsForm settings={settings} missing={missingSettings(settings)} />
 

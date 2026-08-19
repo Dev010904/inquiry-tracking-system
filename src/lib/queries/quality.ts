@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { activeFy } from '@/lib/fy-server'
 import { QA_BUCKET, QUALIFICATION_STAGE } from '@/lib/constants'
 import type {
   MeetingActionRow,
@@ -140,6 +141,15 @@ export async function listMeetings(filters: {
   if (filters.companyId) query = query.eq('company_id', filters.companyId)
   if (filters.orderId) query = query.eq('order_id', filters.orderId)
   if (filters.inquiryId) query = query.eq('inquiry_id', filters.inquiryId)
+
+  // Only the whole-company list follows the financial year. Asked for the
+  // meetings on one order or one client, the caller wants that record's own
+  // history — an order raised last March must not lose its kick-off minutes
+  // because the year rolled over.
+  if (!filters.companyId && !filters.orderId && !filters.inquiryId) {
+    const fy = await activeFy()
+    query = query.gte('meeting_date', fy.from).lte('meeting_date', fy.to)
+  }
 
   const { data: meetings } = await query
     .order('meeting_date', { ascending: false })

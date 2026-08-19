@@ -2,6 +2,7 @@ import 'server-only'
 
 import { differenceInCalendarDays, format, subMonths } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
+import { activeFy } from '@/lib/fy-server'
 import type { IpStatus, IpType } from '@/types/database'
 
 export type MonthlyPoint = {
@@ -59,15 +60,30 @@ export async function getReportData(now = new Date()): Promise<ReportData> {
   const supabase = await createClient()
   const since = format(subMonths(now, MONTHS_BACK - 1), 'yyyy-MM-01')
 
+  const fy = await activeFy()
+
+  /*
+   * Reports cover the financial year on show and nothing outside it. A report
+   * is the thing most likely to be printed and handed to somebody, so it must
+   * be answerable to a single stated period rather than quietly spanning every
+   * year the system has ever held.
+   *
+   * IP assets are the exception below: a patent filed in 2024 is still an asset
+   * of the business in 2027, so the portfolio is not a per-year figure at all.
+   */
   const [inquiriesRes, ordersRes, ipRes] = await Promise.all([
     supabase
       .from('inquiries')
       .select('id, inquiry_date, status, lost_reason, estimated_value')
-      .is('deleted_at', null),
+      .is('deleted_at', null)
+      .gte('inquiry_date', fy.from)
+      .lte('inquiry_date', fy.to),
     supabase
       .from('orders')
       .select('inquiry_id, order_date, total_with_gst, balance_pending, order_status, currency')
-      .is('deleted_at', null),
+      .is('deleted_at', null)
+      .gte('order_date', fy.from)
+      .lte('order_date', fy.to),
     supabase
       .from('ip_assets')
       .select('ip_type, status, cost_to_date')

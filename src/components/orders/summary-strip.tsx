@@ -49,7 +49,8 @@ function Tiles({ totals, showCurrencyLabel }: { totals: CurrencyTotals; showCurr
  * With a domestic-only book there is a single unlabelled block, as before.
  */
 export function SummaryStrip({ summary }: { summary: OrderSummary }) {
-  if (summary.byCurrency.length === 0) return null
+  const brought = summary.broughtForward.filter((t) => t.totalOutstanding > 0)
+  if (summary.byCurrency.length === 0 && brought.length === 0) return null
 
   const mixed = summary.byCurrency.length > 1
 
@@ -58,6 +59,30 @@ export function SummaryStrip({ summary }: { summary: OrderSummary }) {
       {summary.byCurrency.map((totals) => (
         <Tiles key={totals.currency} totals={totals} showCurrencyLabel={mixed} />
       ))}
+
+      {/*
+        Money owed from before this financial year.
+
+        The lists restart on 1 April; a debt does not, so an order invoiced in
+        March and unpaid in May still has to be visible somewhere. It is kept
+        out of the year's own totals rather than folded in, so neither figure
+        needs explaining: the tiles above are this year, this line is what came
+        into it.
+      */}
+      {brought.length > 0 && (
+        <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+          Brought forward from earlier years:{' '}
+          {brought.map((totals, index) => (
+            <span key={totals.currency}>
+              {index > 0 && ' · '}
+              <strong className="tnum text-foreground">
+                {formatMoney(totals.totalOutstanding, totals.currency, true)}
+              </strong>{' '}
+              still owed on {totals.count} order{totals.count === 1 ? '' : 's'}
+            </span>
+          ))}
+        </p>
+      )}
       {mixed && (
         <p className="text-[11px] text-muted-foreground">
           Shown per currency. These are not added together — there is no exchange rate on an order,

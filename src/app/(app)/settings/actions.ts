@@ -1,10 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { settingsManagerOrNull } from '@/lib/auth'
 import { FEATURE_KEYS } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/server'
+import { currentFy, isFy } from '@/lib/fy'
+import { FY_COOKIE } from '@/lib/fy-server'
 import type { ProfileRow } from '@/types/database'
 
 export type SettingsResult = { ok: true } | { ok: false; error: string }
@@ -283,5 +286,47 @@ export async function setUserRoleId(
   if (error) return { ok: false, error: 'Could not change the role.' }
 
   revalidatePath('/settings')
+  return { ok: true }
+}
+
+/**
+ * Switches which financial year the screens are showing.
+ *
+ * Stored in a cookie rather than on the profile, deliberately. Looking at last
+ * year's books is a thing you do for a few minutes, not a property of who you
+ * are — and one admin reading 2025-26 must not change what anybody else sees.
+ * The cookie is a view preference and nothing more: `activeFy()` re-derives the
+ * permission on every request, so a cookie that outlives the permission that
+ * set it stops working the moment the permission goes.
+ *
+ * Passing the current year clears the cookie instead of pinning it, so an
+ * account left on "current" rolls into the new year on 1 April by itself.
+ */
+export async function setActiveFinancialYear(fy: string): Promise<SettingsResult> {
+  const manager = await settingsManagerOrNull()
+  if (!manager) return NO_ACCESS
+
+  const current = currentFy()
+  if (!isFy(fy)) return { ok: false, error: 'That is not a financial year.' }
+  if (fy > current) {
+    return { ok: false, error: 'That financial year has not started yet.' }
+  }
+
+  const jar = await cookies()
+  if (fy === current) {
+    jar.delete(FY_COOKIE)
+  } else {
+    jar.set(FY_COOKIE, fy, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      // A year's view survives a restart but not a month of forgetting.
+      maxAge: 60 * 60 * 24 * 30,
+    })
+  }
+
+  // Everything is scoped by the year, so everything has to be re-read.
+  revalidatePath('/', 'layout')
   return { ok: true }
 }

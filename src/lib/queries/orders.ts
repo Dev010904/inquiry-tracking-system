@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { activeFy } from '@/lib/fy-server'
 import { OPEN_ORDER_STATUSES } from '@/lib/constants'
 import type {
   CompanyRow,
@@ -66,6 +67,16 @@ export type CurrencyTotals = {
 export type OrderSummary = {
   count: number
   byCurrency: CurrencyTotals[]
+  /**
+   * Money still owed on orders raised BEFORE the financial year on show.
+   *
+   * The lists reset on 1 April; a debt does not. An order invoiced in March and
+   * paid in May is outstanding money the business is still chasing, and hiding
+   * it because the year rolled over would misstate what is owed. Kept separate
+   * from the year's own figures rather than folded into them, so neither number
+   * has to be explained.
+   */
+  broughtForward: CurrencyTotals[]
 }
 
 export type OrderListResult = {
@@ -110,6 +121,39 @@ export function isDeliveryOverdue(
  * "total outstanding" that only counted 20 rows would be actively misleading.
  * It is a separate lightweight query selecting three numeric columns.
  */
+type MoneyRow = {
+  order_value: number | string | null
+  advance_received: number | string | null
+  balance_pending: number | string | null
+  currency: string | null
+}
+
+/**
+ * Totals grouped by currency, INR first.
+ *
+ * Shared by the year's own figures and by the brought-forward ones so the two
+ * can never drift into counting differently — the bug that would be hardest to
+ * spot, because both numbers would still look plausible.
+ */
+function totalsFor(rows: MoneyRow[]): CurrencyTotals[] {
+  const byCurrency = new Map<CurrencyCode, CurrencyTotals>()
+  for (const row of rows) {
+    const currency = (row.currency ?? 'INR') as CurrencyCode
+    const bucket =
+      byCurrency.get(currency) ??
+      { currency, totalOrderValue: 0, totalReceived: 0, totalOutstanding: 0, count: 0 }
+    bucket.totalOrderValue += Number(row.order_value ?? 0)
+    bucket.totalReceived += Number(row.advance_received ?? 0)
+    bucket.totalOutstanding += Number(row.balance_pending ?? 0)
+    bucket.count += 1
+    byCurrency.set(currency, bucket)
+  }
+  // The domestic book is what staff read first.
+  return [...byCurrency.values()].sort((a, b) =>
+    a.currency === 'INR' ? -1 : b.currency === 'INR' ? 1 : b.totalOrderValue - a.totalOrderValue
+  )
+}
+
 export async function listOrders(filters: OrderFilters): Promise<OrderListResult> {
   const supabase = await createClient()
   const page = Math.max(1, filters.page ?? 1)
@@ -150,15 +194,32 @@ export async function listOrders(filters: OrderFilters): Promise<OrderListResult
 
   const fromRow = (page - 1) * ORDERS_PAGE_SIZE
 
+  const fy = await activeFy()
+
+  // Both the list and its totals are scoped to the financial year on show, so
+  // the figures under the table always describe the rows in it.
   let listQuery = supabase
     .from('orders')
     .select('*', { count: 'exact' })
     .is('deleted_at', null)
+    .gte('order_date', fy.from)
+    .lte('order_date', fy.to)
 
   let summaryQuery = supabase
     .from('orders')
     .select('order_value, advance_received, balance_pending, currency')
     .is('deleted_at', null)
+    .gte('order_date', fy.from)
+    .lte('order_date', fy.to)
+
+  // Deliberately NOT scoped forward: everything still unpaid from an earlier
+  // year, whatever year that was.
+  const broughtForwardQuery = supabase
+    .from('orders')
+    .select('order_value, advance_received, balance_pending, currency')
+    .is('deleted_at', null)
+    .lt('order_date', fy.from)
+    .gt('balance_pending', 0)
 
   if (filters.status) {
     listQuery = listQuery.eq('order_status', filters.status)
@@ -181,37 +242,23 @@ export async function listOrders(filters: OrderFilters): Promise<OrderListResult
     summaryQuery = summaryQuery.or(orClauses)
   }
 
-  const [listRes, summaryRes] = await Promise.all([
+  const [listRes, summaryRes, broughtRes] = await Promise.all([
     listQuery
       .order(sort.column, { ascending: sort.ascending, nullsFirst: false })
       .order('created_at', { ascending: false })
       .range(fromRow, fromRow + ORDERS_PAGE_SIZE - 1),
     summaryQuery,
+    broughtForwardQuery,
   ])
 
   const orders = listRes.data ?? []
   const total = listRes.count ?? 0
   const summaryRows = summaryRes.data ?? []
 
-  const totalsByCurrency = new Map<CurrencyCode, CurrencyTotals>()
-  for (const row of summaryRows) {
-    const currency = (row.currency ?? 'INR') as CurrencyCode
-    const bucket =
-      totalsByCurrency.get(currency) ??
-      { currency, totalOrderValue: 0, totalReceived: 0, totalOutstanding: 0, count: 0 }
-    bucket.totalOrderValue += Number(row.order_value ?? 0)
-    bucket.totalReceived += Number(row.advance_received ?? 0)
-    bucket.totalOutstanding += Number(row.balance_pending ?? 0)
-    bucket.count += 1
-    totalsByCurrency.set(currency, bucket)
-  }
-
   const summary: OrderSummary = {
     count: summaryRows.length,
-    // INR first, then by value — the domestic book is what staff read first.
-    byCurrency: [...totalsByCurrency.values()].sort((a, b) =>
-      a.currency === 'INR' ? -1 : b.currency === 'INR' ? 1 : b.totalOrderValue - a.totalOrderValue
-    ),
+    broughtForward: totalsFor(broughtRes.data ?? []),
+    byCurrency: totalsFor(summaryRows),
   }
 
   if (orders.length === 0) {

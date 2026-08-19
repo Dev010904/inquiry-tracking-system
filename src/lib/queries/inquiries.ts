@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { activeFy } from '@/lib/fy-server'
 import type {
   ActivityFeedRow,
   CompanyRow,
@@ -115,10 +116,17 @@ export async function listInquiries(filters: InquiryFilters): Promise<InquiryLis
     }
   }
 
+  const fy = await activeFy()
+
+  // Scoped to the financial year on show. The books run 1 April to 31 March, so
+  // a new year opens empty rather than carrying last year's list forward. Any
+  // date filter the user sets narrows within the year; it cannot escape it.
   let query = supabase
     .from('inquiries')
     .select('*', { count: 'exact' })
     .is('deleted_at', null)
+    .gte('inquiry_date', fy.from)
+    .lte('inquiry_date', fy.to)
 
   if (filters.status?.length) query = query.in('status', filters.status)
   if (typeCompanyIds) query = query.in('company_id', typeCompanyIds)
