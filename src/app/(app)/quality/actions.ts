@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
+import { dbMessage } from '@/lib/db-message'
 import {
   meetingActionSchema,
   meetingSchema,
@@ -115,7 +116,9 @@ export async function addQaMedia(input: unknown, orderId: string): Promise<Resul
     uploaded_by: profile.id,
   })
 
-  if (error) return { ok: false, error: 'Could not attach that evidence.' }
+  // The database refuses in a sentence naming what is wrong; discarding it
+  // is what made this path impossible to diagnose from the screen.
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not attach that evidence.') }
 
   revalidatePath(`/orders/${orderId}`)
   return { ok: true }
@@ -125,7 +128,7 @@ export async function removeQaMedia(mediaId: string, orderId: string): Promise<R
   if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
   const supabase = await createClient()
   const { error } = await supabase.from('qa_media').delete().eq('id', mediaId)
-  if (error) return { ok: false, error: 'Could not remove that.' }
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not remove that.') }
   revalidatePath(`/orders/${orderId}`)
   return { ok: true }
 }

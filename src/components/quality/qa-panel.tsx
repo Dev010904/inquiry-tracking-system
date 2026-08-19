@@ -62,8 +62,26 @@ type Props = {
  * hundred. Done here rather than on the server so the upload itself is fast
  * on a site connection.
  */
+class UnreadableImage extends Error {}
+
 async function compress(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file)
+  /*
+   * createImageBitmap throws InvalidStateError on anything it cannot decode —
+   * a HEIC straight off an iPhone, a part-copied file, a screenshot saved with
+   * the wrong extension. That throw used to escape onFile as an unhandled
+   * rejection, which is why a QA photo could fail leaving no row, no object in
+   * the bucket and nothing at all on screen. Named here so the caller can tell
+   * "this file is not readable" apart from "the upload failed".
+   */
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    throw new UnreadableImage(
+      'That file could not be read as an image. If it came from an iPhone it may be HEIC — ' +
+        'take the photo through the app, or save it as JPEG first.'
+    )
+  }
   const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
@@ -138,7 +156,9 @@ export function QaPanel({ orderId, checks, blockReason }: Props) {
         .upload(path, blob, { contentType: 'image/jpeg' })
 
       if (uploadError) {
-        toast.error('Could not upload that photo.')
+        // Say what the storage layer actually refused. A bare "could not
+        // upload" sent the last person looking at the wrong thing entirely.
+        toast.error(`Could not upload that photo — ${uploadError.message}`)
         return
       }
 
@@ -150,8 +170,27 @@ export function QaPanel({ orderId, checks, blockReason }: Props) {
         toast.success('Photo attached')
         router.refresh()
       } else {
+        /*
+         * The file is in the bucket but nothing points at it. Take it back out
+         * rather than leaving an object no screen can reach, and tell the
+         * person the photo is not attached — the dispatch gate reads the row,
+         * not the bucket, so a silent orphan here reads as "evidence complete"
+         * to nobody and blocks the order with no explanation.
+         */
+        await supabase.storage.from(QA_BUCKET).remove([path])
         toast.error(result.error)
       }
+    } catch (cause) {
+      /*
+       * Nothing below this line may fail quietly. This is the gate that stops
+       * goods leaving the building without evidence, so a photo that does not
+       * attach has to say so.
+       */
+      toast.error(
+        cause instanceof UnreadableImage
+          ? cause.message
+          : `Could not attach that photo — ${cause instanceof Error ? cause.message : 'unknown error'}`
+      )
     } finally {
       setUploadingFor(undefined)
     }
