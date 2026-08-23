@@ -590,9 +590,16 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                 It is what tells a reader that the absence of a wet ink
                 signature is deliberate rather than an oversight — which
                 matters more now that the sheet carries a reproduced signature
-                above it. Kept as the owner worded it, verbatim. */}
+                above it.
+                
+                The owner wrote it as "quote/invoice", which is right for the
+                two types he sends most and wrong on a delivery challan, which
+                is neither. The noun comes from DOCUMENT_TITLE instead — the
+                same word already printed as the heading and in the Declaration
+                two lines up, so a sheet cannot end up calling itself three
+                different things. */}
             <p className="pt-1 text-center text-[10px]">
-              This is a computer generated quote/invoice.
+              This is a computer generated {DOCUMENT_TITLE[invoice.doc_type].toLowerCase()}.
             </p>
           </section>
         </article>
