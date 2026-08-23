@@ -13,7 +13,7 @@ import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { COMPANY_TYPE, gstStateFor } from '@/lib/constants'
 import { companySchema } from '@/lib/schemas/company'
-import { updateCompany } from '@/app/(app)/companies/actions'
+import { createCompany, updateCompany } from '@/app/(app)/companies/actions'
 import type { CompanyType } from '@/types/database'
 
 type Fields = {
@@ -28,9 +28,15 @@ type Fields = {
   notes: string
 }
 
-type Props = { id: string; values: Fields }
+/**
+ * `id` is null when creating. One form for both, rather than a second copy
+ * that would drift: the GSTIN-fills-the-state behaviour and the exemption
+ * reasoning are the fiddly parts, and they must be identical either way.
+ */
+type Props = { id: string | null; values: Fields }
 
 export function CompanyForm({ id, values }: Props) {
+  const isNew = id === null
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -59,10 +65,10 @@ export function CompanyForm({ id, values }: Props) {
     }
 
     startTransition(async () => {
-      const result = await updateCompany(id, fields)
+      const result = isNew ? await createCompany(fields) : await updateCompany(id, fields)
       if (result.ok) {
-        toast.success('Client updated')
-        router.push(`/companies/${id}`)
+        toast.success(isNew ? 'Client added' : 'Client updated')
+        router.push(`/companies/${result.id}`)
         router.refresh()
       } else {
         for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
@@ -192,11 +198,13 @@ export function CompanyForm({ id, values }: Props) {
             )}
           </div>
 
-          <p className="flex items-start gap-2 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-            Changing any of this leaves documents already issued exactly as they were printed.
-            Each one keeps the client&apos;s details as they stood on the day it was issued.
-          </p>
+          {!isNew && (
+            <p className="flex items-start gap-2 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+              Changing any of this leaves documents already issued exactly as they were printed.
+              Each one keeps the client&apos;s details as they stood on the day it was issued.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -206,7 +214,7 @@ export function CompanyForm({ id, values }: Props) {
         </Button>
         <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          Save changes
+          {isNew ? 'Add client' : 'Save changes'}
         </Button>
       </div>
     </form>

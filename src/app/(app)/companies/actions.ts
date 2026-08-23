@@ -23,11 +23,73 @@ function flatten(error: z.ZodError): Record<string, string> {
 const idSchema = z.string().uuid()
 
 /**
- * Edits a client.
+ * Creates a client.
  *
- * Deliberately no create: a company is born on the inquiry screen, where it
- * arrives attached to the work that justified it. This screen exists because
- * that inline form captures four columns and an invoice needs nine.
+ * This used to be deliberately absent — a company was born on the inquiry
+ * screen, attached to the work that justified it. That reasoning holds for the
+ * common case and the inline form stays exactly as it was. It does not hold
+ * for the case the owner hit: a client who exists before any inquiry does, or
+ * one being set up properly with a GSTIN and address before the first quote
+ * goes out. The inline form captures four columns; an invoice needs nine, and
+ * there was no way to supply the other five without inventing an inquiry first.
+ *
+ * Duplicates are refused on name rather than merely discouraged. Two rows
+ * called the same thing are indistinguishable in the picker, and the wrong one
+ * carries the GSTIN.
+ */
+export async function createCompany(input: unknown): Promise<CompanyResult> {
+  if (!(await editorOrNull('companies'))) return NO_FEATURE_ACCESS
+
+  const parsed = companySchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: 'Check the highlighted fields.', fieldErrors: flatten(parsed.error) }
+  }
+  const v = parsed.data
+  const supabase = await createClient()
+
+  // Case-insensitive, because "DDIT Nadiad" and "ddit nadiad" are one client.
+  const { data: clash } = await supabase
+    .from('companies')
+    .select('id, name')
+    .ilike('name', v.name)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle()
+
+  if (clash) {
+    return {
+      ok: false,
+      error: `${clash.name} is already on the list. Open that client rather than creating a second one.`,
+      fieldErrors: { name: 'A client with this name already exists' },
+    }
+  }
+
+  const derived = gstStateFor(v.gstin)
+
+  const { data, error } = await supabase
+    .from('companies')
+    .insert({
+      name: v.name,
+      type: v.type,
+      address: v.address || null,
+      city: v.city || null,
+      state: derived?.name ?? (v.state || null),
+      gstin: v.gstin || null,
+      gst_applicable: v.gst_applicable,
+      gst_exemption_reason: v.gst_applicable ? null : v.gst_exemption_reason || null,
+      notes: v.notes || null,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) return { ok: false, error: 'Could not create the client.' }
+
+  revalidatePath('/companies')
+  return { ok: true, id: data.id }
+}
+
+/**
+ * Edits a client.
  *
  * Nothing here can reach a document that has already gone out. Every issued
  * document carries `buyer_snapshot`, written by `create_document()` at issue

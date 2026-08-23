@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { AlertTriangle, Building2, Mail, Pencil, Phone } from 'lucide-react'
+import { AlertTriangle, Building2, Mail, Pencil, Phone, Plus } from 'lucide-react'
 import { CompanySearch } from '@/components/companies/company-search'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -36,11 +36,23 @@ export default async function CompaniesPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Companies &amp; schools</h2>
-        <p className="text-sm text-muted-foreground">
-          Every client, their contacts, and what they are worth.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Companies &amp; schools</h2>
+          <p className="text-sm text-muted-foreground">
+            Every client, their contacts, and what they are worth.
+          </p>
+        </div>
+        {/* The owner's point: this is the screen called Companies, and it was
+            the one place a company could not be added. It could only be done
+            partway through logging an inquiry, which is no use for a client
+            being set up before there is any work to log. */}
+        {canEdit && (
+          <Link href="/companies/new" className={cn(buttonVariants({ size: 'sm' }))}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Add a client
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -93,10 +105,10 @@ export default async function CompaniesPage({
             description={
               q
                 ? 'Try a shorter search term.'
-                : 'Companies are created as you log inquiries — there is no separate step.'
+                : 'Add one here, or let it be created as you log an inquiry.'
             }
-            actionLabel={q ? undefined : 'Log an inquiry'}
-            actionHref={q ? undefined : '/inquiries/new'}
+            actionLabel={q ? undefined : canEdit ? 'Add a client' : 'Log an inquiry'}
+            actionHref={q ? undefined : canEdit ? '/companies/new' : '/inquiries/new'}
           />
         </Card>
       ) : (
