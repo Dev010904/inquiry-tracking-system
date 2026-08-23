@@ -38,6 +38,7 @@ export function RaiseQuotation({ inquiryId, defaultStateCode }: Props) {
   const [docDate, setDocDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [stateCode, setStateCode] = useState(defaultStateCode ?? '')
   const [notes, setNotes] = useState('')
+  const [validDays, setValidDays] = useState('15')
 
   function submit() {
     setError(undefined)
@@ -47,6 +48,7 @@ export function RaiseQuotation({ inquiryId, defaultStateCode }: Props) {
         doc_date: docDate,
         place_of_supply_code: stateCode,
         notes,
+        valid_days: validDays,
       })
       if (result.ok) {
         toast.success('Quotation drafted')
@@ -107,6 +109,24 @@ export function RaiseQuotation({ inquiryId, defaultStateCode }: Props) {
               </Select>
             </Field>
           </div>
+
+          {/* Asked for here rather than left to the draft screen: a quotation
+              is a price with an expiry, and one sent without a date it holds
+              until is the thing customers argue about six weeks later. */}
+          <Field
+            label="Valid for"
+            htmlFor="q_valid"
+            hint="Days from the date above. The sheet prints “Valid till” and the date."
+          >
+            <Input
+              id="q_valid"
+              type="number"
+              min={0}
+              max={365}
+              value={validDays}
+              onChange={(e) => setValidDays(e.target.value)}
+            />
+          </Field>
 
           <Field label="Notes" htmlFor="q_notes" hint="Printed on the quotation">
             <Textarea

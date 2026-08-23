@@ -39,7 +39,6 @@ export function DocumentView({ invoice, lines, settings, company, contact, isAdm
         docType={invoice.doc_type}
         docNo={invoice.doc_no}
         status={invoice.status}
-        paymentDueDays={invoice.payment_due_days}
         isAdmin={isAdmin}
       />
 

@@ -260,6 +260,23 @@ export type DocumentType =
   | 'debit_note'
 export type DocumentStatus = 'draft' | 'issued' | 'cancelled'
 
+/**
+ * One entry in the site-installation dropdown offered while a document is
+ * being written.
+ *
+ * A table rather than a TypeScript union because the list is the owner's, not
+ * ours: a scope the firm starts offering next month must be addable from the
+ * document screen, without a deployment. The document stores the label, not
+ * this id — see `InvoiceRow.installation_scope`.
+ */
+export type InstallationOptionRow = {
+  id: string
+  label: string
+  sort_order: number
+  created_by: string | null
+  created_at: string
+}
+
 /** The supplier's own identity and tax configuration. One row. */
 export type CompanySettingsRow = Timestamps & {
   id: string
@@ -344,8 +361,27 @@ export type InvoiceRow = Timestamps & {
   issued_by: string | null
   cancelled_at: string | null
   cancel_reason: string | null
-  /** Credit period printed on the document, in days. Defaults to 15. */
-  payment_due_days: number
+  /**
+   * How long the document stays valid, in days from `doc_date`. The sheet
+   * prints the resulting date rather than this number — the maker agrees a
+   * period, the customer reads a deadline.
+   */
+  valid_days: number
+  /**
+   * Terms as they apply to THIS deal, seeded from company settings when the
+   * draft is raised and editable until it is issued. Null on a document
+   * raised before these columns existed; the layout falls back to the
+   * supplier snapshot for those.
+   */
+  payment_terms: string | null
+  delivery_timeline: string | null
+  /**
+   * The chosen `installation_options` label, copied rather than referenced —
+   * renaming an option later must not rewrite a document already sent.
+   */
+  installation_scope: string | null
+  visit_rate: number | null
+  visit_count: number | null
   /** Null on rows cancelled before the column existed. */
   cancelled_by: string | null
   created_by: string | null
@@ -573,6 +609,12 @@ export type Database = {
       meetings: { Row: MeetingRow; Insert: InsertOf<MeetingRow> & { subject: string }; Update: InsertOf<MeetingRow>; Relationships: [] }
       meeting_actions: { Row: MeetingActionRow; Insert: InsertOf<MeetingActionRow> & { meeting_id: string; action: string }; Update: InsertOf<MeetingActionRow>; Relationships: [] }
       company_settings: { Row: CompanySettingsRow; Insert: InsertOf<CompanySettingsRow>; Update: InsertOf<CompanySettingsRow>; Relationships: [] }
+      installation_options: {
+        Row: InstallationOptionRow
+        Insert: Partial<InstallationOptionRow> & { label: string }
+        Update: Partial<InstallationOptionRow>
+        Relationships: []
+      }
       invoices: { Row: InvoiceRow; Insert: InsertOf<InvoiceRow> & { doc_type: DocumentType; company_id: string }; Update: InsertOf<InvoiceRow>; Relationships: [] }
       invoice_lines: { Row: InvoiceLineRow; Insert: Partial<InvoiceLineRow>; Update: Partial<InvoiceLineRow>; Relationships: [] }
       payments: { Row: PaymentRow; Insert: InsertOf<PaymentRow> & { order_id: string; amount: number }; Update: InsertOf<PaymentRow>; Relationships: [] }
@@ -600,7 +642,7 @@ export type Database = {
           p_parent_invoice_id?: string | null
           p_notes?: string | null
           p_reason?: string | null
-          p_payment_due_days?: number
+          p_valid_days?: number
         }
         Returns: string
       }
@@ -612,6 +654,7 @@ export type Database = {
           p_place_of_supply_code?: string | null
           p_place_of_supply_name?: string | null
           p_notes?: string | null
+          p_valid_days?: number
         }
         Returns: string
       }
@@ -625,11 +668,29 @@ export type Database = {
       /** Allocates the number and freezes the snapshots. Returns the doc no. */
       issue_document: { Args: { p_invoice_id: string }; Returns: string }
       cancel_document: { Args: { p_invoice_id: string; p_reason: string }; Returns: undefined }
-      /** Changes the printed credit period. Draft only; raises otherwise. */
-      set_payment_due_days: {
-        Args: { p_invoice_id: string; p_days: number }
+      /**
+       * Rewrites the whole terms block on a draft in one call. Draft only;
+       * raises otherwise. One call rather than six so the document is never
+       * left holding half a set of terms.
+       */
+      set_document_terms: {
+        Args: {
+          p_invoice_id: string
+          p_valid_days: number
+          p_payment_terms?: string | null
+          p_delivery_timeline?: string | null
+          p_installation_scope?: string | null
+          p_visit_rate?: number | null
+          p_visit_count?: number | null
+        }
         Returns: undefined
       }
+      /**
+       * Adds a scope to the installation dropdown and returns its label.
+       * Adding one that already exists returns the existing label rather than
+       * failing — two people typing the same scope is not an error.
+       */
+      add_installation_option: { Args: { p_label: string }; Returns: string }
       /** Copies a document into a fresh draft — no number, no snapshots. */
       duplicate_document: { Args: { p_invoice_id: string }; Returns: string }
       /**

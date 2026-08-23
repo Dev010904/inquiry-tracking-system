@@ -1,4 +1,4 @@
-import { format, formatDistanceToNowStrict, isValid, parseISO } from 'date-fns'
+import { addDays, format, formatDistanceToNowStrict, isValid, parseISO } from 'date-fns'
 import { GST_RATE } from './constants'
 import type { CurrencyCode } from '@/types/database'
 
@@ -68,6 +68,29 @@ function toDate(value: string | Date | null | undefined): Date | null {
 export function formatDate(value: string | Date | null | undefined): string {
   const d = toDate(value)
   return d ? format(d, 'dd MMM yyyy') : '—'
+}
+
+/**
+ * The date a document stops being valid: the document date plus the number of
+ * days agreed.
+ *
+ * Only the period is ever typed, because that is how validity is actually
+ * negotiated — "hold this price for a fortnight", not "hold it until the 6th".
+ * The customer reading the sheet wants the opposite: a deadline he can put in a
+ * diary without counting. Deriving one from the other means nobody counts, and
+ * the two can never disagree.
+ *
+ * The year is printed even though it is usually obvious. A 90-day quotation
+ * raised in November expires in the next calendar year, and "12 Feb" on a sheet
+ * dated November is a date a customer can read as already past.
+ */
+export function validTill(
+  docDate: string | Date | null | undefined,
+  days: number | null | undefined
+): string {
+  const d = toDate(docDate)
+  if (!d || days === null || days === undefined || !Number.isFinite(days)) return '—'
+  return format(addDays(d, days), 'dd MMM yyyy')
 }
 
 /** 03 Aug 2026, 4:30 pm — in the viewer's own timezone. Prefer the IST version. */

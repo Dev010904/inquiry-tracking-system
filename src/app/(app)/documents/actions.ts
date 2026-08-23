@@ -6,7 +6,11 @@ import { settingsManagerOrNull } from '@/lib/auth'
 import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { dbMessage } from '@/lib/db-message'
-import { companySettingsSchema, createDocumentSchema } from '@/lib/schemas/document'
+import {
+  companySettingsSchema,
+  createDocumentSchema,
+  documentTermsSchema,
+} from '@/lib/schemas/document'
 import { GST_STATES } from '@/lib/constants'
 
 export type Result =
@@ -116,7 +120,7 @@ export async function createDocument(input: unknown): Promise<Result> {
     p_parent_invoice_id: v.parent_invoice_id || null,
     p_notes: v.notes || null,
     p_reason: v.reason || null,
-    p_payment_due_days: v.payment_due_days,
+    p_valid_days: v.valid_days,
   })
 
   if (error) return { ok: false, error: dbMessage(error.message, 'Could not raise that document.') }
@@ -188,19 +192,68 @@ export async function deleteDraft(invoiceId: string): Promise<Result> {
   return { ok: true }
 }
 
-/** Changes the printed credit period. The database refuses once issued. */
-export async function setPaymentDueDays(invoiceId: string, days: number): Promise<Result> {
+/**
+ * Rewrites the whole terms block on a draft — validity, payment terms,
+ * delivery, installation scope and the visit charge.
+ *
+ * One call rather than one per field. These are read together on the printed
+ * sheet and negotiated together on the phone, and saving them one at a time
+ * would let a network drop leave the document quoting the new rate against the
+ * old number of visits.
+ *
+ * The database refuses once the document is issued, whatever this action does.
+ */
+export async function setDocumentTerms(input: unknown): Promise<Result> {
   if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
 
+  const parsed = documentTermsSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: 'Check the highlighted fields.', fieldErrors: flatten(parsed.error) }
+  }
+  const v = parsed.data
   const supabase = await createClient()
-  const { error } = await supabase.rpc('set_payment_due_days', {
-    p_invoice_id: invoiceId,
-    p_days: days,
+
+  const { error } = await supabase.rpc('set_document_terms', {
+    p_invoice_id: v.invoice_id,
+    p_valid_days: v.valid_days,
+    p_payment_terms: v.payment_terms || null,
+    p_delivery_timeline: v.delivery_timeline || null,
+    p_installation_scope: v.installation_scope || null,
+    p_visit_rate: v.visit_rate,
+    p_visit_count: v.visit_count,
   })
 
-  if (error) return { ok: false, error: dbMessage(error.message, 'Could not change the payment terms.') }
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not save those terms.') }
 
-  revalidatePath(`/documents/${invoiceId}`)
+  revalidatePath(`/documents/${v.invoice_id}`)
+  return { ok: true }
+}
+
+/**
+ * Adds a scope to the site-installation dropdown, from the document screen.
+ *
+ * The list is the owner's rather than ours, and the moment he needs a new entry
+ * is the moment he is halfway through writing a quotation. Sending him to a
+ * settings page to add it, and back again, is how a dropdown ends up with one
+ * option called "Other".
+ */
+export async function addInstallationOption(label: string): Promise<Result> {
+  if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+
+  const clean = label.trim()
+  if (clean.length < 2) {
+    return { ok: false, error: 'Type the installation scope before adding it.' }
+  }
+  if (clean.length > 200) {
+    return { ok: false, error: 'That is too long for a dropdown entry.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('add_installation_option', { p_label: clean })
+
+  if (error) return { ok: false, error: dbMessage(error.message, 'Could not add that option.') }
+
+  revalidatePath('/documents')
   return { ok: true }
 }
 
@@ -235,6 +288,9 @@ const quotationSchema = z.object({
   doc_date: z.string().min(1, 'Pick a date'),
   place_of_supply_code: z.string().trim().max(2).optional().or(z.literal('')),
   notes: z.string().trim().max(2000).optional().or(z.literal('')),
+  // A quotation is a price with an expiry, so validity is asked for up front
+  // here rather than left to the draft screen.
+  valid_days: z.coerce.number().int().min(0).max(365).default(15),
 })
 
 /**
@@ -262,6 +318,7 @@ export async function createQuotation(input: unknown): Promise<Result> {
       ? (GST_STATES[v.place_of_supply_code] ?? null)
       : null,
     p_notes: v.notes || null,
+    p_valid_days: v.valid_days,
   })
 
   if (error) return { ok: false, error: dbMessage(error.message, 'Could not raise that quotation.') }

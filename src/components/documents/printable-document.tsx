@@ -6,7 +6,7 @@ import {
   TAXABLE_DOCUMENT_TYPES,
   TAX_DISPLAYING_DOCUMENT_TYPES,
 } from '@/lib/constants'
-import { formatDate, formatMoney, joinAddress } from '@/lib/format'
+import { formatDate, formatMoney, joinAddress, validTill } from '@/lib/format'
 import type { CompanySettingsRow, InvoiceLineRow, InvoiceRow } from '@/types/database'
 
 type Props = {
@@ -62,6 +62,55 @@ function slabsOf(lines: InvoiceLineRow[]): Slab[] {
   return [...map.values()].sort((a, b) => a.rate - b.rate)
 }
 
+/**
+ * "8,000" — a bare figure to sit inside "@ Rs. …/-".
+ *
+ * Not formatMoney(): that would print "₹8,000.00" into a sentence that already
+ * says Rs., and a rate agreed as a round number should not gain two zeros on
+ * the way to the page. Grouped in the Indian style, because a six-figure visit
+ * rate printed as 150000 is a rate someone will misread.
+ */
+function plainAmount(value: number | string): string {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return String(value)
+  return n.toLocaleString('en-IN', { maximumFractionDigits: 2 })
+}
+
+/**
+ * The site installation sentence, composed rather than stored.
+ *
+ * This was one fixed line in this file — "Site Installation & visit charges @
+ * Rs. 8000/- as extra. Total of 2 visits." — which meant a different rate
+ * needed a code change, and every customer got the same number of visits
+ * whatever had been agreed. The scope now comes from a list the owner controls
+ * and the two figures from the document.
+ *
+ * Each part is optional and drops out cleanly. A document with no scope and no
+ * rate prints no line at all, which is the right answer for the supplies that
+ * involve no site work.
+ */
+function installationSentence(
+  scope: string | null,
+  rate: number | string | null,
+  visits: number | null
+): string | null {
+  const parts: string[] = []
+  const hasRate = rate !== null && rate !== undefined && Number(rate) > 0
+
+  if (scope) {
+    parts.push(hasRate ? `${scope} @ Rs. ${plainAmount(rate)}/- as extra.` : `${scope}.`)
+  } else if (hasRate) {
+    // A rate with nothing to attach it to still has to say what it is for.
+    parts.push(`Visit charges @ Rs. ${plainAmount(rate)}/- as extra.`)
+  }
+
+  if (parts.length > 0 && visits !== null && visits !== undefined) {
+    parts.push(`Total of ${visits} ${visits === 1 ? 'visit' : 'visits'}.`)
+  }
+
+  return parts.length > 0 ? parts.join(' ') : null
+}
+
 const money = (v: number | string | null | undefined) => formatMoney(v, 'INR', true)
 
 /**
@@ -111,6 +160,29 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
       ? { word: 'Cancelled', size: 70, ink: '0.08' }
       : null
   const markInk = stamp ? stamp.ink : '0.06'
+
+  /*
+   * Terms come from the document first and the supplier only as a fallback.
+   *
+   * They used to come from company settings alone, which made them identical
+   * on every document the firm had ever sent. They are now columns on the
+   * invoice, seeded from Settings when the draft is raised and editable until
+   * it is issued.
+   *
+   * The fallback is not defensive padding — it is what keeps documents raised
+   * before those columns existed printing the words they have always printed.
+   * Those sentences were frozen into supplier_snapshot at issue, so reading
+   * through to it reproduces the original sheet exactly. `supplier` is already
+   * the snapshot for an issued document and live settings for a draft, so this
+   * one expression covers both.
+   */
+  const paymentTerms = invoice.payment_terms ?? supplier?.payment_terms ?? null
+  const deliveryTimeline = invoice.delivery_timeline ?? supplier?.delivery_timeline ?? null
+  const installationLine = installationSentence(
+    invoice.installation_scope,
+    invoice.visit_rate,
+    invoice.visit_count
+  )
 
   // Intrastate splits into CGST + SGST, interstate into IGST. Decided by what
   // Postgres actually put on the lines, not re-derived from the state codes.
@@ -247,15 +319,27 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               <p>
                 <span>Date:</span> {formatDate(invoice.doc_date)}
               </p>
-              {/* The credit period, directly under the date where a customer
-                  looks for it. A challan moves goods rather than charging for
-                  them, so it carries no terms. */}
+              {/* How long this holds good, directly under the date where a
+                  customer looks for it.
+                  
+                  This block used to print the credit period — "Payment terms:
+                  15 days" — which put the same words in two places on one
+                  sheet and answered a question nobody asks at the top of a
+                  quotation. What is wanted here is the deadline: the date the
+                  price expires, spelled out so nobody has to count forward
+                  from the document date. The period itself is what the maker
+                  types; see validTill().
+                  
+                  A challan moves goods rather than offering anything, so it
+                  has nothing to expire. */}
               {invoice.doc_type !== 'delivery_challan' && (
                 <p>
-                  <span>Payment terms:</span>{' '}
-                  {invoice.payment_due_days === 0
-                    ? 'Due on receipt'
-                    : `${invoice.payment_due_days} days`}
+                  <span>Valid till:</span>{' '}
+                  <span className="font-medium">
+                    {invoice.valid_days === 0
+                      ? formatDate(invoice.doc_date)
+                      : validTill(invoice.doc_date, invoice.valid_days)}
+                  </span>
                 </p>
               )}
               <p>
@@ -429,17 +513,17 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
            */}
           <section className="print:break-inside-avoid">
             <div className="border-t border-black/30 pt-1">
-              {supplier?.payment_terms && (
+              {paymentTerms && (
                 <p>
-                  <span>Payment Terms :</span> {supplier.payment_terms}
+                  <span>Payment Terms :</span> {paymentTerms}
                 </p>
               )}
-              {supplier?.delivery_timeline && (
+              {deliveryTimeline && (
                 <p>
-                  <span>Delivery Timeline:</span>{' '}
-                  {supplier.delivery_timeline}
+                  <span>Delivery Timeline:</span> {deliveryTimeline}
                 </p>
               )}
+              {installationLine && <p>{installationLine}</p>}
               {invoice.notes && <p className="whitespace-pre-line">{invoice.notes}</p>}
               {invoice.terms && <p className="whitespace-pre-line">{invoice.terms}</p>}
             </div>
@@ -465,12 +549,33 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </div>
               <div className="p-2 text-center">
                 <p>For {supplier?.legal_name ?? ''}</p>
+                {/* The partner's signature, where the gap used to be.
+                    
+                    It sits between the firm's name and the designation, which
+                    is exactly where a hand would put it, and it is sized to
+                    the 48px of white that was already reserved there — so the
+                    block is no taller than before and no document gains a page
+                    from it.
+                    
+                    An <img> rather than a CSS background, for the same reason
+                    as the watermark: print stylesheets drop background images,
+                    which would leave it looking right on screen and missing on
+                    paper. The file is a transparent PNG, so it lands on the
+                    sheet as ink rather than as a white rectangle over the
+                    rule beneath it. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/signature.png"
+                  alt=""
+                  width={97}
+                  height={48}
+                  className="doc-ink mx-auto mt-1 h-12 w-auto object-contain"
+                />
                 {/* The firm signs by office rather than by name, so only the
                     designation prints. signatory_name is still held in company
                     settings and in every issued document's supplier snapshot —
-                    it is simply not put on the page. The gap above is the room
-                    to sign. */}
-                <p className="mt-12 text-[11px]">
+                    it is simply not put on the page. */}
+                <p className="text-[11px]">
                   {supplier?.signatory_designation ?? 'Authorised Signatory'}
                 </p>
               </div>
@@ -478,6 +583,16 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
 
             <p className="border-t border-black/30 pt-1 text-center font-semibold uppercase">
               Subject to {supplier?.jurisdiction_city ?? 'Vadodara'} jurisdiction
+            </p>
+
+            {/* The last line on the sheet, on every type of document.
+                
+                It is what tells a reader that the absence of a wet ink
+                signature is deliberate rather than an oversight — which
+                matters more now that the sheet carries a reproduced signature
+                above it. Kept as the owner worded it, verbatim. */}
+            <p className="pt-1 text-center text-[10px]">
+              This is a computer generated quote/invoice.
             </p>
           </section>
         </article>

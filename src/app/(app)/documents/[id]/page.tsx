@@ -4,12 +4,13 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { AcceptQuotation } from '@/components/documents/accept-quotation'
 import { DocumentLinesEditor } from '@/components/documents/document-lines-editor'
+import { DocumentTerms } from '@/components/documents/document-terms'
 import { DocumentView } from '@/components/documents/document-view'
 import { Badge } from '@/components/ui/badge'
 import { DOCUMENT_TYPE, TAX_DISPLAYING_DOCUMENT_TYPES } from '@/lib/constants'
 import { formatAudit } from '@/lib/format'
 import { requireProfile } from '@/lib/auth'
-import { getDocument } from '@/lib/queries/documents'
+import { getDocument, listInstallationOptions } from '@/lib/queries/documents'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,13 @@ export async function generateMetadata({
 
 export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [profile, detail] = await Promise.all([requireProfile(), getDocument(id)])
+  const [profile, detail, installationOptions] = await Promise.all([
+    requireProfile(),
+    getDocument(id),
+    // Fetched unconditionally rather than only for a draft: the alternative is
+    // a second round trip after the status is known, to save one small query.
+    listInstallationOptions(),
+  ])
   if (!detail) notFound()
 
   const { invoice, lines, settings, company, contact, order } = detail
@@ -88,6 +95,12 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
             showsTax={TAX_DISPLAYING_DOCUMENT_TYPES.includes(invoice.doc_type)}
           />
         </div>
+      )}
+
+      {/* Below the lines, above the preview: the terms are read after the
+          prices are settled, and the preview underneath shows the result. */}
+      {invoice.status === 'draft' && (
+        <DocumentTerms invoice={invoice} options={installationOptions} />
       )}
 
       {invoice.doc_type === 'quotation' && invoice.status === 'issued' && !order && (

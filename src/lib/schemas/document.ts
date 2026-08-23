@@ -90,6 +90,17 @@ export const companySettingsSchema = z.object({
 
 export type CompanySettingsValues = z.output<typeof companySettingsSchema>
 
+/**
+ * Validity in days, shared by every path that sets it. 0 is allowed and means
+ * the price holds for the day it was quoted.
+ */
+const validDays = z.coerce
+  .number()
+  .int('Whole days only')
+  .min(0, 'Cannot be negative')
+  .max(365, '365 days at most')
+  .default(15)
+
 /** Raising a document against an order. */
 export const createDocumentSchema = z.object({
   order_id: z.string().uuid(),
@@ -104,14 +115,43 @@ export const createDocumentSchema = z.object({
   parent_invoice_id: z.string().uuid().optional().or(z.literal('')),
   notes: optional(2000),
   reason: optional(500),
-  // The credit period printed on the document. 15 days is the house default;
-  // it is typed per document because it is negotiated per customer.
-  payment_due_days: z.coerce
-    .number()
-    .int('Whole days only')
-    .min(0, 'Cannot be negative')
-    .max(365, '365 days at most')
-    .default(15),
+  // How long the document holds good. 15 days is the house default; it is
+  // typed per document because it is negotiated per customer. The sheet prints
+  // the resulting date — see validTill() in lib/format.
+  valid_days: validDays,
 })
 
 export type CreateDocumentValues = z.output<typeof createDocumentSchema>
+
+/**
+ * The terms block on a draft, saved as a unit.
+ *
+ * Payment terms and the delivery timeline used to live in company settings,
+ * which made them the same on every document the firm had ever sent. They are
+ * negotiated per deal, so they belong here.
+ *
+ * The site installation line was a fixed English sentence with the rate written
+ * into it. It is now a scope chosen from a list the owner controls, plus the
+ * two numbers that vary, and the sentence is composed when the document prints.
+ */
+export const documentTermsSchema = z.object({
+  invoice_id: z.string().uuid(),
+  valid_days: validDays,
+  payment_terms: optional(500),
+  delivery_timeline: optional(500),
+  installation_scope: optional(200),
+  // Blank means "no visit charge on this document" rather than zero, so both
+  // numbers pass through as null when the boxes are left empty. Coercing '' to
+  // 0 would print "@ Rs. 0/-" on a document that simply does not charge for
+  // visits.
+  visit_rate: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
+    z.number().min(0, 'A visit rate cannot be negative').max(99_999_999).nullable()
+  ),
+  visit_count: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
+    z.number().int('Whole visits only').min(0, 'Cannot be negative').max(999).nullable()
+  ),
+})
+
+export type DocumentTermsValues = z.output<typeof documentTermsSchema>

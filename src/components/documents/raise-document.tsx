@@ -41,7 +41,7 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
   const [stateCode, setStateCode] = useState(defaultStateCode ?? '')
   const [parentId, setParentId] = useState('')
   const [notes, setNotes] = useState('')
-  const [dueDays, setDueDays] = useState('15')
+  const [validDays, setValidDays] = useState('15')
 
   const available = (Object.keys(DOCUMENT_TYPE) as DocumentType[]).filter((type) => {
     if (TAXABLE_DOCUMENT_TYPES.includes(type)) return gstApplicable
@@ -62,7 +62,7 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
         place_of_supply_code: stateCode,
         parent_invoice_id: parentId,
         notes,
-        payment_due_days: dueDays,
+        valid_days: validDays,
       })
       if (result.ok && result.id) {
         toast.success('Draft created')
@@ -124,21 +124,21 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
             />
           </Field>
 
-          {/* A challan moves goods rather than charging for them, so it prints
-              no terms and there is nothing to set. */}
+          {/* A challan moves goods rather than charging for them, so nothing
+              about it expires and there is no validity to set. */}
           {docType !== 'delivery_challan' && (
             <Field
-              label="Payment terms"
-              htmlFor="due_days"
-              hint="Days from the document date. 0 prints “Due on receipt”."
+              label="Valid for"
+              htmlFor="valid_days"
+              hint="Days from the document date. The sheet prints the date this falls on."
             >
               <Input
-                id="due_days"
+                id="valid_days"
                 type="number"
                 min={0}
                 max={365}
-                value={dueDays}
-                onChange={(e) => setDueDays(e.target.value)}
+                value={validDays}
+                onChange={(e) => setValidDays(e.target.value)}
               />
             </Field>
           )}

@@ -9,6 +9,7 @@ import type {
   DocumentType,
   CompanySettingsRow,
   DocumentNumberRegisterRow,
+  InstallationOptionRow,
   InvoiceLineRow,
   InvoiceRow,
   OrderRow,
@@ -149,6 +150,23 @@ export async function getDocument(id: string): Promise<DocumentDetail | null> {
     order: orderRes.data ?? null,
     settings,
   }
+}
+
+/**
+ * The site-installation scopes offered on the document screen.
+ *
+ * Ordered by `sort_order` first so the owner can pin the ones he uses daily to
+ * the top, then alphabetically, so anything added later lands somewhere
+ * predictable rather than at the bottom in creation order.
+ */
+export async function listInstallationOptions(): Promise<InstallationOptionRow[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('installation_options')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('label', { ascending: true })
+  return data ?? []
 }
 
 /** Issued tax invoices on an order, for a credit or debit note to reference. */

@@ -371,10 +371,10 @@ export function CompanySettingsForm({ settings, missing }: Props) {
           </div>
 
           <Field
-            label="Payment terms"
+            label="Default payment terms"
             htmlFor="payment_terms"
             error={errors.payment_terms}
-            hint="One line, printed above the bank details"
+            hint="Copied onto each new document, where it can be changed. Editing it here changes nothing already raised."
           >
             <Input
               id="payment_terms"
@@ -385,10 +385,10 @@ export function CompanySettingsForm({ settings, missing }: Props) {
           </Field>
 
           <Field
-            label="Delivery timeline"
+            label="Default delivery timeline"
             htmlFor="delivery_timeline"
             error={errors.delivery_timeline}
-            hint="One line, printed under the payment terms"
+            hint="Copied onto each new document, where it can be changed. Editing it here changes nothing already raised."
           >
             <Input
               id="delivery_timeline"
