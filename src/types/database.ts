@@ -308,6 +308,15 @@ export type CompanySettingsRow = Timestamps & {
   payment_terms: string | null
   delivery_timeline: string | null
   quotation_terms: string | null
+  /**
+   * The house default for the installation line, copied onto each new
+   * document. Held as three fields rather than as the sentence it used to be,
+   * so the rate can be changed without editing prose — and so the document can
+   * disagree with the default where a customer negotiated something else.
+   */
+  default_installation_scope: string | null
+  default_visit_rate: number | null
+  default_visit_count: number | null
   print_supplier_header: boolean
 }
 

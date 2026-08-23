@@ -61,6 +61,15 @@ export function CompanySettingsForm({ settings, missing }: Props) {
     payment_terms: str(settings?.payment_terms),
     delivery_timeline: str(settings?.delivery_timeline),
     quotation_terms: str(settings?.quotation_terms),
+    default_installation_scope: str(settings?.default_installation_scope),
+    default_visit_rate:
+      settings?.default_visit_rate === null || settings?.default_visit_rate === undefined
+        ? ''
+        : String(settings.default_visit_rate),
+    default_visit_count:
+      settings?.default_visit_count === null || settings?.default_visit_count === undefined
+        ? ''
+        : String(settings.default_visit_count),
     // Absent on a settings row saved before the column existed, and that must
     // read as on — see the migration.
     print_supplier_header: settings?.print_supplier_header ?? true,
@@ -398,6 +407,61 @@ export function CompanySettingsForm({ settings, missing }: Props) {
             />
           </Field>
 
+          {/* The installation line, as three fields rather than as the
+              sentence it used to be. It lived in the quotation terms box below
+              as free prose with the rate written into it, which meant changing
+              the rate meant retyping a sentence — and left no way for one
+              customer to be quoted a different number of visits. */}
+          <Field
+            label="Default site installation"
+            htmlFor="default_installation_scope"
+            error={errors.default_installation_scope}
+            hint="Copied onto each new document, where it can be changed or cleared"
+          >
+            <Input
+              id="default_installation_scope"
+              value={form.default_installation_scope}
+              placeholder="Site Installation & visit charges"
+              onChange={(e) => set('default_installation_scope')(e.target.value)}
+            />
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Default visit rate (₹)"
+              htmlFor="default_visit_rate"
+              error={errors.default_visit_rate}
+              hint="Blank charges nothing for visits"
+            >
+              <Input
+                id="default_visit_rate"
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.default_visit_rate}
+                placeholder="8000"
+                onChange={(e) => set('default_visit_rate')(e.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="Default number of visits"
+              htmlFor="default_visit_count"
+              error={errors.default_visit_count}
+              hint="Blank prints no count"
+            >
+              <Input
+                id="default_visit_count"
+                type="number"
+                min={0}
+                max={999}
+                value={form.default_visit_count}
+                placeholder="2"
+                onChange={(e) => set('default_visit_count')(e.target.value)}
+              />
+            </Field>
+          </div>
+
           <Field
             label="Terms and conditions"
             htmlFor="invoice_terms"
@@ -417,13 +481,13 @@ export function CompanySettingsForm({ settings, missing }: Props) {
             label="Quotation terms"
             htmlFor="quotation_terms"
             error={errors.quotation_terms}
-            hint="Used instead of the above when a quotation is issued — extras such as site visit charges go here"
+            hint="Used instead of the above when a quotation is issued. Site installation and visit charges are the three fields above — putting them here as well prints them twice."
           >
             <Textarea
               id="quotation_terms"
               rows={3}
               value={form.quotation_terms}
-              placeholder="Site installation and visit charges quoted separately."
+              placeholder="Prices held subject to material availability."
               onChange={(e) => set('quotation_terms')(e.target.value)}
             />
           </Field>

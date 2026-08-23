@@ -81,6 +81,15 @@ export const companySettingsSchema = z.object({
   payment_terms: optional(500),
   delivery_timeline: optional(500),
   quotation_terms: optional(2000),
+  default_installation_scope: optional(200),
+  default_visit_rate: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
+    z.number().min(0, 'Cannot be negative').max(99_999_999).nullable()
+  ),
+  default_visit_count: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? null : Number(v)),
+    z.number().int('Whole visits only').min(0, 'Cannot be negative').max(999).nullable()
+  ),
   // A checkbox posts nothing at all when unticked, so an absent value has to
   // mean false here — while a settings row that predates the column still
   // defaults to true in the database. On rather than off is the safe default:

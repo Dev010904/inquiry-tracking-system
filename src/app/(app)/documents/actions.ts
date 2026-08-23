@@ -83,6 +83,9 @@ export async function saveCompanySettings(input: unknown): Promise<Result> {
       payment_terms: blank(v.payment_terms),
       delivery_timeline: blank(v.delivery_timeline),
       quotation_terms: blank(v.quotation_terms),
+      default_installation_scope: blank(v.default_installation_scope),
+      default_visit_rate: v.default_visit_rate,
+      default_visit_count: v.default_visit_count,
       print_supplier_header: v.print_supplier_header,
     })
     .eq('id', existing!.id)

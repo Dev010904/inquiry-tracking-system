@@ -567,7 +567,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                 <img
                   src="/signature.png"
                   alt=""
-                  width={97}
+                  width={98}
                   height={48}
                   className="doc-ink mx-auto mt-1 h-12 w-auto object-contain"
                 />
