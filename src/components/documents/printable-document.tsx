@@ -204,9 +204,29 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
         // and override anything set here. Adding `print:` utilities to this
         // line does nothing; that is how the page margin went missing while
         // looking as though it were set.
+        // Two things on this line are load-bearing and easy to undo by accident.
+        //
+        // `leading-[15px]` is an integer on purpose. It was `leading-snug`,
+        // which on 11px text is 15.125px, so every line of the document added
+        // an eighth of a pixel of drift and each horizontal rule ended up at a
+        // different sub-pixel offset (.16, .31, .44, .66, .78, .84 — measured,
+        // not guessed). A 1px rule at y.5 is painted across two device rows at
+        // half coverage and reads as a soft thick band; the same rule at y.0
+        // lands on one row and reads as a crisp thin one. At 100% display
+        // scaling everything rounds the same way, which is why the owner saw
+        // it on two machines and nobody else saw it at all. A whole-pixel line
+        // box puts every rule on a whole pixel so they all round together.
+        // 15px rather than 16px because the sheet already uses 272 of its
+        // 273mm, and a taller line box would push documents onto a second page.
+        //
+        // The rules are opaque greys rather than black/30 and black/40 for the
+        // same reason: a translucent line spread over two rows is faint and
+        // fuzzy where the same line on one row is sharp, which is what made the
+        // difference so obvious. #b3b3b3 is rgba(0,0,0,.3) over white and
+        // #a6a6a6 is the .4, so the design is unchanged.
         <article
           key={copy}
-          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-snug text-black"
+          className="doc-copy relative mx-auto flex min-h-[273mm] w-full max-w-[190mm] flex-col border bg-white p-6 text-[11px] leading-[15px] text-black"
           style={index < sheets.length - 1 ? { pageBreakAfter: 'always' } : undefined}
         >
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -243,7 +263,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               issued before the setting existed has no such key in its snapshot,
               and that must keep printing the header rather than lose it. */}
           {supplier?.print_supplier_header !== false && (
-          <header className="flex items-center gap-3 border-b border-black/30 pb-2">
+          <header className="flex items-center gap-3 border-b border-[#b3b3b3] pb-2">
             {/* Sized to the identity block beside it so the header keeps the
                 height it had before the logo was added — a taller header is
                 what would push a long document onto a second sheet. The width
@@ -279,7 +299,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
           </header>
           )}
 
-          <h2 className="border-b border-black/30 py-1.5 text-center text-sm font-bold">
+          <h2 className="border-b border-[#b3b3b3] py-1.5 text-center text-sm font-bold">
             {DOCUMENT_TITLE[invoice.doc_type]}
             {isStatutoryTax && (
               <span className="ml-2 text-[11px] font-normal uppercase tracking-wide">
@@ -288,8 +308,8 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
             )}
           </h2>
 
-          <section className="grid grid-cols-[1.6fr_1fr] border-b border-black/30">
-            <div className="border-r border-black/30 p-2">
+          <section className="grid grid-cols-[1.6fr_1fr] border-b border-[#b3b3b3]">
+            <div className="border-r border-[#b3b3b3] p-2">
               <p>
                 <span>
                   {invoice.doc_type === 'quotation' ? 'Quote To:' : 'Bill To:'}
@@ -319,22 +339,22 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               <p>
                 <span>Date:</span> {formatDate(invoice.doc_date)}
               </p>
-              {/* How long this holds good, directly under the date where a
-                  customer looks for it.
+              {/* The date payment falls due, directly under the document
+                  date where a customer looks for it.
                   
-                  This block used to print the credit period — "Payment terms:
-                  15 days" — which put the same words in two places on one
-                  sheet and answered a question nobody asks at the top of a
-                  quotation. What is wanted here is the deadline: the date the
-                  price expires, spelled out so nobody has to count forward
-                  from the document date. The period itself is what the maker
-                  types; see validTill().
+                  Quotations only, at the owner's instruction. It was printing
+                  on every type that was not a challan, which put a due date on
+                  a tax invoice that already states its own terms at the foot,
+                  and on credit notes, where it means nothing at all. The
+                  quotation is the document that carries it, because that is
+                  where the terms are being offered rather than restated.
                   
-                  A challan moves goods rather than offering anything, so it
-                  has nothing to expire. */}
-              {invoice.doc_type !== 'delivery_challan' && (
+                  The maker types a number of days; the date is derived, so
+                  nobody counts forward from the document date by hand and the
+                  two can never disagree. See validTill(). */}
+              {invoice.doc_type === 'quotation' && (
                 <p>
-                  <span>Valid till:</span>{' '}
+                  <span>Payment due date:</span>{' '}
                   <span className="font-medium">
                     {invoice.valid_days === 0
                       ? formatDate(invoice.doc_date)
@@ -368,7 +388,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                   they read louder than the line items underneath, which are
                   the part anyone is actually looking at. 75% is the floor:
                   these get photocopied. */}
-              <tr className="border-b border-black/30 text-left align-bottom">
+              <tr className="border-b border-[#b3b3b3] text-left align-bottom">
                 <th className="w-10 px-1 py-1 font-semibold">SR. NO</th>
                 <th className="px-1 py-1 font-semibold">PRODUCT / SERVICE DESCRIPTION</th>
                 <th className="w-16 px-1 py-1 font-semibold">HSN/SAC</th>
@@ -416,7 +436,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
           </table>
 
           <section>
-            <div className="flex justify-end border-t border-black/30 pt-1 print:break-inside-avoid">
+            <div className="flex justify-end border-t border-[#b3b3b3] pt-1 print:break-inside-avoid">
               <dl className="w-72 space-y-0.5">
                 <div className="flex justify-between">
                   <dt>GROSS TOTAL</dt>
@@ -464,14 +484,14 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                   <dt>Roundoff</dt>
                   <dd>{money(invoice.round_off)}</dd>
                 </div>
-                <div className="flex justify-between border-t border-black/40 pt-0.5 text-xs font-bold">
+                <div className="flex justify-between border-t border-[#a6a6a6] pt-0.5 text-xs font-bold">
                   <dt>TOTAL</dt>
                   <dd>{money(invoice.grand_total)}</dd>
                 </div>
               </dl>
             </div>
 
-            <div className="border-t border-black/30 pt-1 print:break-inside-avoid">
+            <div className="border-t border-[#b3b3b3] pt-1 print:break-inside-avoid">
               <p>
                 <span>Amount in words :</span>{' '}
                 <span className="font-medium">{invoice.amount_in_words ?? '—'}</span>
@@ -512,7 +532,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
            * the signature instead.
            */}
           <section className="print:break-inside-avoid">
-            <div className="border-t border-black/30 pt-1">
+            <div className="border-t border-[#b3b3b3] pt-1">
               {paymentTerms && (
                 <p>
                   <span>Payment Terms :</span> {paymentTerms}
@@ -529,7 +549,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
             </div>
 
             {supplier?.bank_name && (
-              <div className="border-t border-black/30 pt-1">
+              <div className="border-t border-[#b3b3b3] pt-1">
                 <p className="font-semibold">Company&rsquo;s Bank Details:</p>
                 <p>Bank Name : {supplier.bank_name}</p>
                 <p>A/c Name : {supplier.legal_name ?? '—'}</p>
@@ -538,8 +558,8 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </div>
             )}
 
-            <div className="grid grid-cols-[1.6fr_1fr] border-t border-black/30">
-              <div className="border-r border-black/30 p-2">
+            <div className="grid grid-cols-[1.6fr_1fr] border-t border-[#b3b3b3]">
+              <div className="border-r border-[#b3b3b3] p-2">
                 <p className="font-semibold">Declaration</p>
                 {supplier?.msme_no && <p>MSME : {supplier.msme_no}</p>}
                 <p>
@@ -581,7 +601,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               </div>
             </div>
 
-            <p className="border-t border-black/30 pt-1 text-center font-semibold uppercase">
+            <p className="border-t border-[#b3b3b3] pt-1 text-center font-semibold uppercase">
               Subject to {supplier?.jurisdiction_city ?? 'Vadodara'} jurisdiction
             </p>
 

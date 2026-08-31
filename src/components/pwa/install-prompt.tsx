@@ -67,8 +67,8 @@ export function InstallPrompt() {
         <Image
           src="/logo-mark.png"
           alt="ANK"
-          width={311}
-          height={159}
+          width={640}
+          height={423}
           className="h-auto w-12 shrink-0"
         />
 

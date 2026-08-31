@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AlertTriangle, ArrowLeft, Pencil } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
+import { AlertTriangle, Pencil } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/badge'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -40,13 +41,7 @@ export default async function CompanyDetailPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <Link
-        href="/companies"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to companies
-      </Link>
+      <BackLink fallbackHref="/companies" fallbackLabel="Back to companies" />
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>

@@ -3,6 +3,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { activeFy } from '@/lib/fy-server'
 import type {
+  InvoiceRow,
   ActivityFeedRow,
   CompanyRow,
   CompanyType,
@@ -246,6 +247,17 @@ export type InquiryDetail = {
   ownerName: string | null
   followups: FollowupRow[]
   order: OrderRow | null
+  /**
+   * Every document connected to this inquiry: the quotations raised against
+   * the inquiry itself, and — once it has been converted — everything raised
+   * against its order.
+   *
+   * Both, because the paper trail is one story. Somebody opening an inquiry
+   * wants to know what has gone out to that customer, and splitting it across
+   * two screens by which record it happens to hang off is an implementation
+   * detail leaking into the interface.
+   */
+  documents: InvoiceRow[]
   timeline: TimelineEntry[]
 }
 
@@ -290,6 +302,20 @@ export async function getInquiryDetail(id: string): Promise<InquiryDetail | null
     ? await supabase.from('profiles').select('full_name').eq('id', inquiry.owner_id).maybeSingle()
     : null
 
+  // Fetched after the order, because which documents belong here depends on
+  // whether an order exists. `or` rather than two queries so the ordering is
+  // done once, by the database, across both sets.
+  const order = orderRes.data ?? null
+  const documentFilter = order
+    ? `inquiry_id.eq.${id},order_id.eq.${order.id}`
+    : `inquiry_id.eq.${id}`
+  const { data: documents } = await supabase
+    .from('invoices')
+    .select('*')
+    .or(documentFilter)
+    .order('doc_date', { ascending: false })
+    .order('created_at', { ascending: false })
+
   const contacts = contactsRes.data ?? []
   const followups = followupsRes.data ?? []
 
@@ -300,8 +326,9 @@ export async function getInquiryDetail(id: string): Promise<InquiryDetail | null
     contacts,
     ownerName: owner?.data?.full_name ?? null,
     followups,
-    order: orderRes.data ?? null,
-    timeline: buildTimeline(inquiry, followups, activityRes.data ?? [], orderRes.data ?? null),
+    order,
+    documents: documents ?? [],
+    timeline: buildTimeline(inquiry, followups, activityRes.data ?? [], order),
   }
 }
 

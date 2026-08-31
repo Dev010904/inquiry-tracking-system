@@ -61,6 +61,7 @@ export function DocumentTerms({ invoice, options }: Props) {
   // what the document says, so the missing label is offered as its own entry.
   const known = options.some((o) => o.label === scope)
   const busy = pending || adding
+  const isQuotation = invoice.doc_type === 'quotation'
 
   function save() {
     startTransition(async () => {
@@ -116,25 +117,31 @@ export function DocumentTerms({ invoice, options }: Props) {
       </p>
 
       <div className="mt-4 space-y-4">
-        <Field
-          label="Valid for"
-          htmlFor="valid_days"
-          hint={
-            Number.isFinite(Number(validDays))
-              ? `The sheet prints “Valid till: ${validTill(invoice.doc_date, Number(validDays))}”`
-              : 'Days from the document date'
-          }
-        >
-          <Input
-            id="valid_days"
-            type="number"
-            min={0}
-            max={365}
-            value={validDays}
-            disabled={busy}
-            onChange={(e) => setValidDays(e.target.value)}
-          />
-        </Field>
+        {/* Only a quotation prints this, so only a quotation offers it. A
+            box that changes nothing on the page is worse than an absent one:
+            somebody sets it, checks the sheet, and concludes the system is
+            broken. */}
+        {isQuotation && (
+          <Field
+            label="Payment due in"
+            htmlFor="valid_days"
+            hint={
+              Number.isFinite(Number(validDays))
+                ? `Days from the document date. The sheet prints “Payment due date: ${validTill(invoice.doc_date, Number(validDays))}”`
+                : 'Days from the document date'
+            }
+          >
+            <Input
+              id="valid_days"
+              type="number"
+              min={0}
+              max={365}
+              value={validDays}
+              disabled={busy}
+              onChange={(e) => setValidDays(e.target.value)}
+            />
+          </Field>
+        )}
 
         <Field
           label="Payment terms"

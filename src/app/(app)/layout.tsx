@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import Image from 'next/image'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
+import { NavHistory } from '@/components/shell/nav-history'
 import { BottomNav } from '@/components/shell/bottom-nav'
 import { PageTitle } from '@/components/shell/page-title'
 import { Sidebar } from '@/components/shell/sidebar'
@@ -24,6 +26,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh bg-background">
+      {/* Records the screen you came from so Back links can return there.
+          Renders nothing. In Suspense because it reads the query string, and
+          useSearchParams opts its whole subtree out of static rendering —
+          without the boundary that would drag the entire shell with it. */}
+      <Suspense fallback={null}>
+        <NavHistory />
+      </Suspense>
+
       <Sidebar canManageSettings={profile.can_manage_settings} visibleFeatures={visible} />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -35,8 +45,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Image
               src="/logo-mark.png"
               alt="ANK"
-              width={311}
-              height={159}
+              width={640}
+              height={423}
               priority
               className="h-auto w-12 shrink-0 md:hidden"
             />

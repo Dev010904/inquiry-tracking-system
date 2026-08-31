@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Building2, Mail, Phone, User } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
+import { Building2, Mail, Phone, User } from 'lucide-react'
 import { DeliveryPanel } from '@/components/orders/delivery-panel'
 import { DocumentsPanel } from '@/components/orders/documents-panel'
 import { MeetingsPanel } from '@/components/quality/meetings-panel'
@@ -76,13 +77,7 @@ export default async function OrderDetailPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <Link
-        href="/orders"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to orders
-      </Link>
+      <BackLink fallbackHref="/orders" fallbackLabel="Back to orders" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">

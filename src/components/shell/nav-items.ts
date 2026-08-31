@@ -56,7 +56,11 @@ const FEATURE_NAV: Record<FeatureKey, Omit<NavItem, 'feature'>> = {
   orders: { href: '/orders', label: 'Orders', short: 'Orders', icon: Package, primary: true },
   rnd: { href: '/rnd', label: 'R&D Projects', short: 'R&D', icon: FlaskConical, primary: true },
   ip: { href: '/ip', label: 'IP Portfolio', short: 'IP', icon: ShieldCheck, primary: true },
-  documents: { href: '/documents', label: 'Invoices', short: 'Invoices', icon: FileText },
+  // "Documents" rather than "Invoices": the section holds quotations,
+  // proformas, challans and notes as well, and an invoice is only one of them.
+  // Somebody looking for a quotation had no reason to open a menu called
+  // Invoices.
+  documents: { href: '/documents', label: 'Documents', short: 'Docs', icon: FileText },
   meetings: { href: '/meetings', label: 'Meetings', short: 'Meetings', icon: CalendarDays },
   companies: { href: '/companies', label: 'Companies', short: 'Clients', icon: Building2 },
   activity: { href: '/activity', label: 'Recent changes', short: 'Changes', icon: History },

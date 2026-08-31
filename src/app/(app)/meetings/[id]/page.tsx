@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
+import { Printer } from 'lucide-react'
 import { MeetingActions } from '@/components/quality/meeting-actions'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,13 +51,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="print:hidden">
-        <Link
-          href="/meetings"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to meetings
-        </Link>
+        <BackLink fallbackHref="/meetings" fallbackLabel="Back to meetings" />
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">

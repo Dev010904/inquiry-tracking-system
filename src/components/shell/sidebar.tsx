@@ -33,8 +33,8 @@ export function Sidebar({
         <Image
           src="/logo-mark.png"
           alt="ANK"
-          width={311}
-          height={159}
+          width={640}
+          height={423}
           priority
           className="h-auto w-16"
         />

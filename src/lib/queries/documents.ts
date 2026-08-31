@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
 import { activeFy } from '@/lib/fy-server'
+import { DOCUMENT_TYPE } from '@/lib/constants'
 import type {
   CompanyRow,
   ContactRow,
@@ -38,6 +39,31 @@ export function missingSettings(settings: CompanySettingsRow | null): string[] {
   if (!settings.state_code?.trim()) missing.push('state code')
   if (!settings.gstin?.trim()) missing.push('GSTIN')
   return missing
+}
+
+/**
+ * How many documents of each type exist in the financial year on show.
+ *
+ * Drives the type picker on /documents. Scoped to the active year for the same
+ * reason the register is: numbering restarts on 1 April, so a count spanning
+ * years answers a question nobody asked.
+ */
+export async function documentTypeCounts(): Promise<Record<DocumentType, number>> {
+  const supabase = await createClient()
+  const fy = await activeFy()
+
+  const { data } = await supabase
+    .from('invoices')
+    .select('doc_type')
+    .gte('doc_date', fy.from)
+    .lte('doc_date', fy.to)
+
+  const counts = Object.fromEntries(
+    (Object.keys(DOCUMENT_TYPE) as DocumentType[]).map((t) => [t, 0])
+  ) as Record<DocumentType, number>
+
+  for (const row of data ?? []) counts[row.doc_type as DocumentType] += 1
+  return counts
 }
 
 export type DocumentListRow = InvoiceRow & { companyName: string | null }

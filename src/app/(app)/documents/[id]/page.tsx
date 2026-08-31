@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
 import { AcceptQuotation } from '@/components/documents/accept-quotation'
 import { DocumentLinesEditor } from '@/components/documents/document-lines-editor'
 import { DocumentTerms } from '@/components/documents/document-terms'
@@ -42,13 +42,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="print:hidden">
-        <Link
-          href="/documents"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to invoices
-        </Link>
+        <BackLink fallbackHref="/documents" fallbackLabel="Back to documents" />
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight">

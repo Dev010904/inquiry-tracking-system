@@ -110,13 +110,14 @@ export function RaiseQuotation({ inquiryId, defaultStateCode }: Props) {
             </Field>
           </div>
 
-          {/* Asked for here rather than left to the draft screen: a quotation
-              is a price with an expiry, and one sent without a date it holds
-              until is the thing customers argue about six weeks later. */}
+          {/* Asked for here rather than left to the draft screen: the
+              quotation is the document that carries payment terms, and one
+              sent without a due date is the thing customers argue about six
+              weeks later. */}
           <Field
-            label="Valid for"
+            label="Payment due in"
             htmlFor="q_valid"
-            hint="Days from the date above. The sheet prints “Valid till” and the date."
+            hint="Days from the date above. The sheet prints “Payment due date” and the date."
           >
             <Input
               id="q_valid"

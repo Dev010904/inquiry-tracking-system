@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AlertTriangle, ArrowLeft, Briefcase, Pencil, Users } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
+import { AlertTriangle, Briefcase, Pencil, Users } from 'lucide-react'
 import {
   ConfidentialityBadge,
   IpStatusBadge,
@@ -40,13 +41,7 @@ export default async function IpAssetPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <Link
-        href="/ip"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to portfolio
-      </Link>
+      <BackLink fallbackHref="/ip" fallbackLabel="Back to portfolio" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">

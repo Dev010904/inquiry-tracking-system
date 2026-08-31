@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AlertTriangle, ArrowLeft, Pencil, ShieldCheck } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
+import { AlertTriangle, Pencil, ShieldCheck } from 'lucide-react'
 import { ExpenseLedger } from '@/components/rnd/expense-ledger'
 import { BudgetBar, StageBadge } from '@/components/rnd/stage-badge'
 import { ProgressBar } from '@/components/orders/order-status-badge'
@@ -47,13 +48,7 @@ export default async function RndProjectPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <Link
-        href="/rnd"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to projects
-      </Link>
+      <BackLink fallbackHref="/rnd" fallbackLabel="Back to projects" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">

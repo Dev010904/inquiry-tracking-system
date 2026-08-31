@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Building2, Mail, Pencil, Phone, User } from 'lucide-react'
+import { BackLink } from '@/components/shell/back-link'
+import { Building2, Mail, Pencil, Phone, User } from 'lucide-react'
 import { AddFollowup } from '@/components/inquiries/add-followup'
 import { ChangeStatus } from '@/components/inquiries/change-status'
-import { RaiseQuotation } from '@/components/inquiries/raise-quotation'
+import { InquiryDocuments } from '@/components/inquiries/inquiry-documents'
 import { FollowupItem } from '@/components/inquiries/followup-item'
 import { Timeline } from '@/components/inquiries/timeline'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +36,7 @@ export default async function InquiryDetailPage({
   const detail = await getInquiryDetail(id)
   if (!detail) notFound()
 
-  const { inquiry, company, contact, followups, order, ownerName, timeline } = detail
+  const { inquiry, company, contact, followups, order, documents, ownerName, timeline } = detail
   const pending = followups.filter((f) => !f.is_done)
 
   // Confirming an inquiry with no order behind it means creating one, so the
@@ -45,13 +46,7 @@ export default async function InquiryDetailPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <Link
-        href="/inquiries"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to inquiries
-      </Link>
+      <BackLink fallbackHref="/inquiries" fallbackLabel="Back to inquiries" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
@@ -77,10 +72,6 @@ export default async function InquiryDetailPage({
             <Pencil className="h-4 w-4" aria-hidden />
             Edit
           </Link>
-          <RaiseQuotation
-            inquiryId={inquiry.id}
-            defaultStateCode={company?.gstin ? company.gstin.slice(0, 2) : null}
-          />
           {/*
             Replaces the old Convert to order button, at the owner's request.
             Status is what actually moves here, and conversion is reachable
@@ -149,6 +140,18 @@ export default async function InquiryDetailPage({
               )}
             </CardContent>
           </Card>
+
+          {/* Between Requirement and Follow-ups, at the owner's request: the
+              paper that has gone out sits between what was asked for and what
+              is being chased about it. The Quotation button lives here rather
+              than in the page header — it used to be in both places once this
+              panel existed, and one button per action is the rule. */}
+          <InquiryDocuments
+            inquiryId={inquiry.id}
+            documents={documents}
+            defaultStateCode={company?.gstin ? company.gstin.slice(0, 2) : null}
+            hasOrder={alreadyOrdered}
+          />
 
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
