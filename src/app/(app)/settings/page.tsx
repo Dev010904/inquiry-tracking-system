@@ -12,7 +12,8 @@ import { settingsManagerOrNull } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanySettings, missingSettings } from '@/lib/queries/documents'
 import { fyOptions } from '@/lib/fy'
-import { APP_VERSION } from '@/lib/version'
+import { formatDate } from '@/lib/format'
+import { APP_VERSION, APP_VERSION_DATE } from '@/lib/version'
 import { activeFy, earliestFy } from '@/lib/fy-server'
 
 export const metadata: Metadata = { title: 'Settings · ANK Inquiry Tracking' }
@@ -202,7 +203,8 @@ export default async function SettingsPage() {
 
       {/* Quietly at the foot, the way an application states its version. */}
       <p className="pb-2 text-center text-xs text-muted-foreground">
-        ANK Inquiry Tracking &middot; Version {APP_VERSION}
+        ANK Inquiry Tracking &middot; Version {APP_VERSION} &middot; Updated{' '}
+        {formatDate(APP_VERSION_DATE)}
       </p>
     </div>
   )

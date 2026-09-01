@@ -9,3 +9,6 @@
  * cannot import this; when you change it here, change it there too.
  */
 export const APP_VERSION = '1.7'
+
+/** The day that version went live. Moves with APP_VERSION, never on its own. */
+export const APP_VERSION_DATE = '2026-09-01'
