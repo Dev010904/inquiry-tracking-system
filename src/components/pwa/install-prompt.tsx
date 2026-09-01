@@ -62,13 +62,16 @@ export function InstallPrompt() {
   if (dismissed || (!deferred && !showIosHint)) return null
 
   return (
-    <div className="fixed inset-x-3 bottom-20 z-40 rounded-lg border bg-card p-3 shadow-lg sm:left-auto sm:right-4 sm:w-80 md:bottom-4">
+    // print:hidden as well as living only on the dashboard. It is fixed
+    // positioned, so if it ever renders on a printable screen again it lands
+    // in the output — which is how it reached the foot of a printed invoice.
+    <div className="fixed inset-x-3 bottom-20 z-40 rounded-lg border bg-card p-3 shadow-lg print:hidden sm:left-auto sm:right-4 sm:w-80 md:bottom-4">
       <div className="flex items-start gap-3">
         <Image
           src="/logo-mark.png"
           alt="ANK"
-          width={720}
-          height={426}
+          width={760}
+          height={502}
           className="h-auto w-12 shrink-0"
         />
 

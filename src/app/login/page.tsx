@@ -30,8 +30,8 @@ export default async function LoginPage({
           <Image
             src="/logo.png"
             alt="ANK Design &amp; Automation Solutions"
-            width={800}
-            height={528}
+            width={900}
+            height={594}
             priority
             className="h-auto w-48"
           />

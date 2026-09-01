@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
+import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { AlarmPanel } from '@/components/dashboard/alarm-panel'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { RecentChanges } from '@/components/dashboard/recent-changes'
@@ -39,12 +40,17 @@ export default async function DashboardPage() {
     ])
 
     return (
-      <MyWorkDashboard
-        fullName={profile.full_name}
-        tasks={tasks}
-        followups={followups}
-        canOpenInquiries={features.inquiries.canView}
-      />
+      <>
+        <MyWorkDashboard
+          fullName={profile.full_name}
+          tasks={tasks}
+          followups={followups}
+          canOpenInquiries={features.inquiries.canView}
+        />
+        {/* This is the dashboard for a restricted user, so the offer belongs
+            here too — they are the ones most likely to want it on a phone. */}
+        <InstallPrompt />
+      </>
     )
   }
 
@@ -97,6 +103,16 @@ export default async function DashboardPage() {
           {profile.role === 'admin' && <NumberRegisterPanel rows={register} />}
         </div>
       </div>
+
+      {/* The install offer lives here and nowhere else.
+          
+          It used to sit in the app shell, so it floated over every screen —
+          including a document being read before printing, where it landed in
+          the printed PDF as an "Install ANK Track" card at the foot of a tax
+          invoice. The dashboard is the one screen somebody opens without
+          being mid-task, which makes it the only place the offer is not an
+          interruption. */}
+      <InstallPrompt />
     </div>
   )
 }

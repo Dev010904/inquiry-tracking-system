@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { NavHistory } from '@/components/shell/nav-history'
 import { BottomNav } from '@/components/shell/bottom-nav'
 import { PageTitle } from '@/components/shell/page-title'
@@ -45,8 +44,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Image
               src="/logo-mark.png"
               alt="ANK"
-              width={720}
-              height={426}
+              width={760}
+              height={502}
               priority
               className="h-auto w-12 shrink-0 md:hidden"
             />
@@ -87,7 +86,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       <BottomNav visibleFeatures={visible} />
-      <InstallPrompt />
     </div>
   )
 }
