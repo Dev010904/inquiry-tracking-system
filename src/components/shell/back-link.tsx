@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { NAV_PREV_KEY } from '@/components/shell/nav-history'
+import { NAV_CURRENT_KEY, NAV_PREV_KEY } from '@/components/shell/nav-history'
 
 type Props = {
   /** Where to go when there is nothing recorded — a fresh tab, or a pasted link. */
@@ -57,20 +57,41 @@ function labelFor(url: string): string | null {
  */
 export function BackLink({ fallbackHref, fallbackLabel }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const [previous, setPrevious] = useState<{ href: string; label: string } | null>(null)
 
   useEffect(() => {
     try {
-      const prev = sessionStorage.getItem(NAV_PREV_KEY)
-      if (!prev) return
-      const label = labelFor(prev)
+      const recordedCurrent = sessionStorage.getItem(NAV_CURRENT_KEY)
+      const recordedPrevious = sessionStorage.getItem(NAV_PREV_KEY)
+
+      /*
+       * Which of the two is "where I came from" depends on whether NavHistory
+       * has run yet, and the order of two effects on the same render is not
+       * something to rely on. It was relied on, and it was wrong: this link
+       * read `prev` before NavHistory had moved it along, so arriving at a
+       * document from an order offered "Back to orders" — the list — while the
+       * store already held the order itself.
+       *
+       * Deciding by content rather than by timing removes the race. If the
+       * recorded current page is not the page being rendered, NavHistory has
+       * not caught up and that recorded value IS the previous page. If it does
+       * match, NavHistory has caught up and `prev` is the one.
+       */
+      const source =
+        recordedCurrent && recordedCurrent.split('?')[0] !== pathname
+          ? recordedCurrent
+          : recordedPrevious
+
+      if (!source) return
+      const label = labelFor(source)
       // An unrecognised route gets the fallback wording rather than a guess:
       // better a slightly generic label than a confidently wrong one.
-      setPrevious({ href: prev, label: label ?? fallbackLabel })
+      setPrevious({ href: source, label: label ?? fallbackLabel })
     } catch {
       // Storage unavailable — the fallback below is already correct.
     }
-  }, [fallbackLabel])
+  }, [fallbackLabel, pathname])
 
   const href = previous?.href ?? fallbackHref
   const label = previous?.label ?? fallbackLabel
