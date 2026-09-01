@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               src="/logo-mark.png"
               alt="ANK"
               width={720}
-              height={498}
+              height={426}
               priority
               className="h-auto w-12 shrink-0 md:hidden"
             />
