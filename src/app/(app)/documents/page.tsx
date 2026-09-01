@@ -104,7 +104,26 @@ export default async function DocumentsPage({
          * produce. A count of nothing is information — it says none has been
          * raised this year, not that the option does not exist.
          */
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
+          {/* Everything first, because it is the one most people want: the
+              types below are a filter, and a filter belongs under the thing it
+              filters. */}
+          <Link
+            href="/documents?type=all"
+            className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+              <div className="min-w-0">
+                <p className="font-medium">Everything, newest first</p>
+                <p className="text-xs text-muted-foreground">
+                  {total === 0 ? 'Nothing raised this year' : `${total} this year`}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          </Link>
+
           {(Object.keys(DOCUMENT_TYPE) as DocumentType[]).map((type) => (
             <Link
               key={type}
@@ -125,22 +144,6 @@ export default async function DocumentsPage({
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             </Link>
           ))}
-
-          <Link
-            href="/documents?type=all"
-            className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50 sm:col-span-2"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-              <div className="min-w-0">
-                <p className="font-medium">Everything, newest first</p>
-                <p className="text-xs text-muted-foreground">
-                  {total === 0 ? 'Nothing raised this year' : `${total} this year`}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-          </Link>
         </div>
       ) : (
         <>
