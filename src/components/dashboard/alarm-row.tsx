@@ -88,7 +88,11 @@ export function AlarmRow({ alarm }: { alarm: FollowupAlarm }) {
         <p className="text-sm">{alarm.note}</p>
 
         <p className="text-xs text-muted-foreground">
-          <time dateTime={alarm.effectiveDue} title={formatDateTimeIST(alarm.effectiveDue)}>
+          <time
+            dateTime={alarm.effectiveDue}
+            title={formatDateTimeIST(alarm.effectiveDue)}
+            suppressHydrationWarning
+          >
             {formatRelative(alarm.effectiveDue)}
           </time>
           {alarm.ownerName && ` · ${alarm.ownerName}`}

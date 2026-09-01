@@ -41,7 +41,7 @@ export function RecentChanges({ rows }: { rows: ActivityFeedRow[] }) {
                   ) : (
                     <span className="text-sm">{row.summary ?? 'Change recorded'}</span>
                   )}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                     {row.actor_name} · {formatAudit(row.created_at)}
                   </p>
                 </li>

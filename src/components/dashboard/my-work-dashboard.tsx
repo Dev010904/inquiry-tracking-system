@@ -155,7 +155,10 @@ export function MyWorkDashboard({ fullName, tasks, followups, canOpenInquiries }
                       </Badge>
                     </div>
                     <p className="mt-0.5 text-sm">{followup.note}</p>
-                    <p className={cn('mt-0.5 text-xs', late ? 'font-medium text-overdue' : 'text-muted-foreground')}>
+                    <p
+                      className={cn('mt-0.5 text-xs', late ? 'font-medium text-overdue' : 'text-muted-foreground')}
+                      suppressHydrationWarning
+                    >
                       {formatRelative(followup.effectiveDue)}
                     </p>
                   </li>

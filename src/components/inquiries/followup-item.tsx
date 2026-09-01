@@ -62,7 +62,11 @@ export function FollowupItem({ followup }: { followup: FollowupRow }) {
         </div>
         <p className="text-sm">{followup.note}</p>
         <p className="text-xs text-muted-foreground">
-          <time dateTime={effectiveDue} title={formatDateTimeIST(effectiveDue)}>
+          <time
+            dateTime={effectiveDue}
+            title={formatDateTimeIST(effectiveDue)}
+            suppressHydrationWarning
+          >
             {formatRelative(effectiveDue)}
           </time>
         </p>

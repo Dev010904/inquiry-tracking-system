@@ -67,7 +67,12 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
               </Link>
             </>
           )}
-          {invoice.issued_at && <> · issued {formatAudit(invoice.issued_at)}</>}
+          {/* suppressHydrationWarning: formatAudit ends in a relative phrase
+              computed from the clock, so the server's string and the client's
+              can differ by a minute and trip a hydration mismatch. */}
+          {invoice.issued_at && (
+            <span suppressHydrationWarning> · issued {formatAudit(invoice.issued_at)}</span>
+          )}
         </p>
 
         {invoice.status === 'cancelled' && invoice.cancel_reason && (

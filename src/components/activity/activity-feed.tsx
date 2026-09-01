@@ -77,7 +77,10 @@ export function ActivityFeed({ rows, filtered }: { rows: ActivityFeedRow[]; filt
                 {' · '}
                 {section}
                 {' · '}
-                <time dateTime={row.created_at}>{formatAudit(row.created_at)}</time>
+                {/* Relative phrase from the clock — see suppressHydrationWarning note. */}
+                <time dateTime={row.created_at} suppressHydrationWarning>
+                  {formatAudit(row.created_at)}
+                </time>
               </p>
             </div>
           </li>
