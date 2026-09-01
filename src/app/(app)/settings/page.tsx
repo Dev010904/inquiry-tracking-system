@@ -5,7 +5,6 @@ import { CompanySettingsForm } from '@/components/settings/company-settings-form
 import { FinancialYearCard } from '@/components/settings/financial-year-card'
 import { RoleManager } from '@/components/settings/role-manager'
 import { UserTable } from '@/components/settings/user-table'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notFound } from 'next/navigation'
 import { CURRENCY } from '@/lib/constants'
@@ -13,8 +12,7 @@ import { settingsManagerOrNull } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanySettings, missingSettings } from '@/lib/queries/documents'
 import { fyOptions } from '@/lib/fy'
-import { formatDate } from '@/lib/format'
-import { APP_VERSION, APP_VERSION_DATE, RELEASES } from '@/lib/version'
+import { APP_VERSION } from '@/lib/version'
 import { activeFy, earliestFy } from '@/lib/fy-server'
 
 export const metadata: Metadata = { title: 'Settings · ANK Inquiry Tracking' }
@@ -202,56 +200,10 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/*
-        Last on the page, at the owner's request.
-
-        The point of the history rather than a bare number: when something on a
-        document looks different from last month, this is where you find out
-        which round changed it and when — without asking anyone.
-      */}
-      <Card>
-        <CardHeader className="flex-row items-baseline justify-between space-y-0">
-          <CardTitle className="text-base">Version</CardTitle>
-          <span className="tnum text-sm font-semibold">
-            {APP_VERSION}
-            <span className="ml-2 font-normal text-muted-foreground">
-              {formatDate(APP_VERSION_DATE)}
-            </span>
-          </span>
-        </CardHeader>
-        <CardContent>
-          <ol className="space-y-4">
-            {RELEASES.map((release, index) => (
-              <li
-                key={release.version}
-                className={index > 0 ? 'border-t pt-4' : undefined}
-              >
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="tnum font-medium">{release.version}</span>
-                  {index === 0 && (
-                    <Badge variant="ok">Current</Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(release.date)}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-sm">{release.summary}</p>
-                <ul className="mt-1.5 space-y-1">
-                  {release.changes.map((change) => (
-                    <li
-                      key={change}
-                      className="flex gap-2 text-xs text-muted-foreground"
-                    >
-                      <span aria-hidden>·</span>
-                      <span>{change}</span>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+      {/* Quietly at the foot, the way an application states its version. */}
+      <p className="pb-2 text-center text-xs text-muted-foreground">
+        ANK Inquiry Tracking &middot; Version {APP_VERSION}
+      </p>
     </div>
   )
 }
