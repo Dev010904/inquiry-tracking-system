@@ -23,6 +23,12 @@ export type InquirySort = 'date_desc' | 'date_asc' | 'value_desc' | 'value_asc'
 export type InquiryFilters = {
   q?: string
   status?: InquiryStatus[]
+  /**
+   * Statuses to leave out. The list defaults to hiding confirmed inquiries,
+   * which are finished business and were burying the ones still to chase.
+   * Kept separate from `status` so an explicit choice always wins.
+   */
+  excludeStatus?: InquiryStatus[]
   companyType?: CompanyType
   ownerId?: string
   from?: string
@@ -84,9 +90,52 @@ function sanitiseSearch(term: string): string {
  * for the match rather than a second pass over the results.
  */
 export async function listInquiries(filters: InquiryFilters): Promise<InquiryListResult> {
-  const supabase = await createClient()
   const page = Math.max(1, filters.page ?? 1)
   const sort = SORT_COLUMN[filters.sort ?? 'date_desc']
+
+  const built = await buildInquiryQuery(filters)
+  if (!built) return { rows: [], total: 0, page: 1, pageCount: 0 }
+
+  const fromRow = (page - 1) * PAGE_SIZE
+  const { data, count } = await built.query
+    .order(sort.column, { ascending: sort.ascending, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .range(fromRow, fromRow + PAGE_SIZE - 1)
+
+  const inquiries = data ?? []
+  const total = count ?? 0
+
+  if (inquiries.length === 0) {
+    return { rows: [], total, page, pageCount: Math.ceil(total / PAGE_SIZE) }
+  }
+
+  const rows = await decorate(inquiries)
+  return { rows, total, page, pageCount: Math.ceil(total / PAGE_SIZE) }
+}
+
+/**
+ * How many inquiries the same filters would match — no rows fetched.
+ *
+ * Used for the counts beside the two links at the top of the list, so each one
+ * says how much is waiting behind it under whatever filters are already set.
+ */
+export async function countInquiries(filters: InquiryFilters): Promise<number> {
+  const built = await buildInquiryQuery(filters)
+  if (!built) return 0
+  const { count } = await built.query.range(0, 0)
+  return count ?? 0
+}
+
+/**
+ * The filtered, FY-scoped query both the list and the counts run.
+ *
+ * Returns null when a filter has already ruled every row out, so callers can
+ * answer without a round trip. The builder comes back wrapped in an object:
+ * it is thenable, and returning it bare from an async function would run the
+ * query here instead of handing it on.
+ */
+async function buildInquiryQuery(filters: InquiryFilters) {
+  const supabase = await createClient()
 
   let companyIdMatches: string[] | null = null
 
@@ -112,9 +161,7 @@ export async function listInquiries(filters: InquiryFilters): Promise<InquiryLis
       .is('deleted_at', null)
       .eq('type', filters.companyType)
     typeCompanyIds = (data ?? []).map((row) => row.id)
-    if (typeCompanyIds.length === 0) {
-      return { rows: [], total: 0, page: 1, pageCount: 0 }
-    }
+    if (typeCompanyIds.length === 0) return null
   }
 
   const fy = await activeFy()
@@ -130,6 +177,8 @@ export async function listInquiries(filters: InquiryFilters): Promise<InquiryLis
     .lte('inquiry_date', fy.to)
 
   if (filters.status?.length) query = query.in('status', filters.status)
+  else if (filters.excludeStatus?.length)
+    query = query.not('status', 'in', `(${filters.excludeStatus.join(',')})`)
   if (typeCompanyIds) query = query.in('company_id', typeCompanyIds)
   if (filters.ownerId) query = query.eq('owner_id', filters.ownerId)
   if (filters.from) query = query.gte('inquiry_date', filters.from)
@@ -144,21 +193,7 @@ export async function listInquiries(filters: InquiryFilters): Promise<InquiryLis
     }
   }
 
-  const fromRow = (page - 1) * PAGE_SIZE
-  const { data, count } = await query
-    .order(sort.column, { ascending: sort.ascending, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .range(fromRow, fromRow + PAGE_SIZE - 1)
-
-  const inquiries = data ?? []
-  const total = count ?? 0
-
-  if (inquiries.length === 0) {
-    return { rows: [], total, page, pageCount: Math.ceil(total / PAGE_SIZE) }
-  }
-
-  const rows = await decorate(inquiries)
-  return { rows, total, page, pageCount: Math.ceil(total / PAGE_SIZE) }
+  return { query }
 }
 
 /** Attaches company, contact, owner, next follow-up and order presence. */
