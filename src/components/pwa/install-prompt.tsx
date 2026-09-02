@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import { Download, Share, X } from 'lucide-react'
+import { AnkLogo } from '@/components/brand/ank-logo'
 import { Button } from '@/components/ui/button'
 
 type InstallEvent = Event & {
@@ -67,13 +67,7 @@ export function InstallPrompt() {
     // in the output — which is how it reached the foot of a printed invoice.
     <div className="fixed inset-x-3 bottom-20 z-40 rounded-lg border bg-card p-3 shadow-lg print:hidden sm:left-auto sm:right-4 sm:w-80 md:bottom-4">
       <div className="flex items-start gap-3">
-        <Image
-          src="/logo-mark.png"
-          alt="ANK"
-          width={760}
-          height={502}
-          className="h-auto w-12 shrink-0"
-        />
+        <AnkLogo className="w-12 shrink-0" label="ANK" />
 
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">Install ANK Track</p>

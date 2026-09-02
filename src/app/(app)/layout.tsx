@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import Image from 'next/image'
+import { AnkLogo } from '@/components/brand/ank-logo'
 import { NavHistory } from '@/components/shell/nav-history'
 import { BottomNav } from '@/components/shell/bottom-nav'
 import { PageTitle } from '@/components/shell/page-title'
@@ -41,14 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/90 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/75 sm:px-6"
         >
           <div className="flex min-w-0 items-center gap-2.5">
-            <Image
-              src="/logo-mark.png"
-              alt="ANK"
-              width={760}
-              height={502}
-              priority
-              className="h-auto w-12 shrink-0 md:hidden"
-            />
+            <AnkLogo className="w-12 shrink-0 md:hidden" label="ANK" />
             <PageTitle />
 
             {/*

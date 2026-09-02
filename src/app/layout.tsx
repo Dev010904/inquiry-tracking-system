@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
+import { AnkLogoSprite } from '@/components/brand/ank-logo'
 import { ServiceWorkerRegistrar } from '@/components/pwa/service-worker'
 import './globals.css'
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
+        <AnkLogoSprite />
         {children}
         <Toaster richColors position="top-right" />
         <ServiceWorkerRegistrar />

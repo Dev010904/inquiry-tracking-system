@@ -1,8 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { AnkLogo } from '@/components/brand/ank-logo'
 import type { FeatureKey } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, isActivePath } from './nav-items'
@@ -30,14 +30,7 @@ export function Sidebar({
       className="hidden w-60 shrink-0 border-r bg-card md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:self-start"
     >
       <div className="flex h-16 items-center gap-2.5 border-b px-4">
-        <Image
-          src="/logo-mark.png"
-          alt="ANK"
-          width={760}
-          height={502}
-          priority
-          className="h-auto w-16"
-        />
+        <AnkLogo className="w-16" label="ANK" />
         <span className="text-sm font-semibold leading-tight text-muted-foreground">
           Inquiry
           <br />

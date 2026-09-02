@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import { ShieldCheck } from 'lucide-react'
+import { AnkLogo } from '@/components/brand/ank-logo'
 import { LoginForm } from './login-form'
 
 export const metadata: Metadata = { title: 'Sign in · Inquiry Tracking System' }
@@ -27,14 +27,7 @@ export default async function LoginPage({
     <main className="flex min-h-dvh flex-col items-center justify-center bg-muted/40 p-6">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <Image
-            src="/logo.png"
-            alt="ANK Design &amp; Automation Solutions"
-            width={900}
-            height={594}
-            priority
-            className="h-auto w-48"
-          />
+          <AnkLogo className="w-48" />
           <h1 className="mt-4 text-xl font-semibold tracking-tight">Inquiry Tracking System</h1>
         </div>
 
