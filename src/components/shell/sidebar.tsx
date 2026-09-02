@@ -29,12 +29,17 @@ export function Sidebar({
       data-app-shell
       className="hidden w-60 shrink-0 border-r bg-card md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:self-start"
     >
-      <div className="flex h-16 items-center gap-2.5 border-b px-4">
-        <AnkLogo className="w-16" label="ANK" />
-        <span className="text-sm font-semibold leading-tight text-muted-foreground">
-          Inquiry
-          <br />
-          Tracking
+      {/*
+        The logo gets its own row at close to the full width of the sidebar.
+        Squeezed in beside the wordmark it was 64px across, at which size the
+        "Design & Automation Solutions" line is a grey smudge rather than
+        words — the mark read as a placed thumbnail instead of the company's
+        logo. Stacked, it is wide enough to be read as the logo it is.
+      */}
+      <div className="flex flex-col items-center gap-1.5 border-b px-4 py-4">
+        <AnkLogo className="w-44" />
+        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          Inquiry Tracking
         </span>
       </div>
 

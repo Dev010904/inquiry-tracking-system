@@ -59,7 +59,11 @@ export function InstallPrompt() {
     setDismissed(true)
   }
 
-  if (dismissed || (!deferred && !showIosHint)) return null
+  // Shown whenever the app is not already installed. It used to require
+  // either Chrome's beforeinstallprompt or iOS Safari, which meant it never
+  // appeared at all in browsers that fire neither — Brave among them — so the
+  // offer was invisible on the desktop it was written for.
+  if (dismissed) return null
 
   return (
     // print:hidden as well as living only on the dashboard. It is fixed
@@ -75,11 +79,16 @@ export function InstallPrompt() {
             <p className="mt-0.5 text-xs text-muted-foreground">
               Add it to your home screen and open it like any other app.
             </p>
-          ) : (
+          ) : showIosHint ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
               Tap{' '}
               <Share className="inline h-3 w-3 align-text-bottom" aria-label="Share" /> then{' '}
               <strong className="font-medium">Add to Home Screen</strong>.
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Open the browser menu and choose{' '}
+              <strong className="font-medium">Install ANK Track</strong>.
             </p>
           )}
 

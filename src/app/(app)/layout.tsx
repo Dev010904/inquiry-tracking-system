@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/90 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/75 sm:px-6"
         >
           <div className="flex min-w-0 items-center gap-2.5">
-            <AnkLogo className="w-12 shrink-0 md:hidden" label="ANK" />
+            <AnkLogo className="w-20 shrink-0 md:hidden" />
             <PageTitle />
 
             {/*
