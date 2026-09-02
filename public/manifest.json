@@ -9,28 +9,31 @@
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#000080",
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon-192.v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon-512.v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-maskable-192.png",
+      "src": "/icons/icon-maskable-192.v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-maskable-512.png",
+      "src": "/icons/icon-maskable-512.v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -41,13 +44,23 @@
       "name": "New inquiry",
       "short_name": "New inquiry",
       "url": "/inquiries/new",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.v2.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Orders",
       "short_name": "Orders",
       "url": "/orders",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.v2.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

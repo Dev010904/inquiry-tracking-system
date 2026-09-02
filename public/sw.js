@@ -9,25 +9,54 @@
  * whoever opened the app next on a shared phone.
  *
  * So the rule is deliberately narrow:
- *   - Static, non-sensitive assets (icons, manifest)  -> cache first
+ *   - Static, non-sensitive assets (icons, manifest)  -> network first,
+ *     falling back to the cache only when offline
  *   - Everything else, including all navigations,
  *     API calls and Supabase traffic                  -> network only
  *
  * The offline fallback is a static page that contains no business data.
+ *
+ * WHY NETWORK FIRST AND NOT CACHE FIRST.
+ *
+ * The icons and the manifest used to be served cache first, and the cache was
+ * keyed on a VERSION string that nobody ever changed. Between them those two
+ * facts meant a device kept the icons it saw on its very first visit, for
+ * ever: the activate handler only deletes caches whose key does not start with
+ * VERSION, so the shell cache was never dropped, and `cached ?? fetch(...)`
+ * meant a cached icon was never re-fetched. Removing the app from the home
+ * screen and adding it again did not help, because the reinstall read the
+ * icons back out of that same cache. The launcher icon on a phone was months
+ * out of date and there was no way, from the phone, to make it update.
+ *
+ * These files are a few kilobytes and the host already serves them with
+ * `max-age=0, must-revalidate`, so going to the network first costs a
+ * conditional request that almost always comes back 304. That is a fair price
+ * for the guarantee that what the device shows is what is deployed. The cache
+ * is still written on every success, so the app still has its icons and
+ * manifest when the network is gone.
+ *
+ * Bump VERSION whenever a stale shell entry must be dropped outright.
  */
 
-const VERSION = 'ank-v1'
+const VERSION = 'ank-v2'
 const SHELL_CACHE = `${VERSION}-shell`
 
-/** Only files that are identical for every user and contain no data. */
+/**
+ * Only files that are identical for every user and contain no data.
+ *
+ * The icon names carry a revision suffix. The name has to change when the
+ * artwork changes: Android mints the home-screen icon into a WebAPK at install
+ * time, and a new URL is what reliably tells it the icon is not the one it
+ * already has. manifest.json must point at the same names.
+ */
 const SHELL_ASSETS = [
   '/offline',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-192.png',
-  '/icons/icon-maskable-512.png',
-  '/icons/apple-touch-icon.png',
+  '/icons/icon-192.v2.png',
+  '/icons/icon-512.v2.png',
+  '/icons/icon-maskable-192.v2.png',
+  '/icons/icon-maskable-512.v2.png',
+  '/icons/apple-touch-icon.v2.png',
 ]
 
 self.addEventListener('install', (event) => {
@@ -69,15 +98,17 @@ self.addEventListener('fetch', (event) => {
 
   if (isShellAsset(url)) {
     event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ??
-          fetch(request).then((response) => {
+      fetch(request)
+        .then((response) => {
+          // Only a good response is worth keeping; a 404 must not become the
+          // thing this device shows from now on.
+          if (response.ok) {
             const copy = response.clone()
             caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy))
-            return response
-          })
-      )
+          }
+          return response
+        })
+        .catch(() => caches.match(request).then((cached) => cached ?? Response.error()))
     )
     return
   }
