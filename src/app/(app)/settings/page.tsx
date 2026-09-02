@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Info, Monitor, Smartphone, UserPlus } from 'lucide-react'
+import { InstallButton } from '@/components/pwa/install-button'
 import { CompanySettingsForm } from '@/components/settings/company-settings-form'
 import { FinancialYearCard } from '@/components/settings/financial-year-card'
 import { RoleManager } from '@/components/settings/role-manager'
@@ -155,6 +156,11 @@ export default async function SettingsPage() {
           </p>
         </CardHeader>
         <CardContent>
+          {/* One click where the browser allows it; the steps below cover the rest. */}
+          <div className="mb-4">
+            <InstallButton />
+          </div>
+
           <ul className="space-y-3">
             {INSTALL_STEPS.map(({ icon: Icon, platform, steps }) => (
               <li key={platform} className="flex gap-3">

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { AlarmPanel } from '@/components/dashboard/alarm-panel'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { RecentChanges } from '@/components/dashboard/recent-changes'
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
         />
         {/* This is the dashboard for a restricted user, so the offer belongs
             here too — they are the ones most likely to want it on a phone. */}
-        <InstallPrompt />
       </>
     )
   }
@@ -112,7 +110,6 @@ export default async function DashboardPage() {
           invoice. The dashboard is the one screen somebody opens without
           being mid-task, which makes it the only place the offer is not an
           interruption. */}
-      <InstallPrompt />
     </div>
   )
 }
