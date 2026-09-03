@@ -177,6 +177,33 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
    * one expression covers both.
    */
   const paymentTerms = invoice.payment_terms ?? supplier?.payment_terms ?? null
+  /*
+   * The closing terms.
+   *
+   * They were printed straight from invoice.terms, which is only ever filled
+   * at issue. So a draft showed nothing here and the sentence appeared out of
+   * nowhere on the issued sheet, and because the column is frozen, emptying
+   * or rewording "Terms and conditions" in Settings afterwards changed
+   * neither. A draft now reads through to live settings, so the preview shows
+   * what will actually print: clear the setting and the line goes, reword it
+   * and the new words appear, exactly as typed.
+   *
+   * The fallback is deliberately limited to a draft rather than reaching
+   * through `supplier` the way payment terms and delivery do. Ten quotations
+   * already issued carry terms = null beside a supplier_snapshot that still
+   * holds an invoice_terms sentence, and a snapshot-wide fallback would start
+   * printing a line on documents that have already gone to customers. An
+   * issued document prints its own frozen column and nothing else.
+   *
+   * A quotation takes quotation_terms and every other type invoice_terms,
+   * which is the split issue_document applies when it freezes the value.
+   */
+  const closingTerms =
+    invoice.terms ??
+    (isDraft
+      ? (invoice.doc_type === 'quotation' ? settings?.quotation_terms : settings?.invoice_terms)
+      : null) ??
+    null
   const deliveryTimeline = invoice.delivery_timeline ?? supplier?.delivery_timeline ?? null
   const installationLine = installationSentence(
     invoice.installation_scope,
@@ -545,7 +572,7 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
               )}
               {installationLine && <p>{installationLine}</p>}
               {invoice.notes && <p className="whitespace-pre-line">{invoice.notes}</p>}
-              {invoice.terms && <p className="whitespace-pre-line">{invoice.terms}</p>}
+              {closingTerms && <p className="whitespace-pre-line">{closingTerms}</p>}
             </div>
 
             {supplier?.bank_name && (
