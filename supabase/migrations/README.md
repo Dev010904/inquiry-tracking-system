@@ -84,3 +84,37 @@ select (select count(*) from public.orders)     as live,
 If `live` exceeds `snapshot`, the extra orders are genuinely new and the first
 query cannot speak for them. If `compared` is lower than `snapshot`, a
 pre-existing order has **lost its id or been deleted** — stop and report it.
+
+## Security rules every migration must follow (from 8_01–8_06, October 2026)
+
+The `20261001_8_*` files close the database to the anonymous key, limit staff
+to the columns the app actually writes, and make custom roles real in RLS.
+Apply them in order, 8_01 to 8_06; each one stands alone and carries its own
+verification and rollback notes. `docs/SECURITY-REVIEW-2026-10.md` explains
+why each exists and records the dry run that proved it.
+
+After them, a new migration has to keep these true or it reopens a hole:
+
+1. **Never grant anything to `anon`.** The default privileges no longer do it
+   for you; do not add it back by hand. Nothing in this app runs as `anon`.
+2. **Writes are granted per column.** `authenticated` holds INSERT/UPDATE only
+   on the columns a server action writes (8_02 lists them, per action). If you
+   add a column the app writes, add it to the matching `grant insert (…)` /
+   `grant update (…)`. A missing grant shows up as *permission denied for table
+   X* the first time the screen saves — never fix that with a table-wide grant.
+3. **Columns the system owns stay ungranted**: numbers (`inquiry_no`,
+   `order_no`, `doc_no`), totals the triggers keep (`order_value` after
+   insert, `gst_amount`, `advance_received`, `spent_to_date`, `cost_to_date`),
+   approvals and overrides, `created_at`, and everything on `invoices`, which
+   only the SECURITY DEFINER document functions write.
+4. **Policies ask for the feature, not just for a member.** Use
+   `has_feature('<key>')` / `has_any_feature(…)` for reads and
+   `has_feature('<key>', true)` / `can_edit_any_feature(…)` for writes, each
+   wrapped in `(select …)` so it is evaluated once per query, not once per row.
+5. **A SECURITY DEFINER function checks the caller itself** — RLS does not
+   apply inside it — sets `search_path`, and is granted to `authenticated`
+   only: `revoke all on function … from public, anon` straight after creating
+   it. Trigger functions get no grant at all.
+6. **Test before applying**: run the migration and the checks in one
+   transaction that ends in `raise exception`, as recorded in the security
+   review, so nothing is kept until the result is known.
