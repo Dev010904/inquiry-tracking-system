@@ -89,8 +89,9 @@ pre-existing order has **lost its id or been deleted** — stop and report it.
 
 The `20261001_8_*` files close the database to the anonymous key, limit staff
 to the columns the app actually writes, and make custom roles real in RLS.
-Apply them in order, 8_01 to 8_06; each one stands alone and carries its own
-verification and rollback notes. `docs/SECURITY-REVIEW-2026-10.md` explains
+Apply them in order, 8_01 to 8_07; each one carries its own verification and
+rollback notes. All but 8_07 stand alone; 8_07 (a removed meeting action takes
+its open follow-up with it) relies on 8_02 being in place first. `docs/SECURITY-REVIEW-2026-10.md` explains
 why each exists and records the dry run that proved it.
 
 After them, a new migration has to keep these true or it reopens a hole:

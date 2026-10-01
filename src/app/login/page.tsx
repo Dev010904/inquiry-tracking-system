@@ -3,7 +3,7 @@ import { ShieldCheck } from 'lucide-react'
 import { AnkLogo } from '@/components/brand/ank-logo'
 import { LoginForm } from './login-form'
 
-export const metadata: Metadata = { title: 'Sign in · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'Sign in · ANK Inquiry Tracking' }
 
 const ERRORS: Record<string, string> = {
   inactive: 'Your account is no longer active. Ask an administrator to enable it.',

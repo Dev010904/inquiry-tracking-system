@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { NAV_CURRENT_KEY, NAV_PREV_KEY } from '@/components/shell/nav-history'
+import { NAV_CURRENT_KEY, NAV_PREV_KEY, isFormPage } from '@/components/shell/nav-history'
 
 type Props = {
   /** Where to go when there is nothing recorded — a fresh tab, or a pasted link. */
@@ -78,10 +78,17 @@ export function BackLink({ fallbackHref, fallbackLabel }: Props) {
        * not caught up and that recorded value IS the previous page. If it does
        * match, NavHistory has caught up and `prev` is the one.
        */
-      const source =
-        recordedCurrent && recordedCurrent.split('?')[0] !== pathname
-          ? recordedCurrent
-          : recordedPrevious
+      const candidates = [
+        recordedCurrent && recordedCurrent.split('?')[0] !== pathname ? recordedCurrent : null,
+        recordedPrevious,
+      ]
+
+      // A form is passed over for the entry before it (see isFormPage), and so
+      // is this page itself: after an edit, the page before the form is often
+      // the very record on screen, and Back to it would go nowhere.
+      const source = candidates.find(
+        (url): url is string => !!url && !isFormPage(url) && url.split('?')[0] !== pathname
+      )
 
       if (!source) return
       const label = labelFor(source)

@@ -8,7 +8,7 @@ import { ORDER_STATUS } from '@/lib/constants'
 import { listOrders, type OrderSort } from '@/lib/queries/orders'
 import type { OrderStatus } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Orders · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'Orders · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 type Search = Record<string, string | string[] | undefined>

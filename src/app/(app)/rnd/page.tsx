@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { listRndProjects } from '@/lib/queries/rnd'
 import type { RndStage } from '@/types/database'
 
-export const metadata: Metadata = { title: 'R&D Projects · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'R&D Projects · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 type Search = Record<string, string | string[] | undefined>

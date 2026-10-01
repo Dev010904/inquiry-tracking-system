@@ -15,7 +15,7 @@ import { getMyFollowups } from '@/lib/queries/my-work'
 import { getMyTasks } from '@/lib/queries/tasks'
 import { currentAccess } from '@/lib/permissions'
 
-export const metadata: Metadata = { title: 'Dashboard · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'Dashboard · ANK Inquiry Tracking' }
 
 /** Deadlines must be current, so nothing on this page is cached. */
 export const dynamic = 'force-dynamic'

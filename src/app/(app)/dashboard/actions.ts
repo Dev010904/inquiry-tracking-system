@@ -38,9 +38,14 @@ export async function markFollowupDone(followupId: string, outcome?: string): Pr
 }
 
 /**
- * Snooze pushes `snoozed_to` forward from *now*, not from the original due
- * date, so a follow-up that is already three days overdue and snoozed by one
- * day reappears tomorrow rather than staying overdue.
+ * Snooze pushes `snoozed_to` forward from *now* when the follow-up is already
+ * due, not from the original due date, so a follow-up that is three days
+ * overdue and snoozed by one day reappears tomorrow rather than staying
+ * overdue.
+ *
+ * One that is not due yet moves on from its own time instead. Counting from
+ * now there used to pull it forward: due in three days, "snooze 1d" made it
+ * due tomorrow.
  */
 export async function snoozeFollowup(followupId: string, days: number): Promise<ActionResult> {
   // A follow-up belongs to an inquiry, but it is also the user's own work
@@ -54,9 +59,23 @@ export async function snoozeFollowup(followupId: string, days: number): Promise<
   if (!parsedDays.success) return { ok: false, error: 'Snooze by 1, 3 or 7 days only.' }
 
   const supabase = await createClient()
+  const { data: followup } = await supabase
+    .from('followups')
+    .select('due_at, snoozed_to')
+    .eq('id', id.data)
+    .eq('is_done', false)
+    .maybeSingle()
+
+  if (!followup) return { ok: false, error: 'This follow-up is already done or no longer exists.' }
+
+  // The same time every screen shows: the snooze when there is one.
+  const now = new Date()
+  const due = new Date(followup.snoozed_to ?? followup.due_at)
+  const from = due > now ? due : now
+
   const { error } = await supabase
     .from('followups')
-    .update({ snoozed_to: addDays(new Date(), parsedDays.data).toISOString() })
+    .update({ snoozed_to: addDays(from, parsedDays.data).toISOString() })
     .eq('id', id.data)
     .eq('is_done', false)
 

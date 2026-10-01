@@ -6,7 +6,7 @@ import { InquiryForm } from '@/components/inquiries/inquiry-form'
 import { requireProfile } from '@/lib/auth'
 import { getFormOptions, getInquiryDetail } from '@/lib/queries/inquiries'
 
-export const metadata: Metadata = { title: 'Edit inquiry · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'Edit inquiry · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 export default async function EditInquiryPage({

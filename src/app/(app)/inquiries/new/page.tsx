@@ -6,7 +6,7 @@ import { requireProfile } from '@/lib/auth'
 import { getFormOptions } from '@/lib/queries/inquiries'
 import { getCompanySettings } from '@/lib/queries/documents'
 
-export const metadata: Metadata = { title: 'New inquiry · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'New inquiry · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 export default async function NewInquiryPage() {

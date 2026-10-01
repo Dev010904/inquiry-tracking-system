@@ -7,6 +7,17 @@ export const NAV_PREV_KEY = 'nav:prev'
 export const NAV_CURRENT_KEY = 'nav:current'
 
 /**
+ * A create or edit form. Never a place to go back to once it has been left:
+ * saving one lands on the record, and Back from there used to reopen the form
+ * — a blank "New minutes" right after recording the meeting, or the edit form
+ * again after saving a client.
+ */
+export function isFormPage(url: string): boolean {
+  const path = url.split('?')[0] ?? url
+  return /\/(new|edit)$/.test(path)
+}
+
+/**
  * Remembers the screen you came from, so a Back link can go there.
  *
  * `document.referrer` cannot answer this. Next moves between pages on the
@@ -37,8 +48,12 @@ export function NavHistory() {
     try {
       const current = sessionStorage.getItem(NAV_CURRENT_KEY)
       // Guarded so a re-render on the same URL cannot overwrite the previous
-      // entry with the current one, which would make Back a no-op.
-      if (current && current !== url) sessionStorage.setItem(NAV_PREV_KEY, current)
+      // entry with the current one, which would make Back a no-op. A form is
+      // passed over, so the way back from what it saved is where you were
+      // before opening it.
+      if (current && current !== url && !isFormPage(current)) {
+        sessionStorage.setItem(NAV_PREV_KEY, current)
+      }
       sessionStorage.setItem(NAV_CURRENT_KEY, url)
     } catch {
       // Private mode, or storage disabled. The Back links fall back to their

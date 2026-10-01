@@ -27,7 +27,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params
   const detail = await getRndProjectDetail(id)
-  return { title: `${detail?.project.project_name ?? 'Project'} · Inquiry Tracking System` }
+  return { title: `${detail?.project.project_name ?? 'Project'} · ANK Inquiry Tracking` }
 }
 
 export default async function RndProjectPage({

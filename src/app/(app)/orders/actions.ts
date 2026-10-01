@@ -131,7 +131,9 @@ export async function updateOrderSpec(input: unknown): Promise<Result> {
   const { error } = await supabase.rpc('update_order_spec', {
     p_order_id: values.order_id,
     p_technical_specification: values.technical_specification,
-    p_addendum: values.addendum ?? null,
+    // An emptied box is no addendum. Saving '' over null used to log
+    // "changed: addendum" against a field nobody had touched.
+    p_addendum: values.addendum || null,
     p_reason: values.reason,
   })
 

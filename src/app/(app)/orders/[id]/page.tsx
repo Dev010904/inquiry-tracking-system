@@ -38,7 +38,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params
   const detail = await getOrderDetail(id)
-  return { title: `${detail?.order.order_no ?? 'Order'} · Inquiry Tracking System` }
+  return { title: `${detail?.order.order_no ?? 'Order'} · ANK Inquiry Tracking` }
 }
 
 export default async function OrderDetailPage({

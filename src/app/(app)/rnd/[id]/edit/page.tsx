@@ -6,7 +6,7 @@ import { ProjectForm } from '@/components/rnd/project-form'
 import { requireProfile } from '@/lib/auth'
 import { getRndFormOptions, getRndProjectDetail } from '@/lib/queries/rnd'
 
-export const metadata: Metadata = { title: 'Edit project · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'Edit project · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 export default async function EditRndProjectPage({

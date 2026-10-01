@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { CompanyType, InquiryStatus } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Inquiries · Inquiry Tracking System' }
+export const metadata: Metadata = { title: 'Inquiries · ANK Inquiry Tracking' }
 export const dynamic = 'force-dynamic'
 
 type Search = Record<string, string | string[] | undefined>

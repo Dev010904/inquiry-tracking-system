@@ -85,8 +85,8 @@ export function DocumentsPanel({
 
         {linesMissingHsn > 0 && gstApplicable && (
           <p className="text-xs text-overdue">
-            {linesMissingHsn} line{linesMissingHsn === 1 ? '' : 's'} still have no HSN/SAC code. A
-            proforma or challan can be issued, but a tax invoice cannot.
+            {linesMissingHsn === 1 ? '1 line still has' : `${linesMissingHsn} lines still have`} no
+            HSN/SAC code. A proforma or challan can be issued, but a tax invoice cannot.
           </p>
         )}
 
