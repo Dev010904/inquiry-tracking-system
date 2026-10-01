@@ -127,7 +127,8 @@ export async function createInquiry(input: InquiryInput): Promise<SaveResult> {
 }
 
 export async function updateInquiry(id: string, input: InquiryInput): Promise<SaveResult> {
-  if (!(await editorOrNull('inquiries'))) return NO_FEATURE_ACCESS
+  const profile = await editorOrNull('inquiries')
+  if (!profile) return NO_FEATURE_ACCESS
 
   if (!z.string().uuid().safeParse(id).success) {
     return { ok: false, error: 'Unrecognised inquiry.' }
@@ -154,6 +155,7 @@ export async function updateInquiry(id: string, input: InquiryInput): Promise<Sa
         phone: values.new_contact.phone || null,
         email: values.new_contact.email || null,
         designation: values.new_contact.designation ?? null,
+        created_by: profile.id,
       })
       .select('id')
       .single()

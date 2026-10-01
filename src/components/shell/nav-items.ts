@@ -6,6 +6,7 @@ import {
   FlaskConical,
   History,
   LayoutDashboard,
+  ListChecks,
   BarChart3,
   Package,
   Settings,
@@ -84,6 +85,32 @@ const ALL_NAV_ITEMS: NavItem[] = [
 
 /** What the menus render. Add `unbuilt: true` to hide a route in progress. */
 export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter((item) => !item.unbuilt)
+
+/**
+ * The way home for someone whose role withholds the Dashboard.
+ *
+ * /dashboard renders their My work page instead of the commercial dashboard,
+ * but with the Dashboard item hidden nothing in the menus pointed there — once
+ * they opened a record, only the browser's Back button or signing in again
+ * took them back to their own work. Shown only when the Dashboard item is not.
+ */
+export const MY_WORK_ITEM: NavItem = {
+  href: '/dashboard',
+  label: 'My work',
+  short: 'My work',
+  icon: ListChecks,
+  primary: true,
+}
+
+/** The menu items a permission set can reach, My work first when it applies. */
+export function menuItems(visibleFeatures: FeatureKey[], canManageSettings: boolean): NavItem[] {
+  const items = NAV_ITEMS.filter((item) =>
+    item.feature
+      ? visibleFeatures.includes(item.feature)
+      : !item.settingsManagerOnly || canManageSettings
+  )
+  return visibleFeatures.includes('dashboard') ? items : [MY_WORK_ITEM, ...items]
+}
 
 /**
  * The label the permission editor shows for each feature, taken from the menu

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { AnkLogo } from '@/components/brand/ank-logo'
 import type { FeatureKey } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { NAV_ITEMS, isActivePath } from './nav-items'
+import { isActivePath, menuItems } from './nav-items'
 
 export function Sidebar({
   canManageSettings,
@@ -15,9 +15,7 @@ export function Sidebar({
   visibleFeatures: FeatureKey[]
 }) {
   const pathname = usePathname()
-  const items = NAV_ITEMS.filter((item) =>
-    item.feature ? visibleFeatures.includes(item.feature) : !item.settingsManagerOnly || canManageSettings
-  )
+  const items = menuItems(visibleFeatures, canManageSettings)
 
   return (
     // Pinned to the viewport, like the header above the content. Without the

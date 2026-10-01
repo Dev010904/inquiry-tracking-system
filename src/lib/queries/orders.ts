@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { activeFy } from '@/lib/fy-server'
 import { OPEN_ORDER_STATUSES } from '@/lib/constants'
@@ -318,7 +319,7 @@ export type OrderDetail = {
   deliveryOverdue: boolean
 }
 
-export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
+async function loadOrderDetail(id: string): Promise<OrderDetail | null> {
   const supabase = await createClient()
 
   const { data: order } = await supabase
@@ -388,3 +389,10 @@ export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
     deliveryOverdue: isDeliveryOverdue(order.delivery_date, order.order_status),
   }
 }
+
+/**
+ * Cached for the request. The page's generateMetadata and the page itself both
+ * ask for the same record, and every one of these loaders is several queries —
+ * without this the whole set ran twice on every visit.
+ */
+export const getOrderDetail = cache(loadOrderDetail)

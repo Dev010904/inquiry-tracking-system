@@ -21,6 +21,11 @@ const idSchema = z.string().uuid('Unrecognised user')
  */
 const NO_ACCESS = { ok: false, error: 'You cannot change settings.' } as const
 
+const NOT_ACCOUNT_ADMIN = {
+  ok: false,
+  error: 'Only an admin who can manage settings may change staff accounts.',
+} as const
+
 /**
  * Changes a staff member's role.
  *
@@ -29,11 +34,15 @@ const NO_ACCESS = { ok: false, error: 'You cannot change settings.' } as const
  * rejects a non-admin touching `role` even on their own row.
  */
 export async function setUserRole(userId: string, role: 'admin' | 'staff'): Promise<SettingsResult> {
-  const admin = await settingsManagerOrNull()
-  if (!admin) return NO_ACCESS
+  // The profiles_update policy lets only an admin change someone else's row.
+  // A settings manager who is not an admin used to get "updated" back while
+  // the database quietly changed nothing.
+  const admin = await roleAdminOrNull()
+  if (!admin) return NOT_ACCOUNT_ADMIN
 
   const parsed = idSchema.safeParse(userId)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
+  if (role !== 'admin' && role !== 'staff') return { ok: false, error: 'Unrecognised account type.' }
 
   // Losing the last admin would lock everyone out of user management, and
   // only a direct database edit could undo it.
@@ -42,9 +51,13 @@ export async function setUserRole(userId: string, role: 'admin' | 'staff'): Prom
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('profiles').update({ role }).eq('id', parsed.data)
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role })
+    .eq('id', parsed.data)
+    .select('id')
 
-  if (error) return { ok: false, error: 'Could not change the role.' }
+  if (error || !data?.length) return { ok: false, error: 'Could not change the role.' }
 
   revalidatePath('/settings')
   return { ok: true }
@@ -52,8 +65,8 @@ export async function setUserRole(userId: string, role: 'admin' | 'staff'): Prom
 
 /** Deactivating is the intended alternative to deleting — it preserves history. */
 export async function setUserActive(userId: string, isActive: boolean): Promise<SettingsResult> {
-  const admin = await settingsManagerOrNull()
-  if (!admin) return NO_ACCESS
+  const admin = await roleAdminOrNull()
+  if (!admin) return NOT_ACCOUNT_ADMIN
 
   const parsed = idSchema.safeParse(userId)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message }
@@ -82,12 +95,13 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
     }
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .update({ is_active: isActive })
     .eq('id', parsed.data)
+    .select('id')
 
-  if (error) return { ok: false, error: 'Could not update the account.' }
+  if (error || !data?.length) return { ok: false, error: 'Could not update the account.' }
 
   revalidatePath('/settings')
   return { ok: true }
@@ -281,9 +295,13 @@ export async function setUserRoleId(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('profiles').update({ role_id: roleId }).eq('id', id.data)
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role_id: roleId })
+    .eq('id', id.data)
+    .select('id')
 
-  if (error) return { ok: false, error: 'Could not change the role.' }
+  if (error || !data?.length) return { ok: false, error: 'Could not change the role.' }
 
   revalidatePath('/settings')
   return { ok: true }

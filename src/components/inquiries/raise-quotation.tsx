@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { GST_STATES } from '@/lib/constants'
+import { GST_STATE_OPTIONS } from '@/lib/constants'
 import { createQuotation } from '@/app/(app)/documents/actions'
 
 type Props = {
@@ -101,7 +101,7 @@ export function RaiseQuotation({ inquiryId, defaultStateCode }: Props) {
                 onChange={(e) => setStateCode(e.target.value)}
               >
                 <option value="">Not set</option>
-                {Object.entries(GST_STATES).map(([code, name]) => (
+                {GST_STATE_OPTIONS.map(([code, name]) => (
                   <option key={code} value={code}>
                     {code} — {name}
                   </option>

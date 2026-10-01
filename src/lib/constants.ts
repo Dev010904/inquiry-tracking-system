@@ -31,14 +31,19 @@ export const CURRENCY = {
 } as const
 
 /**
- * The GST slabs ANK actually sells at. Offered as a picker, but a rate can
- * still be typed: GST has carried odd rates before (1.5%, 3%, 7.5%) and a form
- * that cannot express one sends staff to a spreadsheet.
+ * The GST slabs, as the quick picks on a line. Offered as a picker, but a rate
+ * can still be typed: GST has carried odd rates before (0.25%, 1.5%, 3%) and a
+ * form that cannot express one sends staff to a spreadsheet.
+ *
+ * GST 2.0 (in force from 22 September 2025) left 5%, 18% and the 40% rate;
+ * 12% and 28% were abolished, so they are no longer offered. A line already
+ * carrying one of them still shows it, as a typed rate, and issued documents
+ * are snapshots that nothing here can change.
  *
  * 0 is a slab like any other here. What separates a 0% line from an exempt one
  * on a printed document is the recorded reason, not the number.
  */
-export const GST_SLABS = [0, 5, 12, 18, 28] as const
+export const GST_SLABS = [0, 5, 18, 40] as const
 
 export const INQUIRY_STATUS = {
   new: 'New',
@@ -330,6 +335,18 @@ export const GST_STATES: Record<string, string> = {
   '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana',
   '37': 'Andhra Pradesh', '38': 'Ladakh', '97': 'Other Territory',
 }
+
+/**
+ * The same states as a list in code order, for drop-downs.
+ *
+ * Object.entries(GST_STATES) is not in code order: JavaScript lists keys that
+ * look like integers ("10".."97") before the others, and "01".."09" are not
+ * integer-like because of the leading zero, so the menu began at Bihar and put
+ * Jammu and Kashmir near the bottom.
+ */
+export const GST_STATE_OPTIONS: [code: string, name: string][] = Object.entries(GST_STATES).sort(
+  ([a], [b]) => a.localeCompare(b)
+)
 
 export const QA_RESULT = {
   pass: 'Passed',

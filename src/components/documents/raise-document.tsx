@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { DOCUMENT_TYPE, GST_STATES, TAXABLE_DOCUMENT_TYPES } from '@/lib/constants'
+import { DOCUMENT_TYPE, GST_STATE_OPTIONS, TAXABLE_DOCUMENT_TYPES } from '@/lib/constants'
 import { createDocument } from '@/app/(app)/documents/actions'
 import type { DocumentType, InvoiceRow } from '@/types/database'
 
@@ -131,7 +131,7 @@ export function RaiseDocument({ orderId, gstApplicable, parents, defaultStateCod
             >
               <Select id="pos" value={stateCode} onChange={(e) => setStateCode(e.target.value)}>
                 <option value="">Select a state</option>
-                {Object.entries(GST_STATES).map(([code, name]) => (
+                {GST_STATE_OPTIONS.map(([code, name]) => (
                   <option key={code} value={code}>
                     {code} — {name}
                   </option>

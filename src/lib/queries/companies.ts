@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { CompanyRow, CompanyType, ContactRow, InquiryRow, OrderRow } from '@/types/database'
 
@@ -128,7 +129,7 @@ export type CompanyDetail = {
   orders: OrderRow[]
 }
 
-export async function getCompanyDetail(id: string): Promise<CompanyDetail | null> {
+async function loadCompanyDetail(id: string): Promise<CompanyDetail | null> {
   const supabase = await createClient()
 
   const { data: company } = await supabase
@@ -200,3 +201,10 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
 
   return { company, card, contacts, inquiries, orders: orderRows }
 }
+
+/**
+ * Cached for the request. The page's generateMetadata and the page itself both
+ * ask for the same record, and every one of these loaders is several queries —
+ * without this the whole set ran twice on every visit.
+ */
+export const getCompanyDetail = cache(loadCompanyDetail)

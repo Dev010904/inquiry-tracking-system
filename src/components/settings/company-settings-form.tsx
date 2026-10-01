@@ -10,7 +10,7 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { CURRENCY, GST_STATES } from '@/lib/constants'
+import { CURRENCY, GST_STATES, GST_STATE_OPTIONS } from '@/lib/constants'
 import { saveCompanySettings } from '@/app/(app)/documents/actions'
 import type { CompanySettingsRow } from '@/types/database'
 
@@ -220,7 +220,7 @@ export function CompanySettingsForm({ settings, missing }: Props) {
                 }
               >
                 <option value="">Select a state</option>
-                {Object.entries(GST_STATES).map(([code, name]) => (
+                {GST_STATE_OPTIONS.map(([code, name]) => (
                   <option key={code} value={code}>
                     {code} — {name}
                   </option>

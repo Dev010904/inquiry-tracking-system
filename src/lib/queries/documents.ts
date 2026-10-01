@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { activeFy } from '@/lib/fy-server'
 import { DOCUMENT_TYPE } from '@/lib/constants'
@@ -138,7 +139,7 @@ export type DocumentDetail = {
   settings: CompanySettingsRow | null
 }
 
-export async function getDocument(id: string): Promise<DocumentDetail | null> {
+async function loadDocument(id: string): Promise<DocumentDetail | null> {
   const supabase = await createClient()
 
   const { data: invoice } = await supabase.from('invoices').select('*').eq('id', id).maybeSingle()
@@ -226,3 +227,10 @@ export async function getNumberRegister(): Promise<DocumentNumberRegisterRow[]> 
   if (error) return []
   return (data ?? []) as DocumentNumberRegisterRow[]
 }
+
+/**
+ * Cached for the request. The page's generateMetadata and the page itself both
+ * ask for the same record, and every one of these loaders is several queries —
+ * without this the whole set ran twice on every visit.
+ */
+export const getDocument = cache(loadDocument)

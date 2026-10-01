@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { differenceInCalendarDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 import { DEAD_IP_STATUSES } from '@/lib/constants'
@@ -118,7 +119,7 @@ export type IpAssetDetail = {
   projectName: string | null
 }
 
-export async function getIpAssetDetail(
+async function loadIpAssetDetail(
   id: string,
   now = new Date()
 ): Promise<IpAssetDetail | null> {
@@ -181,3 +182,10 @@ export async function getIpFormOptions() {
     .order('project_name')
   return { projects: data ?? [] }
 }
+
+/**
+ * Cached for the request. The page's generateMetadata and the page itself both
+ * ask for the same record, and every one of these loaders is several queries —
+ * without this the whole set ran twice on every visit.
+ */
+export const getIpAssetDetail = cache(loadIpAssetDetail)

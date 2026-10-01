@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { activeFy } from '@/lib/fy-server'
 import { QA_BUCKET, QUALIFICATION_STAGE } from '@/lib/constants'
@@ -185,7 +186,7 @@ export async function listMeetings(filters: {
   }))
 }
 
-export async function getMeeting(id: string): Promise<MeetingWithActions | null> {
+async function loadMeeting(id: string): Promise<MeetingWithActions | null> {
   const supabase = await createClient()
   const { data: meeting } = await supabase.from('meetings').select('*').eq('id', id).maybeSingle()
   if (!meeting) return null
@@ -207,3 +208,10 @@ export async function getMeeting(id: string): Promise<MeetingWithActions | null>
     companyName: company?.name ?? null,
   }
 }
+
+/**
+ * Cached for the request. The page's generateMetadata and the page itself both
+ * ask for the same record, and every one of these loaders is several queries —
+ * without this the whole set ran twice on every visit.
+ */
+export const getMeeting = cache(loadMeeting)

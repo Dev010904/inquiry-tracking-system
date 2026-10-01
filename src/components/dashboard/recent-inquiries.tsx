@@ -18,13 +18,13 @@ function ContactLine({ inquiry }: { inquiry: RecentInquiry }) {
       </p>
       <p className="text-xs text-muted-foreground">
         {inquiry.contactPhone && (
-          <a href={`tel:${inquiry.contactPhone}`} className="hover:underline">
+          <a href={`tel:${inquiry.contactPhone}`} className="relative z-10 hover:underline">
             {inquiry.contactPhone}
           </a>
         )}
         {inquiry.contactPhone && inquiry.contactEmail && ' · '}
         {inquiry.contactEmail && (
-          <a href={`mailto:${inquiry.contactEmail}`} className="hover:underline">
+          <a href={`mailto:${inquiry.contactEmail}`} className="relative z-10 hover:underline">
             {inquiry.contactEmail}
           </a>
         )}
@@ -114,10 +114,21 @@ export function RecentInquiries({ inquiries }: { inquiries: RecentInquiry[] }) {
 
             <ul className="divide-y md:hidden">
               {inquiries.map((inquiry) => (
-                <li key={inquiry.id} className="py-3 first:pt-0">
-                  <Link href={`/inquiries/${inquiry.id}`} className="block space-y-1.5">
+                // The card is not one big link any more: it holds tel: and
+                // mailto: links, and a link inside a link is invalid HTML —
+                // React logged a hydration error on every dashboard load, and
+                // on a phone a tap on the number could open the inquiry
+                // instead of dialling. The company name is the link, stretched
+                // over the card by its ::after; the contact links sit above it.
+                <li key={inquiry.id} className="relative py-3 first:pt-0">
+                  <div className="space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium">{inquiry.companyName}</p>
+                      <Link
+                        href={`/inquiries/${inquiry.id}`}
+                        className="font-medium after:absolute after:inset-0"
+                      >
+                        {inquiry.companyName}
+                      </Link>
                       <StatusBadge status={inquiry.status} />
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -133,7 +144,7 @@ export function RecentInquiries({ inquiries }: { inquiries: RecentInquiry[] }) {
                           : 'No follow-up set'}
                       </span>
                     </div>
-                  </Link>
+                  </div>
                 </li>
               ))}
             </ul>

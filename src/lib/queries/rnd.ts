@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { differenceInCalendarDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 import type {
@@ -117,7 +118,7 @@ export type RndProjectDetail = {
   ipAssets: Pick<IpAssetRow, 'id' | 'title' | 'ip_type' | 'status' | 'next_renewal_date'>[]
 }
 
-export async function getRndProjectDetail(
+async function loadRndProjectDetail(
   id: string,
   now = new Date()
 ): Promise<RndProjectDetail | null> {
@@ -191,3 +192,10 @@ export async function getRndFormOptions() {
     .order('full_name')
   return { staff: data ?? [] }
 }
+
+/**
+ * Cached for the request. The page's generateMetadata and the page itself both
+ * ask for the same record, and every one of these loaders is several queries —
+ * without this the whole set ran twice on every visit.
+ */
+export const getRndProjectDetail = cache(loadRndProjectDetail)

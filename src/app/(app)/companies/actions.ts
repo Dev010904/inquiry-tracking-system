@@ -38,7 +38,8 @@ const idSchema = z.string().uuid()
  * carries the GSTIN.
  */
 export async function createCompany(input: unknown): Promise<CompanyResult> {
-  if (!(await editorOrNull('companies'))) return NO_FEATURE_ACCESS
+  const profile = await editorOrNull('companies')
+  if (!profile) return NO_FEATURE_ACCESS
 
   const parsed = companySchema.safeParse(input)
   if (!parsed.success) {
@@ -48,10 +49,13 @@ export async function createCompany(input: unknown): Promise<CompanyResult> {
   const supabase = await createClient()
 
   // Case-insensitive, because "DDIT Nadiad" and "ddit nadiad" are one client.
+  // The name is escaped first: ilike treats % and _ as wildcards, so "A_B
+  // Engineering" used to clash with "AXB Engineering", and a name of "%"
+  // matched — and then named — whichever client came first.
   const { data: clash } = await supabase
     .from('companies')
     .select('id, name')
-    .ilike('name', v.name)
+    .ilike('name', v.name.replace(/[\\%_]/g, (c) => `\\${c}`))
     .is('deleted_at', null)
     .limit(1)
     .maybeSingle()
@@ -78,6 +82,7 @@ export async function createCompany(input: unknown): Promise<CompanyResult> {
       gst_applicable: v.gst_applicable,
       gst_exemption_reason: v.gst_applicable ? null : v.gst_exemption_reason || null,
       notes: v.notes || null,
+      created_by: profile.id,
     })
     .select('id')
     .single()

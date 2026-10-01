@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { FeatureKey } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { NAV_ITEMS, isActivePath } from './nav-items'
+import { isActivePath, menuItems } from './nav-items'
 
 /**
  * Mobile tab bar. Five destinations only — more than that and the touch
@@ -16,9 +16,8 @@ import { NAV_ITEMS, isActivePath } from './nav-items'
  */
 export function BottomNav({ visibleFeatures }: { visibleFeatures: FeatureKey[] }) {
   const pathname = usePathname()
-  const items = NAV_ITEMS.filter(
-    (item) => item.primary && item.feature && visibleFeatures.includes(item.feature)
-  )
+  // Settings never sits in the tab bar, so the settings flag is irrelevant here.
+  const items = menuItems(visibleFeatures, false).filter((item) => item.primary)
 
   // `repeat(0, …)` is not a valid grid template, and an empty bar is only a
   // strip of chrome taking up the bottom of the screen.

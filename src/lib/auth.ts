@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { ProfileRow } from '@/types/database'
@@ -11,8 +12,14 @@ import type { ProfileRow } from '@/types/database'
  * not the same thing as an active staff account: a user could be deactivated
  * mid-session, or exist in auth.users without a profiles row. Every page that
  * reads business data goes through here.
+ *
+ * Cached for the request. A single page reaches this from the layout, the
+ * page, the financial-year helper and the settings check — and each call was
+ * a round trip to Supabase Auth plus a profile read before anything else could
+ * start. Once per request is enough: nothing in a request changes who is
+ * asking.
  */
-export async function requireProfile(): Promise<ProfileRow> {
+export const requireProfile = cache(async function requireProfile(): Promise<ProfileRow> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -32,7 +39,7 @@ export async function requireProfile(): Promise<ProfileRow> {
   }
 
   return profile
-}
+})
 
 export async function requireAdmin(): Promise<ProfileRow> {
   const profile = await requireProfile()

@@ -45,23 +45,27 @@ export default async function SettingsPage() {
   // open Settings should not learn from the app that Settings is there.
   if (!profile) notFound()
 
-  const settings = await getCompanySettings()
-  const [fy, earliest] = await Promise.all([activeFy(), earliestFy()])
-
   const supabase = await createClient()
-  const { data: users } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('is_active', { ascending: false })
-    .order('full_name')
 
-  const { data: roles } = await supabase
-    .from('roles')
-    .select('*')
-    .order('is_system', { ascending: false })
-    .order('name')
-
-  const { data: roleFeatures } = await supabase.from('role_features').select('*')
+  // None of these depends on another, so they go out together rather than one
+  // round trip after the next.
+  const [settings, fy, earliest, { data: users }, { data: roles }, { data: roleFeatures }] =
+    await Promise.all([
+      getCompanySettings(),
+      activeFy(),
+      earliestFy(),
+      supabase
+        .from('profiles')
+        .select('*')
+        .order('is_active', { ascending: false })
+        .order('full_name'),
+      supabase
+        .from('roles')
+        .select('*')
+        .order('is_system', { ascending: false })
+        .order('name'),
+      supabase.from('role_features').select('*'),
+    ])
 
   // Counted here rather than in the component so a delete can tell the admin
   // how many people it is about to send back to the enum fallback.
@@ -101,7 +105,12 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {users && users.length > 0 && (
-            <UserTable users={users} currentUserId={profile.id} roles={roles ?? []} />
+            <UserTable
+              users={users}
+              currentUserId={profile.id}
+              roles={roles ?? []}
+              canManageAccounts={profile.role === 'admin'}
+            />
           )}
 
           <div className="rounded-md border border-dashed p-4">
@@ -128,8 +137,10 @@ export default async function SettingsPage() {
               </li>
             </ol>
             <p className="mt-2 text-sm text-muted-foreground">
-              They appear in the list above straight away, as Staff. Password resets are done the
-              same way: Authentication → Users → ⋮ → Reset password.
+              They appear in the list above straight away, as <strong className="font-medium text-foreground">Inactive</strong>{' '}
+              — nobody gets in until an admin checks who it is, gives them a role if they should
+              see less than everything, and presses Activate. Password resets are done the same
+              way: Authentication → Users → ⋮ → Reset password.
             </p>
           </div>
         </CardContent>

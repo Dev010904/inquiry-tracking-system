@@ -16,10 +16,13 @@ export function UserTable({
   users,
   currentUserId,
   roles,
+  canManageAccounts,
 }: {
   users: ProfileRow[]
   currentUserId: string
   roles: RoleRow[]
+  /** Only an admin may change another person's account; the database agrees. */
+  canManageAccounts: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -40,6 +43,7 @@ export function UserTable({
     <ul className="divide-y">
       {users.map((user) => {
         const isSelf = user.id === currentUserId
+        const locked = pending || isSelf || !canManageAccounts
         return (
           <li
             key={user.id}
@@ -52,7 +56,7 @@ export function UserTable({
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-medium">{user.full_name}</p>
                 {isSelf && <Badge variant="secondary">You</Badge>}
-                {!user.is_active && <Badge variant="muted">Deactivated</Badge>}
+                {!user.is_active && <Badge variant="muted">Inactive</Badge>}
               </div>
               <p className="truncate text-sm text-muted-foreground">{user.email ?? '—'}</p>
               <p className="text-xs text-muted-foreground">
@@ -70,7 +74,7 @@ export function UserTable({
                 aria-label={`Account type for ${user.full_name}`}
                 className="h-9 w-28"
                 value={user.role}
-                disabled={pending || isSelf}
+                disabled={locked}
                 onChange={(e) =>
                   run(
                     () => setUserRole(user.id, e.target.value as 'admin' | 'staff'),
@@ -86,7 +90,7 @@ export function UserTable({
                 aria-label={`Role for ${user.full_name}`}
                 className="h-9 w-40"
                 value={user.role_id ?? ''}
-                disabled={pending || isSelf}
+                disabled={locked}
                 onChange={(e) =>
                   run(() => setUserRoleId(user.id, e.target.value || null), 'Role updated')
                 }
@@ -102,16 +106,16 @@ export function UserTable({
               <Button
                 size="sm"
                 variant={user.is_active ? 'outline' : 'default'}
-                disabled={pending || isSelf}
+                disabled={locked}
                 onClick={() =>
                   run(
                     () => setUserActive(user.id, !user.is_active),
-                    user.is_active ? 'Account deactivated' : 'Account reactivated'
+                    user.is_active ? 'Account deactivated' : 'Account activated'
                   )
                 }
               >
                 {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
-                {user.is_active ? 'Deactivate' : 'Reactivate'}
+                {user.is_active ? 'Deactivate' : 'Activate'}
               </Button>
             </div>
           </li>
