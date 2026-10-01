@@ -20,10 +20,14 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Select, optionsFrom } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { QA_BUCKET, QA_RESULT } from '@/lib/constants'
+import { QA_RESULT } from '@/lib/constants'
 import { formatDate } from '@/lib/format'
-import { createClient } from '@/lib/supabase/client'
-import { addQaMedia, removeQaMedia, saveQaCheck } from '@/app/(app)/quality/actions'
+import {
+  addQaMedia,
+  removeQaMedia,
+  saveQaCheck,
+  startQaPhotoUpload,
+} from '@/app/(app)/quality/actions'
 import type { QaResult } from '@/types/database'
 
 type Media = {
@@ -63,6 +67,34 @@ type Props = {
  * on a site connection.
  */
 class UnreadableImage extends Error {}
+
+/**
+ * Puts one file at a signed upload URL.
+ *
+ * The same request supabase-js sends for uploadToSignedUrl — a multipart PUT
+ * with the file and its cache setting — made directly, so the phone does not
+ * download the whole Supabase client just to send one photo. The token in the
+ * URL is what authorises it; the anon key is only the gateway's ticket in.
+ * Returns null on success, or what Storage said was wrong.
+ */
+async function uploadToSignedUrl(uploadUrl: string, file: Blob): Promise<string | null> {
+  const body = new FormData()
+  body.append('cacheControl', '3600')
+  body.append('', file)
+
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { apikey: anon, Authorization: `Bearer ${anon}`, 'x-upsert': 'false' },
+    body,
+  })
+  if (response.ok) return null
+
+  const detail = (await response.json().catch(() => null)) as
+    | { message?: string; error?: string }
+    | null
+  return detail?.message ?? detail?.error ?? `upload refused (${response.status})`
+}
 
 async function compress(file: File): Promise<Blob> {
   /*
@@ -149,21 +181,27 @@ export function QaPanel({ orderId, checks, blockReason }: Props) {
     setUploadingFor(checkId)
     try {
       const blob = await compress(file)
-      const path = `${orderId}/${checkId}/${Date.now()}.jpg`
-      const supabase = createClient()
-      const { error: uploadError } = await supabase.storage
-        .from(QA_BUCKET)
-        .upload(path, blob, { contentType: 'image/jpeg' })
+
+      // The server checks who is asking and hands back a one-off token for
+      // one path in the private bucket; the session itself never reaches this
+      // page (the auth cookies are httpOnly).
+      const ticket = await startQaPhotoUpload(orderId, checkId)
+      if (!ticket.ok) {
+        toast.error(ticket.error)
+        return
+      }
+
+      const uploadError = await uploadToSignedUrl(ticket.uploadUrl, blob)
 
       if (uploadError) {
         // Say what the storage layer actually refused. A bare "could not
         // upload" sent the last person looking at the wrong thing entirely.
-        toast.error(`Could not upload that photo — ${uploadError.message}`)
+        toast.error(`Could not upload that photo — ${uploadError}`)
         return
       }
 
       const result = await addQaMedia(
-        { qa_check_id: checkId, kind: 'photo', storage_path: path },
+        { qa_check_id: checkId, kind: 'photo', storage_path: ticket.path },
         orderId
       )
       if (result.ok) {
@@ -171,13 +209,11 @@ export function QaPanel({ orderId, checks, blockReason }: Props) {
         router.refresh()
       } else {
         /*
-         * The file is in the bucket but nothing points at it. Take it back out
-         * rather than leaving an object no screen can reach, and tell the
-         * person the photo is not attached — the dispatch gate reads the row,
-         * not the bucket, so a silent orphan here reads as "evidence complete"
-         * to nobody and blocks the order with no explanation.
+         * Tell the person the photo is not attached — the dispatch gate reads
+         * the row, not the bucket, so a silent failure here blocks the order
+         * with no explanation. The server action has already taken the file
+         * back out of the bucket where it is allowed to.
          */
-        await supabase.storage.from(QA_BUCKET).remove([path])
         toast.error(result.error)
       }
     } catch (cause) {

@@ -37,7 +37,16 @@ export const qaMediaSchema = z
     qa_check_id: z.string().uuid(),
     kind: z.enum(['photo', 'video']),
     storage_path: optional(500),
-    external_url: z.string().trim().url('Paste the full link').optional().or(z.literal('')),
+    // http(s) only. A "URL" is anything the URL parser accepts — javascript:
+    // and data: included — and this one is rendered as a link other staff
+    // click.
+    external_url: z
+      .string()
+      .trim()
+      .url('Paste the full link')
+      .regex(/^https?:\/\//i, 'Paste the full link, starting with https://')
+      .optional()
+      .or(z.literal('')),
     caption: optional(300),
   })
   .refine((v) => Boolean(v.storage_path) !== Boolean(v.external_url), {

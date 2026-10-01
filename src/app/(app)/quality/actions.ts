@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { NO_FEATURE_ACCESS, editorOrNull } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { dbMessage } from '@/lib/db-message'
+import { QA_BUCKET } from '@/lib/constants'
 import {
   meetingActionSchema,
   meetingSchema,
@@ -89,6 +90,47 @@ export async function saveQaCheck(input: unknown): Promise<Result> {
   return { ok: true, id: data.id }
 }
 
+const uuid = z.string().uuid()
+
+export type PhotoUpload =
+  | { ok: true; path: string; uploadUrl: string }
+  | { ok: false; error: string }
+
+/**
+ * Hands the browser a one-off permission to upload one QA photo.
+ *
+ * The browser used to upload with the signed-in session itself, which meant
+ * the session had to be readable by page scripts. Now the server checks the
+ * caller and the check, picks the path, and asks Storage for a signed upload
+ * token for exactly that path; the browser can put one file there and nothing
+ * else. Storage applies the bucket's own limits (JPEG, PNG or WebP, 5 MB).
+ */
+export async function startQaPhotoUpload(orderId: string, checkId: string): Promise<PhotoUpload> {
+  if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
+  if (!uuid.safeParse(orderId).success || !uuid.safeParse(checkId).success) {
+    return { ok: false, error: 'Unrecognised QA check.' }
+  }
+
+  const supabase = await createClient()
+  const { data: check } = await supabase
+    .from('qa_checks')
+    .select('id')
+    .eq('id', checkId)
+    .eq('order_id', orderId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!check) return { ok: false, error: 'That QA check no longer exists.' }
+
+  // The same layout the dispatch gate checks: <order>/<check>/<file>.
+  const path = `${orderId}/${checkId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.jpg`
+  const { data, error } = await supabase.storage.from(QA_BUCKET).createSignedUploadUrl(path)
+  if (error || !data) return { ok: false, error: 'Could not start the upload. Try again.' }
+
+  // The URL carries the token. It is good for this one path only, and Storage
+  // refuses a second file at the same path.
+  return { ok: true, path: data.path, uploadUrl: data.signedUrl }
+}
+
 /**
  * Records a piece of evidence.
  *
@@ -105,20 +147,38 @@ export async function addQaMedia(input: unknown, orderId: string): Promise<Resul
     return { ok: false, error: parsed.error.issues[0]!.message, fieldErrors: flatten(parsed.error) }
   }
   const v = parsed.data
+  const storagePath = blank(v.storage_path)
+
+  // A photo is the file just uploaded for this check; a video is a link. The
+  // database checks the same again (guard_qa_media), with the order taken from
+  // the check rather than from this request.
+  if (v.kind === 'photo') {
+    if (!storagePath || !storagePath.startsWith(`${orderId}/${v.qa_check_id}/`) || storagePath.includes('..')) {
+      return { ok: false, error: 'That photo does not belong to this QA check.' }
+    }
+  } else if (storagePath) {
+    return { ok: false, error: 'A video is added as a link, not uploaded.' }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.from('qa_media').insert({
     qa_check_id: v.qa_check_id,
     kind: v.kind,
-    storage_path: blank(v.storage_path),
+    storage_path: storagePath,
     external_url: blank(v.external_url),
     caption: blank(v.caption),
     uploaded_by: profile.id,
   })
 
-  // The database refuses in a sentence naming what is wrong; discarding it
-  // is what made this path impossible to diagnose from the screen.
-  if (error) return { ok: false, error: dbMessage(error.message, 'Could not attach that evidence.') }
+  if (error) {
+    // The file is in the bucket but nothing points at it. Take it back out
+    // where the bucket allows (admins), so an orphan is the exception.
+    if (storagePath) await supabase.storage.from(QA_BUCKET).remove([storagePath])
+    // The database refuses in a sentence naming what is wrong; discarding it
+    // is what made this path impossible to diagnose from the screen.
+    return { ok: false, error: dbMessage(error.message, 'Could not attach that evidence.') }
+  }
 
   revalidatePath(`/orders/${orderId}`)
   return { ok: true }
@@ -126,9 +186,25 @@ export async function addQaMedia(input: unknown, orderId: string): Promise<Resul
 
 export async function removeQaMedia(mediaId: string, orderId: string): Promise<Result> {
   if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
+  if (!uuid.safeParse(mediaId).success) return { ok: false, error: 'Unrecognised evidence.' }
+
   const supabase = await createClient()
+  const { data: media } = await supabase
+    .from('qa_media')
+    .select('storage_path')
+    .eq('id', mediaId)
+    .maybeSingle()
+
   const { error } = await supabase.from('qa_media').delete().eq('id', mediaId)
   if (error) return { ok: false, error: dbMessage(error.message, 'Could not remove that.') }
+
+  // The photo file goes too where the bucket allows it (admins). For anyone
+  // else the file stays, unreferenced, as before — evidence is only ever
+  // destroyed by an admin.
+  if (media?.storage_path) {
+    await supabase.storage.from(QA_BUCKET).remove([media.storage_path])
+  }
+
   revalidatePath(`/orders/${orderId}`)
   return { ok: true }
 }
@@ -185,6 +261,7 @@ export async function setRequiresQualification(
   required: boolean
 ): Promise<Result> {
   if (!(await editorOrNull('orders'))) return NO_FEATURE_ACCESS
+  if (!uuid.safeParse(orderId).success) return { ok: false, error: 'Unrecognised order.' }
   const supabase = await createClient()
   const { error } = await supabase
     .from('orders')
@@ -281,6 +358,7 @@ export async function saveMeetingAction(input: unknown): Promise<Result> {
 
 export async function deleteMeetingAction(actionId: string, meetingId: string): Promise<Result> {
   if (!(await editorOrNull('meetings'))) return NO_FEATURE_ACCESS
+  if (!uuid.safeParse(actionId).success) return { ok: false, error: 'Unrecognised action.' }
   const supabase = await createClient()
   const { error } = await supabase.from('meeting_actions').delete().eq('id', actionId)
   if (error) return { ok: false, error: 'Could not remove that action.' }

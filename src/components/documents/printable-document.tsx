@@ -609,10 +609,14 @@ export function PrintableDocument({ invoice, lines, settings, buyerFallback, cop
                     which would leave it looking right on screen and missing on
                     paper. The file is a transparent PNG, so it lands on the
                     sheet as ink rather than as a white rectangle over the
-                    rule beneath it. */}
+                    rule beneath it.
+
+                    Served by src/app/assets/signature/route.ts to signed-in
+                    users who may open documents — never from /public, where
+                    anyone could download it. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/signature.png"
+                  src="/assets/signature"
                   alt=""
                   width={98}
                   height={48}

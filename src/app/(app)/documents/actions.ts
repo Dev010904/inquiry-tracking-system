@@ -17,6 +17,12 @@ export type Result =
   | { ok: true; id?: string; docNo?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> }
 
+const documentId = z.string().uuid()
+
+/** Every action that takes a document id refuses one that is not a uuid before
+ * it reaches the database, rather than echoing Postgres's syntax error. */
+const UNRECOGNISED = { ok: false as const, error: 'Unrecognised document.' }
+
 function flatten(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {}
   for (const issue of error.issues) {
@@ -139,6 +145,7 @@ export async function createDocument(input: unknown): Promise<Result> {
  */
 export async function issueDocument(invoiceId: string): Promise<Result> {
   if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+  if (!documentId.safeParse(invoiceId).success) return UNRECOGNISED
   const supabase = await createClient()
 
   const { data, error } = await supabase.rpc('issue_document', { p_invoice_id: invoiceId })
@@ -158,6 +165,7 @@ export async function issueDocument(invoiceId: string): Promise<Result> {
 export async function cancelDocument(invoiceId: string, reason: string): Promise<Result> {
   const profile = await editorOrNull('documents')
   if (!profile) return NO_FEATURE_ACCESS
+  if (!documentId.safeParse(invoiceId).success) return UNRECOGNISED
   if (profile.role !== 'admin') {
     return { ok: false, error: 'Only an admin can cancel a document.' }
   }
@@ -182,6 +190,7 @@ export async function cancelDocument(invoiceId: string, reason: string): Promise
 export async function deleteDraft(invoiceId: string): Promise<Result> {
   const profile = await editorOrNull('documents')
   if (!profile) return NO_FEATURE_ACCESS
+  if (!documentId.safeParse(invoiceId).success) return UNRECOGNISED
   if (profile.role !== 'admin') {
     return { ok: false, error: 'Only an admin can delete a draft.' }
   }
@@ -272,6 +281,7 @@ export async function addInstallationOption(label: string): Promise<Result> {
  */
 export async function duplicateDocument(invoiceId: string): Promise<Result> {
   if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+  if (!documentId.safeParse(invoiceId).success) return UNRECOGNISED
 
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('duplicate_document', {
@@ -416,6 +426,7 @@ export async function saveDocumentLine(input: unknown): Promise<Result> {
 /** Removes a line from a draft and recalculates what is left. */
 export async function removeDocumentLine(lineId: string, invoiceId: string): Promise<Result> {
   if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+  if (!documentId.safeParse(lineId).success) return UNRECOGNISED
   const supabase = await createClient()
 
   const { error } = await supabase.from('invoice_lines').delete().eq('id', lineId)
@@ -443,6 +454,7 @@ export async function acceptQuotation(
   technicalSpecification: string
 ): Promise<Result> {
   if (!(await editorOrNull('documents'))) return NO_FEATURE_ACCESS
+  if (!documentId.safeParse(quotationId).success) return UNRECOGNISED
 
   const spec = technicalSpecification.trim()
   if (spec.length < 3) {
