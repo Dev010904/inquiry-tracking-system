@@ -72,6 +72,24 @@ Severity is about what an attacker could do, not how likely it is.
 - The Settings page now loads its data in parallel.
 - Leftovers of the deleted Pro/Lite editions were removed from `.gitignore` and `tsconfig.json`.
 
+Found by the signed-in test on 1 October (see the end of this document) and
+fixed in the last commit:
+
+- **Removing an action from meeting minutes left its follow-up behind**: the
+  owner kept being reminded on the dashboard about an action that no longer
+  existed. `20261001_8_07` makes the open follow-up go with the action; one
+  already done stays as history.
+- **Snoozing a follow-up that was not due yet pulled it forward**: due in three
+  days, "1d" made it due tomorrow. Snooze now counts from now only when the
+  follow-up is already due, otherwise from its own time.
+- **Back after saving a form reopened the form**: after recording minutes, Back
+  said "Back to the meeting" and led to a blank New minutes page. Back now skips
+  forms and returns to where you were before them.
+- Half the pages titled the browser tab "… · Inquiry Tracking System", the
+  other half "… · ANK Inquiry Tracking"; all now use the app's name. "1 line
+  still have no HSN/SAC code" now reads "has". Clearing an empty addendum no
+  longer logs "changed: addendum" in Recent changes.
+
 ## Not changed — needs a decision or an account setting
 
 These are outside the code, or cost money, so they are for the owner:
@@ -118,9 +136,9 @@ upload URL that the current storage policy already permits).
 1. **Review** the branch: `git diff main...security-hardening`.
 2. **Back up** the database (see point 1 above).
 3. **Apply the migrations** in the Supabase SQL editor, one file at a time, in
-   order: `20261001_8_01` → `8_02` → `8_03` → `8_04` → `8_05` → `8_06`. Run the
-   verification queries at the bottom of each file. Each file says how to undo
-   it.
+   order: `20261001_8_01` → `8_02` → `8_03` → `8_04` → `8_05` → `8_06` →
+   `8_07`. Run the verification queries at the bottom of each file. Each file
+   says how to undo it. `8_07` must come after `8_02`.
 4. **Deploy the code**: merge `security-hardening` into `main`; Vercel builds
    it.
 5. **Account settings**: Site URL (point 2), and points 4–5 when decided.
@@ -201,9 +219,53 @@ production build was run locally and checked signed out: every page carries
 the new headers and a CSP whose nonce is on all 44 scripts of the login page,
 the page hydrates with no CSP violations and the service worker still
 registers; `/signature.png` and `/_next/image` answer 404 and
-`/assets/signature` redirects to the login page. Signed-in flows could not be
-exercised outside production without a staff password, which is why the
-checklist above matters — above all the QA photo upload.
+`/assets/signature` redirects to the login page.
+
+**Run 4 — 8_07.** Inside a rolled-back transaction, as the admin: an action
+with an owner and a due date created its follow-up; removing the action
+removed the follow-up, and the removal was audited; an action marked done kept
+its done follow-up when removed; staff cannot call the new function. The
+trigger and function were confirmed absent afterwards.
+
+**Run 5 — signed in, on the live data, 1 October 2026, 12:36–13:20 UTC.** The
+owner signed in to the new build running locally (`next start`), which talks to
+the live database — still without the migrations, which is the state the system
+is in if the code goes live before them. A checksum of every row of 27 tables
+(the change log included), both counter tables and the photo storage was taken
+first.
+
+- All 28 screens opened with no errors and no CSP violations in the console;
+  every script carried the nonce; the session cookie was invisible to
+  JavaScript; nothing about the session was in local or session storage; the
+  service worker cached only the offline page and icons. The signature loaded on
+  an issued quotation and a tax invoice, and was served `private, no-store`.
+  Dashboard, inquiries, an inquiry, companies and a client were also checked at
+  phone width (390 px): no sideways scrolling, bottom bar present, no link
+  inside a link. The browser would not stay at phone width for the remaining
+  screens.
+- With records named "ZZ TEST": a client, a case-insensitive duplicate refused,
+  a name differing only where `_` stood accepted (the escape fix), a contact, an
+  inquiry with its follow-up (INQ-2026-0021), "Lost" without a reason refused,
+  status to Quoted, a quotation draft with a line (GST picks 0/5/18/40, states in
+  code order), terms, preview with signature, then deleted — no number used;
+  convert to order (ORD-2026-0010), an order line, a payment recorded and
+  removed, the specification changed with its reason logged, Dispatched refused
+  without QA, delivery details, a work update, pending work set to done,
+  qualification on and off, a QA check with a photo uploaded through the new
+  signed upload, a `javascript:` link refused, an https link accepted, both
+  removed (the photo file went from storage too), meeting minutes with an action
+  and a follow-up, and follow-up snooze and done. The problems listed under
+  "Found by the signed-in test" were found here, fixed, rebuilt and re-checked
+  on the same records.
+- Every test record was then deleted and the counters returned to 20 and 9
+  (no real record had taken a later number). The checksums of all 30 items
+  matched the ones taken before, so the live data is exactly as it was.
+- Sign out returned to the login page; afterwards the dashboard, an order and
+  `/assets/signature` each sent the browser to the login page with the right
+  return path.
+
+Still to do after it goes live: the checklist above, and in particular the
+Staff role account, which this test did not sign in as.
 
 ## Undoing it
 
@@ -212,4 +274,5 @@ checklist above matters — above all the QA photo upload.
   independent, so one can be undone without the others — e.g. if a screen
   fails with "permission denied for table X", the quickest restore is the
   rollback block at the end of 8_02, and the proper fix is to add the missing
-  column to that file's grants.
+  column to that file's grants. The one exception: undo 8_07 before (or
+  together with) 8_02, since 8_07 relies on 8_02.
