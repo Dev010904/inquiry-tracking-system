@@ -23,15 +23,19 @@ this size.
 > It bypasses every security rule in the database. You will paste it directly
 > into Vercel's settings screen, where only you can see it.
 
-**The three environment variables Vercel needs:**
+**The two environment variables Vercel needs:**
 
 ```
 NEXT_PUBLIC_SUPABASE_URL       https://vozvdtgsinocrohmasvq.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY  (Supabase → Settings → API → anon public)
-SUPABASE_SERVICE_ROLE_KEY      (Supabase → Settings → API → service_role) ← secret
 ```
 
-The first two are safe to share. The third is not.
+Both are safe to share: the anon key opens nothing on its own (since the
+October 2026 hardening the database grants it no access at all).
+
+**Do not add `SUPABASE_SERVICE_ROLE_KEY` to Vercel.** Nothing in the app uses
+it, and a key that bypasses every rule in the database should not sit anywhere
+it is not needed.
 
 **Updating it later.** Once it is connected, every change I make gets pushed
 and Vercel rebuilds it automatically — usually in under two minutes. Your
@@ -81,16 +85,19 @@ You chose to manage users from Supabase directly. Here is exactly how.
    ```
    Leave it out and the app will call them `priya` — whatever comes before
    the `@` in their email.
-5. Save. Their staff profile is created automatically. They can sign in
-   immediately.
+5. Save. Their staff profile is created automatically, **switched off**.
+6. In the app, go to **Settings → Staff accounts**. They are listed as
+   *Inactive*. If they should see less than everything, give them a role first;
+   then press **Activate**. Until an admin does this they cannot get in — so an
+   account created by mistake, or by anyone else, opens nothing.
 
 **New users are `staff`, not `admin`.** Staff can do everything day to day.
-Only admins can delete records or remove payments. To promote someone, go to
-**Table Editor → profiles**, find their row, change `role` to `admin`.
+Only admins can delete records or remove payments. To promote someone, change
+their account type from Staff to Admin in **Settings → Staff accounts**.
 
-**To remove someone's access:** in **Table Editor → profiles**, set
-`is_active` to `false`. Do *not* delete the row — deactivating keeps their
-name attached to the work they did. They are signed out on their next action.
+**To remove someone's access:** **Settings → Staff accounts → Deactivate**. Do
+*not* delete the user — deactivating keeps their name attached to the work they
+did. They are signed out on their next action.
 
 **To reset a forgotten password:** **Authentication → Users**, find them, ⋮ →
 *Reset password*. There is no self-service reset in the app by design.
