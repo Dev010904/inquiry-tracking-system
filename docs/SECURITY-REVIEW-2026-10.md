@@ -1,8 +1,10 @@
 # ANK Track — security review and hardening, 1 October 2026
 
-Everything below is on the branch **`security-hardening`**. Nothing has been
-deployed and no database change has been applied: the live system is exactly
-as it was. The branch is for the team to review, test and then put live.
+Everything below **went live on 1 October 2026** (about 13:40 UTC): the code is
+on `main` (commit `febab1a`, Vercel production) and migrations 8_01–8_07 are
+applied to the live database. No data was changed — a checksum of every table
+before and after is identical. What was done, what was checked live and how to
+undo it are under **Put live on 1 October 2026**.
 
 ## In one paragraph
 
@@ -116,7 +118,9 @@ These are outside the code, or cost money, so they are for the owner:
    each with a Supabase service-role key stored (for a different, paused
    Supabase project — not the ANK data). If those editions are gone, delete
    both projects in Vercel, and the paused Supabase project "Dev010904's
-   Project" if nothing uses it.
+   Project" if nothing uses it. (1 Oct: the owner asked for both to be
+   deleted; Vercel only lets the owner confirm a deletion in its dashboard,
+   so they stay until that is done.)
 6. **Two-step login (MFA) for admins**: Supabase already allows authenticator
    apps; the app needs an enrolment screen and a code prompt at login. Worth
    doing — four of the five accounts are admins.
@@ -125,7 +129,7 @@ These are outside the code, or cost money, so they are for the owner:
 8. Next.js still ships an old PostCSS internally (a build-time issue only, not
    reachable from the site). It clears when the app moves to Next.js 16.
 
-## How to put this live
+## How to put this live (done 1 October 2026 — see the next section)
 
 Either order of steps 3 and 4 is safe. The old code works on the new database —
 run 1 below replays its writes column by column, and its photo paths already
@@ -143,6 +147,51 @@ upload URL that the current storage policy already permits).
    it.
 5. **Account settings**: Site URL (point 2), and points 4–5 when decided.
 6. **Test** with the checklist below.
+
+## Put live on 1 October 2026
+
+1. A checksum of every table, both counters and the photo storage was taken.
+2. The rules as they stood were saved inside the database, in
+   `ank_restore_20261001.ddl`: every policy (as drop-and-create SQL), the 11
+   functions the migrations replace, the privileges and the old
+   `profiles.is_active` default. Only the database owner can read it; the API
+   cannot reach it. Drop it once the change is accepted:
+   `drop schema ank_restore_20261001 cascade;`
+3. `main` was fast-forwarded to `febab1a` and pushed; Vercel built and
+   promoted it (deployment `dpl_6ApR9fxrjpBJTCYUcY62uHjnUNnj`).
+4. The seven migrations were applied in order. Supabase records each one; the
+   recorded text of every one has the same checksum as the file in the repo,
+   so what ran is exactly what was reviewed. Each file's verification queries
+   passed, and the data checksums were unchanged.
+
+Checked on the live system afterwards:
+
+- Signed out: security headers and a nonce CSP on every page; `/signature.png`
+  and `/_next/image` answer 404; `/assets/signature` and `/dashboard` send the
+  browser to the login page.
+- With the public (anon) key, from outside: every table answers *permission
+  denied*, the document functions refuse, the photo bucket lists nothing.
+- Supabase security advisor: no errors. Two warnings remain by design:
+  signed-in users can call the 22 SECURITY DEFINER functions the app and its
+  policies use (each checks the caller itself), and leaked-password protection
+  is a Pro-plan setting (point 1 above).
+- As the database sees them: an admin sees every row; the Staff role sees its
+  dashboard data and no payments, documents, bank details, order lines,
+  meetings or R&D; a signed-out caller is refused.
+- Signed in as the owner on ank-its.vercel.app: every screen loads with its
+  data and no console errors; the signature shows on an issued quotation and
+  the QA photo on an order; Recent changes lists the full history (it opens on
+  "Last 24 hours"); Settings shows the company details and the staff list.
+  Creating a client, adding a contact and editing the client worked, and Back
+  after saving returned to the list. Those test records were deleted and the
+  checksums again matched the snapshot. The remaining write flows were not
+  repeated on the live site — they ran on the same code in run 5 and on these
+  migrations in runs 1–4 — so the checklist below is still worth doing once.
+
+To undo: in Vercel, *Instant Rollback* to deployment
+`dpl_DQ8Jbz2LMTkvTx1BEgvrBFsFCV8Q` (commit `90305a4`) for the code; for the
+database, each migration's rollback block, or the saved definitions in
+`ank_restore_20261001.ddl` (that is also where 8_03's previous policies are).
 
 ## Checklist for the team after it is live
 
