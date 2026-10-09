@@ -271,6 +271,16 @@ Decisions worth knowing:
 
 Typecheck: 115 source files, zero errors.
 
+### Phase 9 — Attendance (9 Oct 2026, out for team testing)
+
+Fingerprint attendance for the same staff logins: Today, a monthly register
+with an Excel download, each person's month, leave and forgotten-punch
+requests with approval, and an admin setup (people and device numbers,
+office timings, holidays, leave types, devices, pen-drive import). eSSL /
+ZKTeco devices push punches over HTTPS (`/iclock/…`); fingerprints never
+leave the device. Migration 9_01. Everything — rules, device setup, the test
+data left in on purpose and how to remove it — is in `docs/ATTENDANCE.md`.
+
 ---
 
 ## Next — remaining phases

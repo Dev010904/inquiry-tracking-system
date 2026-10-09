@@ -21,6 +21,7 @@ export const ACTIVITY_SECTIONS = {
   companies: 'Companies',
   contacts: 'Contacts',
   profiles: 'Staff accounts',
+  attendance: 'Attendance',
 } as const
 
 export type ActivitySection = keyof typeof ACTIVITY_SECTIONS
@@ -39,6 +40,10 @@ export function activityHref(row: ActivityFeedRow): string | null {
       return `/ip/${row.row_id}`
     case 'companies':
       return `/companies/${row.row_id}`
+    case 'attendance':
+      // People, leave and corrections all live under one section; the
+      // requests screen is where most of these changes are made.
+      return '/attendance/requests'
     default:
       // Payments, follow-ups and work updates live inside a parent screen and
       // have no page of their own, so they are shown without a link rather

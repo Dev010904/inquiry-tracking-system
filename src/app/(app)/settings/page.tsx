@@ -143,6 +143,14 @@ export default async function SettingsPage() {
               way: Authentication → Users → ⋮ → Reset password.
             </p>
           </div>
+
+          <p className="text-sm text-muted-foreground">
+            To track someone&rsquo;s attendance, add their account here first, then put it on attendance under{' '}
+            <Link href="/attendance/setup" className="text-primary hover:underline">
+              Attendance → Setup
+            </Link>{' '}
+            with the number they are enrolled under on the fingerprint device.
+          </p>
         </CardContent>
       </Card>
 

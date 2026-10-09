@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ClipboardList,
   FileText,
+  Fingerprint,
   FlaskConical,
   History,
   LayoutDashboard,
@@ -70,6 +71,7 @@ const FEATURE_NAV: Record<FeatureKey, Omit<NavItem, 'feature'>> = {
   // order, so "what came in this year" and "who owes us" had no answer
   // anywhere in the app — findable only by someone already told where it was.
   payments: { href: '/payments', label: 'Ledger', short: 'Ledger', icon: Wallet },
+  attendance: { href: '/attendance', label: 'Attendance', short: 'Attendance', icon: Fingerprint },
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [

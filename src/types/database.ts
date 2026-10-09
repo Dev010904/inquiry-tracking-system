@@ -568,6 +568,135 @@ export type ActivityFeedRow = {
 }
 
 /** Columns Postgres computes; never send them on insert or update. */
+/* ---------------------------------------------------------------------------
+ * Attendance (migration 20261009_9_01). Times of day are Postgres `time`
+ * ("09:30:00"); punches are timestamptz in UTC and are read in IST.
+ * ------------------------------------------------------------------------- */
+
+export type AttendanceShiftRow = Timestamps & {
+  id: string
+  name: string
+  start_time: string
+  end_time: string
+  grace_minutes: number
+  half_day_minutes: number
+  full_day_minutes: number
+  /** ISO weekdays: 1 = Monday … 7 = Sunday. */
+  weekly_offs: number[]
+  late_marks_per_half_day: number
+  overtime_after_minutes: number
+  is_default: boolean
+}
+
+export type AttendancePersonRow = Timestamps & {
+  id: string
+  profile_id: string
+  device_code: string
+  shift_id: string
+  tracked_from: string
+  is_active: boolean
+  created_by: string | null
+}
+
+export type AttendanceDeviceStatus = 'pending' | 'active' | 'blocked'
+
+export type AttendanceDeviceRow = Timestamps & {
+  id: string
+  serial_no: string
+  name: string
+  status: AttendanceDeviceStatus
+  push_token: string
+  token_required: boolean
+  attlog_stamp: string | null
+  last_seen_at: string | null
+  last_ip: string | null
+  last_info: string | null
+}
+
+export type PunchSource = 'device' | 'import' | 'manual' | 'correction'
+
+export type AttendancePunchRow = {
+  id: string
+  person_id: string | null
+  device_code: string
+  punched_at: string
+  source: PunchSource
+  device_id: string | null
+  verify_mode: number | null
+  punch_state: number | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type AttendanceHolidayRow = Timestamps & {
+  id: string
+  holiday_on: string
+  name: string
+  created_by: string | null
+}
+
+export type AttendanceLeaveTypeRow = Timestamps & {
+  id: string
+  code: string
+  name: string
+  is_paid: boolean
+  counts_as_present: boolean
+  yearly_quota: number | null
+  is_active: boolean
+  sort_order: number
+}
+
+export type AttendanceRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
+
+export type AttendanceLeaveRow = Timestamps & {
+  id: string
+  person_id: string
+  leave_type_id: string
+  from_date: string
+  to_date: string
+  half_day: boolean
+  reason: string | null
+  status: AttendanceRequestStatus
+  requested_by: string
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+}
+
+export type AttendanceCorrectionRow = Timestamps & {
+  id: string
+  person_id: string
+  work_date: string
+  punch_in: string | null
+  punch_out: string | null
+  reason: string
+  status: AttendanceRequestStatus
+  requested_by: string
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+}
+
+export type DayOverrideStatus =
+  | 'present'
+  | 'half_day'
+  | 'absent'
+  | 'leave'
+  | 'on_duty'
+  | 'holiday'
+  | 'weekly_off'
+
+export type AttendanceDayOverrideRow = Timestamps & {
+  id: string
+  person_id: string
+  work_date: string
+  status: DayOverrideStatus
+  leave_type_id: string | null
+  note: string
+  created_by: string
+}
+
 type Generated = 'gst_amount' | 'total_with_gst' | 'balance_pending'
 
 type Writable<T> = Omit<T, 'created_at' | 'updated_at'>
@@ -633,6 +762,15 @@ export type Database = {
       ip_assets: { Row: IpAssetRow; Insert: InsertOf<IpAssetRow> & { title: string; ip_type: IpType }; Update: InsertOf<IpAssetRow>; Relationships: [] }
       ip_events: { Row: IpEventRow; Insert: InsertOf<IpEventRow> & { ip_asset_id: string; event_type: string }; Update: InsertOf<IpEventRow>; Relationships: [] }
       activity_log: { Row: ActivityLogRow; Insert: Partial<ActivityLogRow>; Update: Partial<ActivityLogRow>; Relationships: [] }
+      attendance_shifts: { Row: AttendanceShiftRow; Insert: Omit<InsertOf<AttendanceShiftRow>, 'is_default'> & { name: string; start_time: string; end_time: string }; Update: Omit<InsertOf<AttendanceShiftRow>, 'is_default'>; Relationships: [] }
+      attendance_people: { Row: AttendancePersonRow; Insert: Omit<InsertOf<AttendancePersonRow>, 'created_by'> & { profile_id: string; device_code: string; shift_id: string }; Update: Pick<Partial<AttendancePersonRow>, 'device_code' | 'shift_id' | 'tracked_from' | 'is_active'>; Relationships: [] }
+      attendance_devices: { Row: AttendanceDeviceRow; Insert: Pick<Partial<AttendanceDeviceRow>, 'name' | 'status' | 'token_required'> & { serial_no: string }; Update: Pick<Partial<AttendanceDeviceRow>, 'name' | 'status' | 'token_required'>; Relationships: [] }
+      attendance_punches: { Row: AttendancePunchRow; Insert: never; Update: never; Relationships: [] }
+      attendance_holidays: { Row: AttendanceHolidayRow; Insert: { holiday_on: string; name: string }; Update: { holiday_on?: string; name?: string }; Relationships: [] }
+      attendance_leave_types: { Row: AttendanceLeaveTypeRow; Insert: Omit<InsertOf<AttendanceLeaveTypeRow>, 'id'> & { code: string; name: string }; Update: Omit<InsertOf<AttendanceLeaveTypeRow>, 'id' | 'code'>; Relationships: [] }
+      attendance_leaves: { Row: AttendanceLeaveRow; Insert: { person_id: string; leave_type_id: string; from_date: string; to_date: string; half_day?: boolean; reason?: string | null }; Update: never; Relationships: [] }
+      attendance_corrections: { Row: AttendanceCorrectionRow; Insert: { person_id: string; work_date: string; punch_in?: string | null; punch_out?: string | null; reason: string }; Update: never; Relationships: [] }
+      attendance_day_overrides: { Row: AttendanceDayOverrideRow; Insert: { person_id: string; work_date: string; status: DayOverrideStatus; leave_type_id?: string | null; note: string }; Update: { status?: DayOverrideStatus; leave_type_id?: string | null; note?: string }; Relationships: [] }
     }
     Views: {
       activity_feed: { Row: ActivityFeedRow; Relationships: [] }
@@ -720,6 +858,31 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
+      }
+      attendance_decide_leave: { Args: { p_id: string; p_approve: boolean | null; p_note?: string | null }; Returns: undefined }
+      attendance_decide_correction: { Args: { p_id: string; p_approve: boolean; p_note?: string | null }; Returns: undefined }
+      attendance_cancel_request: { Args: { p_kind: 'leave' | 'correction'; p_id: string }; Returns: undefined }
+      attendance_add_manual_punch: { Args: { p_person: string; p_at: string; p_note: string }; Returns: string }
+      attendance_delete_punch: { Args: { p_id: string }; Returns: undefined }
+      attendance_import_punches: {
+        Args: { p_rows: { c: string; t: string }[]; p_label: string }
+        Returns: { inserted: number; invalid: number; duplicates: number }
+      }
+      /** Anonymous: the fingerprint device's handshake (route /iclock/cdata). */
+      attendance_device_hello: {
+        Args: { p_serial: string; p_token: string | null; p_ip: string | null; p_info: string | null }
+        Returns: { status: AttendanceDeviceStatus | 'rejected'; stamp?: string | null }
+      }
+      /** Anonymous: punches from the device. -1 when the device may not send. */
+      attendance_device_push: {
+        Args: {
+          p_serial: string
+          p_token: string | null
+          p_ip: string | null
+          p_stamp: string | null
+          p_rows: { c: string; t: string; s?: string; v?: string }[]
+        }
+        Returns: number
       }
     }
     Enums: {
