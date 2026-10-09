@@ -46,7 +46,9 @@ Checked in this order — the first that applies wins:
 5. **Approved leave** — a full or half day; *On duty* counts as present.
 6. Otherwise the **punches**: the first is *in*, the last is *out*.
    - No punches → **Absent** (today, before the shift ends: *Not yet in*).
-   - One punch only → **Missed punch** (today: *In*).
+   - One punch only → **Missed punch** (today: *In*). It still counts as a
+     present, paid day — the person came in — and is listed under *Missed
+     punches* until the person asks for a correction or an admin fixes it.
    - Worked at least the full-day hours (7 h by default) → **Present**;
      at least the half-day hours (4 h) → **Half day**; less → Absent.
 
@@ -57,7 +59,9 @@ min by default). **Left early** is the last punch before shift end.
 turn every N late marks into half a day off (off by default). All of this is
 set per shift in Setup → Office timings (shifts).
 
-All times are Indian time (IST), whatever the computer's clock says.
+All times are Indian time (IST), whatever the computer's clock says. Days
+after today stay blank in the register until they come; leave already approved
+for them is listed under Leave & corrections.
 
 ## The Excel register
 
@@ -162,7 +166,8 @@ twice.
 So the team can see an example of everything, these records were left in the
 live system. All of them are marked **ZZ TEST** or use the numbers 99xx:
 
-- Device **ZZTEST001** (approved) in Setup → Fingerprint devices.
+- Device **ZZTEST001**, "ZZ TEST device (example, not a real one)", approved, in
+  Setup → Fingerprint devices. It shows as offline on Today; that is expected.
 - **Dev** on attendance as device number **9901**, counted from 1 Oct 2026,
   with punches 1–9 Oct: normal days, a late day (3 Oct), a long day with
   overtime (7 Oct), a half day (8 Oct), a punch added by an admin (2 Oct), an

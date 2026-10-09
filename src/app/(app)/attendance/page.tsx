@@ -117,10 +117,10 @@ export default async function AttendanceTodayPage() {
             <CardContent>
               <dl className="grid grid-cols-3 gap-3 text-sm">
                 {[
-                  ['Present', myMonth.summary.present + myMonth.summary.onDuty],
+                  ['Present', myMonth.summary.present],
                   ['Half days', myMonth.summary.halfDays],
                   ['Absent', myMonth.summary.absent],
-                  ['Leave', myMonth.summary.paidLeave + myMonth.summary.unpaidLeave],
+                  ['Leave / on duty', myMonth.summary.paidLeave + myMonth.summary.unpaidLeave + myMonth.summary.onDuty],
                   ['Late marks', myMonth.summary.lateMarks],
                   ['Missed punches', myMonth.summary.missedPunches],
                 ].map(([label, value]) => (
