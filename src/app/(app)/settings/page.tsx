@@ -57,6 +57,7 @@ export default async function SettingsPage() {
       supabase
         .from('profiles')
         .select('*')
+        .eq('is_hidden', false)
         .order('is_active', { ascending: false })
         .order('full_name'),
       supabase

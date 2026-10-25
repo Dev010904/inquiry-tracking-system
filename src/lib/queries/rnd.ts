@@ -189,6 +189,7 @@ export async function getRndFormOptions() {
     .from('profiles')
     .select('id, full_name')
     .eq('is_active', true)
+    .eq('is_hidden', false)
     .order('full_name')
   return { staff: data ?? [] }
 }

@@ -447,7 +447,7 @@ export async function getFormOptions() {
       .is('deleted_at', null)
       .order('name')
       .limit(1000),
-    supabase.from('profiles').select('id, full_name').eq('is_active', true).order('full_name'),
+    supabase.from('profiles').select('id, full_name').eq('is_active', true).eq('is_hidden', false).order('full_name'),
   ])
 
   return {

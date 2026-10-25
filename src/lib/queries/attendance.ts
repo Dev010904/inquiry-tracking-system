@@ -314,7 +314,7 @@ export async function getSetup() {
     getLeaveTypes(),
     getHolidays(`${Number(year) - 1}-01-01`, `${Number(year) + 1}-12-31`),
     supabase.from('attendance_devices').select('*').order('created_at'),
-    supabase.from('profiles').select('id, full_name, email, is_active').order('full_name'),
+    supabase.from('profiles').select('id, full_name, email, is_active').eq('is_hidden', false).order('full_name'),
     allPages<{ device_code: string; punched_at: string }>((from, to) =>
       supabase
         .from('attendance_punches')

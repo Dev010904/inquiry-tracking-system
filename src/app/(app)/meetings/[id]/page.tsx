@@ -46,6 +46,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
     .from('profiles')
     .select('id, full_name')
     .eq('is_active', true)
+    .eq('is_hidden', false)
     .order('full_name')
 
   return (

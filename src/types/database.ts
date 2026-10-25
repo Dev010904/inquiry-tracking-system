@@ -39,6 +39,8 @@ export type ProfileRow = Timestamps & {
   role: UserRole
   is_active: boolean
   can_manage_settings: boolean
+  /** System account: left out of Settings and every people picker. Set from SQL only. */
+  is_hidden: boolean
   /**
    * Optional custom role. NULL means fall back to `role` above.
    *

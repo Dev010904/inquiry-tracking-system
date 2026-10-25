@@ -281,6 +281,14 @@ ZKTeco devices push punches over HTTPS (`/iclock/…`); fingerprints never
 leave the device. Migration 9_01. Everything — rules, device setup, the test
 data left in on purpose and how to remove it — is in `docs/ATTENDANCE.md`.
 
+### System accounts (25 Oct 2026)
+
+`profiles.is_hidden` marks a system account: it signs in and works like any
+other, but Settings > Users and every people picker (inquiry owner, task
+assignee, meeting owner, R&D lead, activity filter, attendance setup) leave it
+out. Past actions still show its name. Set from SQL only; the app cannot
+change it. Migration 10_01. One account is marked: System Admin.
+
 ---
 
 ## Next — remaining phases

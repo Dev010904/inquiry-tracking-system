@@ -85,6 +85,7 @@ export async function activityActors() {
   const { data } = await supabase
     .from('profiles')
     .select('id, full_name')
+    .eq('is_hidden', false)
     .order('full_name')
   return data ?? []
 }
